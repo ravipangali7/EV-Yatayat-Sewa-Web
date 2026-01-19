@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 10%;
+
+    --primary: 152 76% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 100% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 150 15% 95%;
+    --muted-foreground: 210 10% 45%;
+
+    --accent: 152 60% 92%;
+    --accent-foreground: 152 76% 25%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 150 20% 90%;
+    --input: 150 20% 90%;
+    --ring: 152 76% 36%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --electric-blue: 200 100% 50%;
+    --electric-blue-glow: 200 100% 60%;
+    --eco-green: 152 76% 36%;
+    --eco-green-light: 152 60% 92%;
+    --eco-green-dark: 152 76% 25%;
+    --charcoal: 210 20% 15%;
+    --charcoal-light: 210 10% 30%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(152 76% 36%), hsl(200 100% 45%));
+    --gradient-hero: linear-gradient(135deg, hsl(152 76% 20%), hsl(200 100% 30%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(150 15% 98%));
+    --gradient-glow: radial-gradient(circle at center, hsl(152 76% 50% / 0.3), transparent 70%);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px hsl(152 76% 36% / 0.08);
+    --shadow-md: 0 4px 20px hsl(152 76% 36% / 0.12);
+    --shadow-lg: 0 8px 40px hsl(152 76% 36% / 0.15);
+    --shadow-glow: 0 0 40px hsl(152 76% 50% / 0.3);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 152 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 152 60% 92%;
+    --sidebar-accent-foreground: 152 76% 25%;
+    --sidebar-border: 150 20% 90%;
+    --sidebar-ring: 152 76% 36%;
+  }
+
+  .dark {
+    --background: 210 20% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 210 20% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 210 20% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 152 70% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 100% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 15% 18%;
+    --muted-foreground: 210 10% 60%;
+
+    --accent: 152 50% 20%;
+    --accent-foreground: 152 70% 70%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 15% 20%;
+    --input: 210 15% 20%;
+    --ring: 152 70% 45%;
+
+    --sidebar-background: 210 20% 10%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 152 70% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 152 50% 20%;
+    --sidebar-accent-foreground: 152 70% 70%;
+    --sidebar-border: 210 15% 20%;
+    --sidebar-ring: 152 70% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-md;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .gradient-bg {
+    background-image: var(--gradient-primary);
+  }
+
+  .glow-effect {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .hero-gradient {
+    background: linear-gradient(135deg, hsl(152 76% 15% / 0.95), hsl(200 100% 20% / 0.95));
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px hsl(152 76% 50% / 0.3); }
+    50% { box-shadow: 0 0 40px hsl(152 76% 50% / 0.5); }
+  }
+}
