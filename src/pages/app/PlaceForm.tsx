@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PlaceMap } from '@/components/places/PlaceMap';
-import { getPlace, createPlace, updatePlace } from '@/stores/mockData';
+import { placeApi } from '@/modules/places/services/placeApi';
 import { toast } from 'sonner';
+import { toNumber } from '@/lib/utils';
 
 export default function PlaceForm() {
   const { id } = useParams();
@@ -17,37 +18,56 @@ export default function PlaceForm() {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    latitude: 40.7128,
-    longitude: -74.0060,
+    latitude: 0,
+    longitude: 0,
     address: '',
   });
 
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    if (isEdit && id) {
-      const place = getPlace(id);
-      if (place) {
-        setFormData({
-          name: place.name,
-          code: place.code,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          address: place.address,
-        });
+    const fetchPlace = async () => {
+      if (isEdit && id) {
+        try {
+          setLoading(true);
+          const place = await placeApi.get(id);
+          setFormData({
+            name: place.name || '',
+            code: place.code || '',
+            latitude: toNumber(place.latitude, 40.7128),
+            longitude: toNumber(place.longitude, -74.0060),
+            address: place.address || '',
+          });
+        } catch (error) {
+          toast.error('Failed to load place');
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
       }
-    }
+    };
+    fetchPlace();
   }, [id, isEdit]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    if (isEdit && id) {
-      updatePlace(id, formData);
-      toast.success('Place updated successfully');
-    } else {
-      createPlace(formData);
-      toast.success('Place created successfully');
+    try {
+      if (isEdit && id) {
+        await placeApi.edit(id, formData);
+        toast.success('Place updated successfully');
+      } else {
+        await placeApi.create(formData);
+        toast.success('Place created successfully');
+      }
+      navigate('/app/places');
+    } catch (error) {
+      console.error(error);
+      // Error is already handled by API interceptor
+    } finally {
+      setLoading(false);
     }
-    navigate('/app/places');
   };
 
   const handleLocationChange = (lat: number, lng: number, address: string) => {
@@ -138,8 +158,8 @@ export default function PlaceForm() {
         </div>
 
         <div className="flex gap-4">
-          <Button type="submit">{isEdit ? 'Update' : 'Create'} Place</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/places')}>
+          <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} Place</Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/app/places')} disabled={loading}>
             Cancel
           </Button>
         </div>

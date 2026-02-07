@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { MapPin, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { GoogleMapComponent } from '@/components/maps/GoogleMap';
 
 interface PlaceMapProps {
   latitude: number;
@@ -64,9 +65,6 @@ export function PlaceMap({ latitude, longitude, onLocationChange }: PlaceMapProp
     setSearchQuery(result.display_name);
   };
 
-  // Generate static map URL using OpenStreetMap
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01},${latitude - 0.01},${longitude + 0.01},${latitude + 0.01}&layer=mapnik&marker=${latitude},${longitude}`;
-
   return (
     <div className="space-y-4">
       {/* Search Input */}
@@ -106,21 +104,15 @@ export function PlaceMap({ latitude, longitude, onLocationChange }: PlaceMapProp
         )}
       </div>
 
-      {/* Map Display */}
-      <Card className="overflow-hidden">
-        <div className="relative h-64 w-full bg-muted">
-          <iframe
-            src={mapUrl}
-            className="w-full h-full border-0"
-            title="Location Map"
-          />
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium shadow-lg">
-              {latitude.toFixed(6)}, {longitude.toFixed(6)}
-            </div>
-          </div>
-        </div>
-      </Card>
+      {/* Google Map Display with custom pin */}
+      <GoogleMapComponent
+        latitude={latitude}
+        longitude={longitude}
+        onLocationChange={onLocationChange}
+        height="400px"
+        zoom={15}
+        clickable={true}
+      />
     </div>
   );
 }

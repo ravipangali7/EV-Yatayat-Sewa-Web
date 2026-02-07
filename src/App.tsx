@@ -16,16 +16,23 @@ import UserForm from "./pages/app/UserForm";
 import UserView from "./pages/app/UserView";
 import Wallets from "./pages/app/Wallets";
 import WalletForm from "./pages/app/WalletForm";
+import WalletView from "./pages/app/WalletView";
 import Transactions from "./pages/app/Transactions";
 import TransactionForm from "./pages/app/TransactionForm";
+import TransactionView from "./pages/app/TransactionView";
 import Settings from "./pages/app/Settings";
 import Places from "./pages/app/Places";
 import PlaceForm from "./pages/app/PlaceForm";
+import PlaceView from "./pages/app/PlaceView";
 import Routes_ from "./pages/app/Routes";
 import RouteForm from "./pages/app/RouteForm";
+import RouteView from "./pages/app/RouteView";
 import Vehicles from "./pages/app/Vehicles";
 import VehicleForm from "./pages/app/VehicleForm";
 import VehicleView from "./pages/app/VehicleView";
+import SeatBookings from "./pages/app/SeatBookings";
+import SeatBookingForm from "./pages/app/SeatBookingForm";
+import SeatBookingView from "./pages/app/SeatBookingView";
 
 const queryClient = new QueryClient();
 
@@ -70,12 +77,12 @@ function AppRoutes() {
       {/* Wallets */}
       <Route path="/app/wallets" element={<ProtectedRoute><Wallets /></ProtectedRoute>} />
       <Route path="/app/wallets/add" element={<ProtectedRoute><WalletForm /></ProtectedRoute>} />
-      <Route path="/app/wallets/:id" element={<ProtectedRoute><WalletForm /></ProtectedRoute>} />
+      <Route path="/app/wallets/:id" element={<ProtectedRoute><WalletView /></ProtectedRoute>} />
       <Route path="/app/wallets/:id/edit" element={<ProtectedRoute><WalletForm /></ProtectedRoute>} />
       
       {/* Transactions */}
       <Route path="/app/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-      <Route path="/app/transactions/:id" element={<ProtectedRoute><TransactionForm /></ProtectedRoute>} />
+      <Route path="/app/transactions/:id" element={<ProtectedRoute><TransactionView /></ProtectedRoute>} />
       <Route path="/app/transactions/:id/edit" element={<ProtectedRoute><TransactionForm /></ProtectedRoute>} />
       
       {/* Settings */}
@@ -84,13 +91,13 @@ function AppRoutes() {
       {/* Places */}
       <Route path="/app/places" element={<ProtectedRoute><Places /></ProtectedRoute>} />
       <Route path="/app/places/add" element={<ProtectedRoute><PlaceForm /></ProtectedRoute>} />
-      <Route path="/app/places/:id" element={<ProtectedRoute><PlaceForm /></ProtectedRoute>} />
+      <Route path="/app/places/:id" element={<ProtectedRoute><PlaceView /></ProtectedRoute>} />
       <Route path="/app/places/:id/edit" element={<ProtectedRoute><PlaceForm /></ProtectedRoute>} />
       
       {/* Routes */}
       <Route path="/app/routes" element={<ProtectedRoute><Routes_ /></ProtectedRoute>} />
       <Route path="/app/routes/add" element={<ProtectedRoute><RouteForm /></ProtectedRoute>} />
-      <Route path="/app/routes/:id" element={<ProtectedRoute><RouteForm /></ProtectedRoute>} />
+      <Route path="/app/routes/:id" element={<ProtectedRoute><RouteView /></ProtectedRoute>} />
       <Route path="/app/routes/:id/edit" element={<ProtectedRoute><RouteForm /></ProtectedRoute>} />
       
       {/* Vehicles */}
@@ -98,6 +105,12 @@ function AppRoutes() {
       <Route path="/app/vehicles/add" element={<ProtectedRoute><VehicleForm /></ProtectedRoute>} />
       <Route path="/app/vehicles/:id" element={<ProtectedRoute><VehicleView /></ProtectedRoute>} />
       <Route path="/app/vehicles/:id/edit" element={<ProtectedRoute><VehicleForm /></ProtectedRoute>} />
+      
+      {/* Seat Bookings */}
+      <Route path="/app/seat-bookings" element={<ProtectedRoute><SeatBookings /></ProtectedRoute>} />
+      <Route path="/app/seat-bookings/add" element={<ProtectedRoute><SeatBookingForm /></ProtectedRoute>} />
+      <Route path="/app/seat-bookings/:id" element={<ProtectedRoute><SeatBookingView /></ProtectedRoute>} />
+      <Route path="/app/seat-bookings/:id/edit" element={<ProtectedRoute><SeatBookingForm /></ProtectedRoute>} />
       
       <Route path="*" element={<NotFound />} />
     </Routes>

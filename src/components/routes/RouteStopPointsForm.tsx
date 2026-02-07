@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
-import { getPlaces } from '@/stores/mockData';
+import { Place } from '@/types';
 
 interface StopPoint {
   id: string;
@@ -13,10 +13,10 @@ interface StopPoint {
 interface RouteStopPointsFormProps {
   value: StopPoint[];
   onChange: (stopPoints: StopPoint[]) => void;
+  places?: Place[];
 }
 
-export function RouteStopPointsForm({ value, onChange }: RouteStopPointsFormProps) {
-  const places = getPlaces();
+export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopPointsFormProps) {
   const placeOptions = places.map((p) => ({ value: p.id, label: p.name }));
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 

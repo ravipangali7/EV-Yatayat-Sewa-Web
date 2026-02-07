@@ -12,7 +12,8 @@ import {
   LogOut,
   Wallet,
   Receipt,
-  ChevronDown
+  ChevronDown,
+  Ticket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +52,7 @@ const navSections: NavSection[] = [
       { label: 'Places', path: '/app/places', icon: <MapPin className="w-5 h-5" /> },
       { label: 'Routes', path: '/app/routes', icon: <RouteIcon className="w-5 h-5" /> },
       { label: 'Vehicles', path: '/app/vehicles', icon: <Bus className="w-5 h-5" /> },
+      { label: 'Seat Bookings', path: '/app/seat-bookings', icon: <Ticket className="w-5 h-5" /> },
     ],
   },
 ];

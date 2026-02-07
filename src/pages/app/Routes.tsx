@@ -1,34 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
-import { getRoutes, getPlaces, deleteRoute, deleteRoutes } from '@/stores/mockData';
+import { routeApi } from '@/modules/routes/services/routeApi';
 import { Route } from '@/types';
 import { toast } from 'sonner';
 
 export default function Routes() {
   const navigate = useNavigate();
-  const [routes, setRoutes] = useState(getRoutes());
-  const places = getPlaces();
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const getPlaceName = (placeId: string) => {
-    const place = places.find(p => p.id === placeId);
-    return place?.name || 'Unknown';
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const routesResponse = await routeApi.list({ per_page: 1000 });
+        setRoutes(routesResponse.results);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const columns: Column<Route>[] = [
     { key: 'name', header: 'Name' },
     {
       key: 'start_point',
       header: 'Start Point',
-      render: (route) => getPlaceName(route.start_point),
+      render: (route) => route.start_point_details?.name || 'Unknown',
     },
     {
       key: 'end_point',
       header: 'End Point',
-      render: (route) => getPlaceName(route.end_point),
+      render: (route) => route.end_point_details?.name || 'Unknown',
     },
     {
       key: 'is_bidirectional',
@@ -37,16 +47,24 @@ export default function Routes() {
     },
   ];
 
-  const handleDelete = (id: string) => {
-    deleteRoute(id);
-    setRoutes(getRoutes());
-    toast.success('Route deleted successfully');
+  const handleDelete = async (id: string) => {
+    try {
+      await routeApi.delete(id);
+      setRoutes(routes.filter(route => route.id !== id));
+      toast.success('Route deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete route:', error);
+    }
   };
 
-  const handleBulkDelete = (ids: string[]) => {
-    deleteRoutes(ids);
-    setRoutes(getRoutes());
-    toast.success(`${ids.length} routes deleted successfully`);
+  const handleBulkDelete = async (ids: string[]) => {
+    try {
+      await Promise.all(ids.map(id => routeApi.delete(id)));
+      setRoutes(routes.filter(route => !ids.includes(route.id)));
+      toast.success(`${ids.length} routes deleted successfully`);
+    } catch (error) {
+      console.error('Failed to delete routes:', error);
+    }
   };
 
   return (
@@ -62,15 +80,21 @@ export default function Routes() {
         }
       />
 
-      <DataTable
-        data={routes}
-        columns={columns}
-        searchPlaceholder="Search routes..."
-        onView={(route) => navigate(`/app/routes/${route.id}`)}
-        onEdit={(route) => navigate(`/app/routes/${route.id}/edit`)}
-        onDelete={handleDelete}
-        onBulkDelete={handleBulkDelete}
-      />
+      {loading ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading routes...</p>
+        </div>
+      ) : (
+        <DataTable
+          data={routes}
+          columns={columns}
+          searchPlaceholder="Search routes..."
+          onView={(route) => navigate(`/app/routes/${route.id}`)}
+          onEdit={(route) => navigate(`/app/routes/${route.id}/edit`)}
+          onDelete={handleDelete}
+          onBulkDelete={handleBulkDelete}
+        />
+      )}
     </div>
   );
 }

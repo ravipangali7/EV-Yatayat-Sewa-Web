@@ -17,6 +17,12 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!phone || !password) {
+      toast.error('Please enter both phone number and password');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -25,10 +31,12 @@ export default function Login() {
         toast.success('Login successful!');
         navigate('/app');
       } else {
-        toast.error('Invalid credentials');
+        toast.error('Invalid phone number or password');
       }
-    } catch {
-      toast.error('An error occurred');
+    } catch (error: any) {
+      // Error is already handled by API interceptor, but we can show a more specific message
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.phone?.[0] || 'Invalid credentials';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -98,9 +106,6 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            Demo: Enter any phone and password to login
-          </p>
         </div>
       </div>
     </div>

@@ -1,15 +1,44 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Edit, Check, X } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/common/StatusBadge';
-import { getUser } from '@/stores/mockData';
+import { userApi } from '@/modules/users/services/userApi';
+import { User } from '@/types';
+import { toast } from 'sonner';
 
 export default function UserView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const user = id ? getUser(id) : null;
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const userData = await userApi.get(id);
+        setUser(userData);
+      } catch (error) {
+        toast.error('Failed to load user');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Loading user...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -31,6 +60,13 @@ export default function UserView() {
     { label: 'Updated At', value: new Date(user.updated_at).toLocaleString() },
   ];
 
+  // Construct full media URL for profile picture
+  const profilePictureUrl = user.profile_picture
+    ? user.profile_picture.startsWith('http')
+      ? user.profile_picture
+      : `http://127.0.0.1:8000${user.profile_picture}`
+    : null;
+
   return (
     <div>
       <PageHeader
@@ -51,6 +87,26 @@ export default function UserView() {
             <CardTitle>Basic Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Profile Picture */}
+            <div className="flex flex-col items-center py-4 border-b border-border">
+              <div className="relative">
+                {profilePictureUrl ? (
+                  <img
+                    src={profilePictureUrl}
+                    alt={`${user.name}'s profile`}
+                    className="w-32 h-32 object-cover rounded-full border-4 border-border"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full border-4 border-border bg-muted flex items-center justify-center">
+                    <span className="text-4xl font-semibold text-muted-foreground">
+                      {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">Profile Picture</p>
+            </div>
+            
             {fields.map((field) => (
               <div key={field.label} className="flex justify-between items-center py-2 border-b border-border last:border-0">
                 <span className="text-muted-foreground">{field.label}</span>

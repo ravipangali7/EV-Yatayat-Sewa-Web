@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getTransaction, updateTransaction } from '@/stores/mockData';
+import { transactionApi } from '@/modules/transactions/services/transactionApi';
 import { TransactionStatus } from '@/types';
 import { toast } from 'sonner';
 
@@ -18,26 +18,45 @@ export default function TransactionForm() {
     remarks: '',
   });
 
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    if (id) {
-      const tx = getTransaction(id);
-      if (tx) {
-        setFormData({
-          status: tx.status,
-          remarks: tx.remarks || '',
-        });
+    const fetchTransaction = async () => {
+      if (id) {
+        try {
+          setLoading(true);
+          const tx = await transactionApi.get(id);
+          setFormData({
+            status: tx.status,
+            remarks: tx.remarks || '',
+          });
+        } catch (error) {
+          toast.error('Failed to load transaction');
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
       }
-    }
+    };
+    fetchTransaction();
   }, [id]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    if (id) {
-      updateTransaction(id, formData);
-      toast.success('Transaction updated successfully');
+    try {
+      if (id) {
+        await transactionApi.edit(id, formData);
+        toast.success('Transaction updated successfully');
+      }
+      navigate('/app/transactions');
+    } catch (error) {
+      console.error(error);
+      // Error is already handled by API interceptor
+    } finally {
+      setLoading(false);
     }
-    navigate('/app/transactions');
   };
 
   return (
@@ -78,8 +97,8 @@ export default function TransactionForm() {
         </div>
 
         <div className="flex gap-4 mt-8">
-          <Button type="submit">Update Transaction</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/transactions')}>
+          <Button type="submit" disabled={loading}>Update Transaction</Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/app/transactions')} disabled={loading}>
             Cancel
           </Button>
         </div>

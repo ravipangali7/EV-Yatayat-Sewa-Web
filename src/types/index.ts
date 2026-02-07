@@ -134,6 +134,36 @@ export interface Vehicle {
   updated_at: string;
 }
 
+export interface SeatBooking {
+  id: string;
+  user?: string;
+  user_details?: User;
+  is_guest: boolean;
+  vehicle: string;
+  vehicle_details?: {
+    id: string;
+    name: string;
+    vehicle_no: string;
+    vehicle_type: string;
+  };
+  vehicle_seat: string;
+  vehicle_seat_details?: VehicleSeat;
+  check_in_lat: number;
+  check_in_lng: number;
+  check_in_datetime: string;
+  check_in_address: string;
+  check_out_lat?: number;
+  check_out_lng?: number;
+  check_out_datetime?: string;
+  check_out_address?: string;
+  trip_distance?: number;
+  trip_duration?: number;
+  trip_amount?: number;
+  is_paid: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PaginationState {
   page: number;
   perPage: number;

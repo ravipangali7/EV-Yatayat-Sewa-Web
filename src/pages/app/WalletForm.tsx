@@ -5,14 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
-import { getWallet, getUsers, createWallet, updateWallet } from '@/stores/mockData';
+import { walletApi } from '@/modules/wallets/services/walletApi';
+import { userApi } from '@/modules/users/services/userApi';
 import { toast } from 'sonner';
 
 export default function WalletForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = !!id;
-  const users = getUsers();
+  const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
 
   const [formData, setFormData] = useState({
     user: '',
@@ -21,31 +22,62 @@ export default function WalletForm() {
     to_be_received: 0,
   });
 
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    if (isEdit && id) {
-      const wallet = getWallet(id);
-      if (wallet) {
-        setFormData({
-          user: wallet.user,
-          balance: wallet.balance,
-          to_be_pay: wallet.to_be_pay,
-          to_be_received: wallet.to_be_received,
-        });
+    const fetchUsers = async () => {
+      try {
+        const response = await userApi.list({ per_page: 1000 });
+        setUsers(response.results.map(u => ({ id: u.id, name: u.name || u.username })));
+      } catch (error) {
+        console.error('Failed to load users:', error);
       }
-    }
+    };
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (isEdit && id) {
+        try {
+          setLoading(true);
+          const wallet = await walletApi.get(id);
+          setFormData({
+            user: wallet.user || '',
+            balance: wallet.balance || 0,
+            to_be_pay: wallet.to_be_pay || 0,
+            to_be_received: wallet.to_be_received || 0,
+          });
+        } catch (error) {
+          toast.error('Failed to load wallet');
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchWallet();
   }, [id, isEdit]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    if (isEdit && id) {
-      updateWallet(id, formData);
-      toast.success('Wallet updated successfully');
-    } else {
-      createWallet(formData);
-      toast.success('Wallet created successfully');
+    try {
+      if (isEdit && id) {
+        await walletApi.edit(id, formData);
+        toast.success('Wallet updated successfully');
+      } else {
+        await walletApi.create(formData);
+        toast.success('Wallet created successfully');
+      }
+      navigate('/app/wallets');
+    } catch (error) {
+      console.error(error);
+      // Error is already handled by API interceptor
+    } finally {
+      setLoading(false);
     }
-    navigate('/app/wallets');
   };
 
   const userOptions = users.map((u) => ({ value: u.id, label: u.name }));
@@ -108,8 +140,8 @@ export default function WalletForm() {
         </div>
 
         <div className="flex gap-4 mt-8">
-          <Button type="submit">{isEdit ? 'Update' : 'Create'} Wallet</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/wallets')}>
+          <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} Wallet</Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/app/wallets')} disabled={loading}>
             Cancel
           </Button>
         </div>

@@ -1,16 +1,56 @@
-import { Users, Bus, MapPin, Route as RouteIcon, Wallet, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Bus, MapPin, Route as RouteIcon, Wallet as WalletIcon, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getUsers, getVehicles, getPlaces, getRoutes, getWallets, getTransactions } from '@/stores/mockData';
+import { userApi } from '@/modules/users/services/userApi';
+import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
+import { placeApi } from '@/modules/places/services/placeApi';
+import { routeApi } from '@/modules/routes/services/routeApi';
+import { walletApi } from '@/modules/wallets/services/walletApi';
+import { transactionApi } from '@/modules/transactions/services/transactionApi';
+import { User, Vehicle, Place, Route, Wallet, Transaction } from '@/types';
+import { toast } from 'sonner';
+import { toNumber } from '@/lib/utils';
 
 export default function Dashboard() {
-  const users = getUsers();
-  const vehicles = getVehicles();
-  const places = getPlaces();
-  const routes = getRoutes();
-  const wallets = getWallets();
-  const transactions = getTransactions();
+  const [users, setUsers] = useState<User[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const totalBalance = wallets.reduce((sum, w) => sum + w.balance, 0);
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        const [usersRes, vehiclesRes, placesRes, routesRes, walletsRes, transactionsRes] = 
+          await Promise.all([
+            userApi.list({ per_page: 1000 }),
+            vehicleApi.list({ per_page: 1000 }),
+            placeApi.list({ per_page: 1000 }),
+            routeApi.list({ per_page: 1000 }),
+            walletApi.list({ per_page: 1000 }),
+            transactionApi.list({ per_page: 1000 }),
+          ]);
+        
+        setUsers(usersRes.results);
+        setVehicles(vehiclesRes.results);
+        setPlaces(placesRes.results);
+        setRoutes(routesRes.results);
+        setWallets(walletsRes.results);
+        setTransactions(transactionsRes.results);
+      } catch (error) {
+        toast.error('Failed to load dashboard data');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
+  const totalBalance = wallets.reduce((sum, w) => sum + toNumber(w.balance, 0), 0);
   const activeVehicles = vehicles.filter(v => v.is_active).length;
   const drivers = users.filter(u => u.is_driver).length;
 
@@ -46,7 +86,7 @@ export default function Dashboard() {
     {
       title: 'Total Balance',
       value: `$${totalBalance.toLocaleString()}`,
-      icon: <Wallet className="w-5 h-5" />,
+      icon: <WalletIcon className="w-5 h-5" />,
       change: '+8.2%',
       changeType: 'positive' as const,
     },
@@ -58,6 +98,20 @@ export default function Dashboard() {
       changeType: 'neutral' as const,
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Welcome back! Here's an overview of your fleet.</p>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -127,7 +181,7 @@ export default function Dashboard() {
                     <p className="text-sm text-muted-foreground">{tx.type === 'add' ? 'Credit' : 'Debit'}</p>
                   </div>
                   <span className={`font-semibold ${tx.type === 'add' ? 'text-success' : 'text-destructive'}`}>
-                    {tx.type === 'add' ? '+' : '-'}${tx.amount}
+                    {tx.type === 'add' ? '+' : '-'}${toNumber(tx.amount, 0)}
                   </span>
                 </div>
               ))}

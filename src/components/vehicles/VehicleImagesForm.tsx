@@ -1,14 +1,15 @@
 import { Plus, Trash2, Image } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-interface ImageForm {
+export interface ImageForm {
   id: string;
   title: string;
   description: string;
-  image: string;
+  image: File | string; // File for new uploads, string URL for existing images
 }
 
 interface VehicleImagesFormProps {
@@ -31,7 +32,7 @@ export function VehicleImagesForm({ value, onChange }: VehicleImagesFormProps) {
     onChange(value.filter((_, i) => i !== index));
   };
 
-  const updateImage = (index: number, field: keyof ImageForm, fieldValue: string) => {
+  const updateImage = (index: number, field: keyof ImageForm, fieldValue: string | File) => {
     const updated = [...value];
     updated[index] = { ...updated[index], [field]: fieldValue };
     onChange(updated);
@@ -40,14 +41,40 @@ export function VehicleImagesForm({ value, onChange }: VehicleImagesFormProps) {
   const handleFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In production, you'd upload to a storage service
-      // For now, we'll use a placeholder URL
-      const reader = new FileReader();
-      reader.onload = () => {
-        updateImage(index, 'image', reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Store the File object directly (not as base64)
+      updateImage(index, 'image', file);
     }
+  };
+
+  // Create and cache object URLs for File objects, cleanup on unmount
+  const imagePreviews = useMemo(() => {
+    const previews = new Map<File, string>();
+    value.forEach(img => {
+      if (img.image instanceof File && !previews.has(img.image)) {
+        previews.set(img.image, URL.createObjectURL(img.image));
+      }
+    });
+    return previews;
+  }, [value]);
+
+  // Cleanup object URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [imagePreviews]);
+
+  // Get preview URL for display
+  const getImagePreview = (image: File | string): string => {
+    if (image instanceof File) {
+      // For File objects, use cached object URL
+      return imagePreviews.get(image) || '';
+    }
+    // For string URLs (existing images), add base URL if needed
+    if (!image) return '';
+    return image.startsWith('http')
+      ? image
+      : `http://127.0.0.1:8000${image}`;
   };
 
   return (
@@ -93,7 +120,7 @@ export function VehicleImagesForm({ value, onChange }: VehicleImagesFormProps) {
                   <div className="flex items-center gap-4">
                     {img.image ? (
                       <img
-                        src={img.image}
+                        src={getImagePreview(img.image)}
                         alt={img.title}
                         className="w-20 h-20 object-cover rounded-lg border border-border"
                       />

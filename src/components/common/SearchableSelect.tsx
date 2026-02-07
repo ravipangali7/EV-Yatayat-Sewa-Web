@@ -22,25 +22,45 @@ export interface SelectOption {
   label: string;
 }
 
-interface SearchableSelectProps {
-  options: SelectOption[];
+interface SearchableSelectProps<T = SelectOption> {
+  options: T[];
   value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  getOptionLabel?: (option: T) => string;
+  getOptionValue?: (option: T) => string;
 }
 
-export function SearchableSelect({
+export function SearchableSelect<T = SelectOption>({
   options,
   value,
   onChange,
   placeholder = 'Select...',
   disabled = false,
   className,
-}: SearchableSelectProps) {
+  getOptionLabel,
+  getOptionValue,
+}: SearchableSelectProps<T>) {
   const [open, setOpen] = useState(false);
-  const selectedOption = options.find((o) => o.value === value);
+  
+  // Helper functions to get label and value
+  const getLabel = (option: T): string => {
+    if (getOptionLabel) {
+      return getOptionLabel(option);
+    }
+    return (option as any).label || (option as any).name || String(option);
+  };
+  
+  const getValue = (option: T): string => {
+    if (getOptionValue) {
+      return getOptionValue(option);
+    }
+    return (option as any).value || (option as any).id || String(option);
+  };
+  
+  const selectedOption = options.find((o) => getValue(o) === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -52,7 +72,7 @@ export function SearchableSelect({
           className={cn('w-full justify-between', className)}
           disabled={disabled}
         >
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? getLabel(selectedOption) : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -62,24 +82,28 @@ export function SearchableSelect({
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.label}
-                  onSelect={() => {
-                    onChange(option.value);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === option.value ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
-              ))}
+              {options.map((option) => {
+                const optionValue = getValue(option);
+                const optionLabel = getLabel(option);
+                return (
+                  <CommandItem
+                    key={optionValue}
+                    value={optionLabel}
+                    onSelect={() => {
+                      onChange(optionValue);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        value === optionValue ? 'opacity-100' : 'opacity-0'
+                      )}
+                    />
+                    {optionLabel}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>

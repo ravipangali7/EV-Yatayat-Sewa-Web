@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { RouteStopPointsForm } from '@/components/routes/RouteStopPointsForm';
-import { getRoute, getPlaces, getRouteStopPoints, createRoute, updateRoute, createRouteStopPoint, deleteRouteStopPoints } from '@/stores/mockData';
+import { routeApi } from '@/modules/routes/services/routeApi';
+import { placeApi } from '@/modules/places/services/placeApi';
 import { toast } from 'sonner';
 
 interface StopPoint {
@@ -20,7 +21,7 @@ export default function RouteForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = !!id;
-  const places = getPlaces();
+  const [places, setPlaces] = useState<Array<{ id: string; name: string }>>([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -30,58 +31,77 @@ export default function RouteForm() {
   });
 
   const [stopPoints, setStopPoints] = useState<StopPoint[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isEdit && id) {
-      const route = getRoute(id);
-      if (route) {
-        setFormData({
-          name: route.name,
-          is_bidirectional: route.is_bidirectional,
-          start_point: route.start_point,
-          end_point: route.end_point,
-        });
-
-        const existingStopPoints = getRouteStopPoints(id);
-        setStopPoints(
-          existingStopPoints.map((sp) => ({
-            id: sp.id,
-            place: sp.place,
-            order: sp.order,
-          }))
-        );
+    const fetchPlaces = async () => {
+      try {
+        const response = await placeApi.list({ per_page: 1000 });
+        setPlaces(response.results.map(p => ({ id: p.id, name: p.name })));
+      } catch (error) {
+        console.error('Failed to load places:', error);
       }
-    }
+    };
+    fetchPlaces();
+  }, []);
+
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (isEdit && id) {
+        try {
+          setLoading(true);
+          const route = await routeApi.get(id);
+          setFormData({
+            name: route.name || '',
+            is_bidirectional: route.is_bidirectional || false,
+            start_point: route.start_point || '',
+            end_point: route.end_point || '',
+          });
+
+          if (route.stop_points) {
+            setStopPoints(
+              route.stop_points.map((sp) => ({
+                id: sp.id,
+                place: sp.place,
+                order: sp.order,
+              }))
+            );
+          }
+        } catch (error) {
+          toast.error('Failed to load route');
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchRoute();
   }, [id, isEdit]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    if (isEdit && id) {
-      updateRoute(id, formData);
-      // Update stop points
-      deleteRouteStopPoints(id);
-      stopPoints.forEach((sp) => {
-        createRouteStopPoint({
-          route: id,
-          place: sp.place,
-          order: sp.order,
-        });
-      });
-      toast.success('Route updated successfully');
-    } else {
-      const newRoute = createRoute(formData);
-      // Create stop points
-      stopPoints.forEach((sp) => {
-        createRouteStopPoint({
-          route: newRoute.id,
-          place: sp.place,
-          order: sp.order,
-        });
-      });
-      toast.success('Route created successfully');
+    try {
+      const routeData = {
+        ...formData,
+        stop_points: stopPoints.map(sp => ({ place: sp.place, order: sp.order })),
+      };
+
+      if (isEdit && id) {
+        await routeApi.edit(id, routeData);
+        toast.success('Route updated successfully');
+      } else {
+        await routeApi.create(routeData);
+        toast.success('Route created successfully');
+      }
+      navigate('/app/routes');
+    } catch (error) {
+      console.error(error);
+      // Error is already handled by API interceptor
+    } finally {
+      setLoading(false);
     }
-    navigate('/app/routes');
   };
 
   const placeOptions = places.map((p) => ({ value: p.id, label: p.name }));
@@ -141,12 +161,12 @@ export default function RouteForm() {
         </div>
 
         <div className="form-section">
-          <RouteStopPointsForm value={stopPoints} onChange={setStopPoints} />
+          <RouteStopPointsForm value={stopPoints} onChange={setStopPoints} places={places} />
         </div>
 
         <div className="flex gap-4">
-          <Button type="submit">{isEdit ? 'Update' : 'Create'} Route</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/routes')}>
+          <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} Route</Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/app/routes')} disabled={loading}>
             Cancel
           </Button>
         </div>

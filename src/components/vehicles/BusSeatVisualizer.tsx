@@ -3,9 +3,12 @@ import { cn } from '@/lib/utils';
 
 interface BusSeatVisualizerProps {
   seats: VehicleSeat[];
+  selectedSeatId?: string;
+  onSeatClick?: (seat: VehicleSeat) => void;
+  onlyAvailable?: boolean; // If true, only show available seats as clickable
 }
 
-export function BusSeatVisualizer({ seats }: BusSeatVisualizerProps) {
+export function BusSeatVisualizer({ seats, selectedSeatId, onSeatClick, onlyAvailable = false }: BusSeatVisualizerProps) {
   // Group seats by side
   const seatsBySide: Record<VehicleSeatSide, VehicleSeat[]> = {
     A: seats.filter(s => s.side === 'A').sort((a, b) => a.number - b.number),
@@ -26,13 +29,25 @@ export function BusSeatVisualizer({ seats }: BusSeatVisualizerProps) {
       return <div className="seat seat-empty opacity-20" />;
     }
 
+    const isSelected = selectedSeatId === seat.id;
+    const isClickable = onSeatClick && (onlyAvailable ? seat.status === 'available' : true);
+    const isDisabled = onlyAvailable && seat.status !== 'available';
+
     return (
       <div
         className={cn(
           'seat',
-          seat.status === 'available' ? 'seat-available' : 'seat-booked'
+          seat.status === 'available' ? 'seat-available' : 'seat-booked',
+          isSelected && 'ring-2 ring-primary ring-offset-2',
+          isClickable && !isDisabled && 'cursor-pointer hover:opacity-80',
+          isDisabled && 'cursor-not-allowed opacity-50'
         )}
         title={`${seat.side}${seat.number} - ${seat.status}`}
+        onClick={() => {
+          if (isClickable && !isDisabled && onSeatClick) {
+            onSeatClick(seat);
+          }
+        }}
       >
         {seat.side}{seat.number}
       </div>
@@ -115,7 +130,11 @@ export function BusSeatVisualizer({ seats }: BusSeatVisualizerProps) {
             <div className="flex justify-center">
               <div className="flex gap-1 items-center">
                 <span className="text-xs font-semibold text-muted-foreground mr-2">C</span>
-                {seatsBySide.C.map((seat) => renderSeat(seat))}
+                {seatsBySide.C.map((seat) => (
+                  <div key={seat.id || `seat-${seat.side}-${seat.number}`}>
+                    {renderSeat(seat)}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

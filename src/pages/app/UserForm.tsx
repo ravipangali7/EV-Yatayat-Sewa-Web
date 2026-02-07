@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { getUser, createUser, updateUser } from '@/stores/mockData';
+import { userApi } from '@/modules/users/services/userApi';
 import { toast } from 'sonner';
 
 export default function UserForm() {
@@ -14,49 +14,168 @@ export default function UserForm() {
   const isEdit = !!id;
 
   const [formData, setFormData] = useState({
-    username: '',
     phone: '',
     email: '',
     name: '',
     password: '',
+    confirmPassword: '',
     is_driver: false,
     is_superuser: false,
     is_staff: false,
     is_active: true,
-    profile_picture: '',
+    profile_picture: null as File | null,
   });
 
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    if (isEdit && id) {
-      const user = getUser(id);
-      if (user) {
-        setFormData({
-          username: user.username,
-          phone: user.phone,
-          email: user.email,
-          name: user.name,
-          password: '',
-          is_driver: user.is_driver,
-          is_superuser: user.is_superuser || false,
-          is_staff: user.is_staff || false,
-          is_active: user.is_active ?? true,
-          profile_picture: user.profile_picture || '',
-        });
+    const fetchUser = async () => {
+      if (isEdit && id) {
+        try {
+          setLoading(true);
+          const user = await userApi.get(id);
+          setFormData({
+            phone: user.phone || '',
+            email: user.email || '',
+            name: user.name || '',
+            password: '',
+            confirmPassword: '',
+            is_driver: user.is_driver || false,
+            is_superuser: user.is_superuser || false,
+            is_staff: user.is_staff || false,
+            is_active: user.is_active ?? true,
+            profile_picture: null,
+          });
+          // Set preview if profile picture exists
+          if (user.profile_picture) {
+            // Construct full media URL if it's a relative path
+            const profilePicUrl = user.profile_picture.startsWith('http') 
+              ? user.profile_picture 
+              : `http://127.0.0.1:8000${user.profile_picture}`;
+            setProfilePicturePreview(profilePicUrl);
+          }
+        } catch (error) {
+          toast.error('Failed to load user');
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
       }
-    }
+    };
+    fetchUser();
   }, [id, isEdit]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (isEdit && id) {
-      updateUser(id, formData);
-      toast.success('User updated successfully');
-    } else {
-      createUser(formData);
-      toast.success('User created successfully');
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormData((prev) => ({ ...prev, profile_picture: file }));
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicturePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-    navigate('/app/users');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setPasswordError('');
+
+    // Validate password match for new users
+    if (!isEdit) {
+      if (formData.password !== formData.confirmPassword) {
+        setPasswordError('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+      if (!formData.password) {
+        setPasswordError('Password is required');
+        setLoading(false);
+        return;
+      }
+    } else {
+      // For edit, validate only if password is provided
+      if (formData.password && formData.password !== formData.confirmPassword) {
+        setPasswordError('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+    }
+
+    try {
+      // Check if we have a file to upload
+      const hasFile = formData.profile_picture instanceof File;
+
+      if (hasFile) {
+        // Use FormData for file upload
+        const formDataToSend = new FormData();
+        formDataToSend.append('name', formData.name);
+        formDataToSend.append('phone', formData.phone);
+        if (formData.email) {
+          formDataToSend.append('email', formData.email);
+        }
+        if (formData.password) {
+          formDataToSend.append('password', formData.password);
+        }
+        formDataToSend.append('is_driver', formData.is_driver.toString());
+        formDataToSend.append('is_superuser', formData.is_superuser.toString());
+        formDataToSend.append('is_staff', formData.is_staff.toString());
+        formDataToSend.append('is_active', formData.is_active.toString());
+        formDataToSend.append('profile_picture', formData.profile_picture);
+
+        if (isEdit && id) {
+          await userApi.editWithFile(id, formDataToSend);
+          toast.success('User updated successfully');
+        } else {
+          await userApi.createWithFile(formDataToSend);
+          toast.success('User created successfully');
+        }
+        // Clear file input after successful submission
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } else {
+        // Use regular JSON for non-file updates
+        // Explicitly build payload with only the fields we want - never include profile_picture
+        const submitData: any = {
+          name: formData.name,
+          phone: formData.phone,
+          is_driver: formData.is_driver,
+          is_superuser: formData.is_superuser,
+          is_staff: formData.is_staff,
+          is_active: formData.is_active,
+        };
+        
+        // Only include email if it has a value
+        if (formData.email) {
+          submitData.email = formData.email;
+        }
+        
+        // Only include password if provided (and not empty during edit)
+        if (formData.password && (!isEdit || formData.password.trim() !== '')) {
+          submitData.password = formData.password;
+        }
+
+        if (isEdit && id) {
+          await userApi.edit(id, submitData);
+          toast.success('User updated successfully');
+        } else {
+          await userApi.create(submitData);
+          toast.success('User created successfully');
+        }
+      }
+      navigate('/app/users');
+    } catch (error) {
+      console.error(error);
+      // Error is already handled by API interceptor
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (field: string, value: string | boolean) => {
@@ -84,15 +203,6 @@ export default function UserForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              value={formData.username}
-              onChange={(e) => handleChange('username', e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="phone">Phone</Label>
             <Input
               id="phone"
@@ -104,13 +214,12 @@ export default function UserForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email (Optional)</Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              required
             />
           </div>
 
@@ -120,20 +229,51 @@ export default function UserForm() {
               id="password"
               type="password"
               value={formData.password}
-              onChange={(e) => handleChange('password', e.target.value)}
+              onChange={(e) => {
+                handleChange('password', e.target.value);
+                setPasswordError('');
+              }}
               required={!isEdit}
             />
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="profile_picture">Profile Image URL</Label>
+            <Label htmlFor="confirmPassword">Confirm Password {isEdit && '(leave blank to keep current)'}</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) => {
+                handleChange('confirmPassword', e.target.value);
+                setPasswordError('');
+              }}
+              required={!isEdit}
+            />
+            {passwordError && (
+              <p className="text-sm text-destructive mt-1">{passwordError}</p>
+            )}
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="profile_picture">Profile Image</Label>
             <Input
               id="profile_picture"
-              type="url"
-              value={formData.profile_picture}
-              onChange={(e) => handleChange('profile_picture', e.target.value)}
-              placeholder="https://..."
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="cursor-pointer"
+              key={isEdit ? `file-input-${id}` : 'file-input-new'}
             />
+            {profilePicturePreview && (
+              <div className="mt-2">
+                <img
+                  src={profilePicturePreview}
+                  alt="Profile preview"
+                  className="w-32 h-32 object-cover rounded-lg border border-border"
+                />
+              </div>
+            )}
           </div>
 
           <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -176,8 +316,8 @@ export default function UserForm() {
         </div>
 
         <div className="flex gap-4 mt-8">
-          <Button type="submit">{isEdit ? 'Update' : 'Create'} User</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/users')}>
+          <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} User</Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/app/users')} disabled={loading}>
             Cancel
           </Button>
         </div>
