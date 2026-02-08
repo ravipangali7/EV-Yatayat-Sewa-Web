@@ -2,7 +2,9 @@ import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse } f
 import { toast } from 'sonner';
 
 // Base API URL - adjust this to match your Django server
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+// const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'https://system.evyatayat.com/api';
+const MEDIA_BASE_URL = 'https://system.evyatayat.com/media/';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
