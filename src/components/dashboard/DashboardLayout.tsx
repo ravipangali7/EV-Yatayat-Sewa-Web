@@ -93,13 +93,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-        <Link to="/admin" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <Bus className="w-6 h-6 text-primary-foreground" />
-          </div>
-          {sidebarOpen && (
-            <span className="text-xl font-bold text-sidebar-foreground">EV Yatayat Sewa</span>
-          )}
+        <Link to="/admin" className="flex items-center">
+          <img src="/logo.png" alt="EV Yatayat Sewa" className="h-10 w-auto object-contain" />
         </Link>
       </div>
 

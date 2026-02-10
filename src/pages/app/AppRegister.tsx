@@ -55,9 +55,7 @@ export default function AppRegister() {
       <div className="min-h-screen flex flex-col">
         <div className="gradient-primary pt-12 pb-8 px-6 rounded-b-[2rem]">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/20 flex items-center justify-center mx-auto mb-3">
-              <span className="text-xl font-bold text-primary-foreground">EV</span>
-            </div>
+            <img src="/logo.png" alt="EV Yatayat Sewa" className="mx-auto h-10 w-auto object-contain mb-3" />
             <h1 className="text-xl font-bold text-primary-foreground">Create Account</h1>
             <p className="text-primary-foreground/80 text-xs mt-1">Join EV Yatayat Sewa</p>
           </motion.div>

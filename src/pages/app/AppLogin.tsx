@@ -55,10 +55,7 @@ export default function AppLogin() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <div className="w-16 h-16 rounded-2xl bg-primary-foreground/20 flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl font-bold text-primary-foreground">EV</span>
-            </div>
-            <h1 className="text-2xl font-bold text-primary-foreground">EV Yatayat Sewa</h1>
+            <img src="/logo.png" alt="EV Yatayat Sewa" className="mx-auto h-12 w-auto object-contain mb-4" />
             <p className="text-primary-foreground/80 text-sm mt-1">Green rides, smart commute</p>
           </motion.div>
         </div>
