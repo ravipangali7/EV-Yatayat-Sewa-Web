@@ -78,7 +78,7 @@ export default function Places() {
         title="Places"
         subtitle="Manage locations and stops"
         actions={
-          <Button onClick={() => navigate('/app/places/add')}>
+          <Button onClick={() => navigate('/admin/places/add')}>
             <Plus className="w-4 h-4 mr-2" />
             Add Place
           </Button>
@@ -94,8 +94,8 @@ export default function Places() {
           data={places}
           columns={columns}
           searchPlaceholder="Search places..."
-          onView={(place) => navigate(`/app/places/${place.id}`)}
-          onEdit={(place) => navigate(`/app/places/${place.id}/edit`)}
+          onView={(place) => navigate(`/admin/places/${place.id}`)}
+          onEdit={(place) => navigate(`/admin/places/${place.id}/edit`)}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
         />

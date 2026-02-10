@@ -2,9 +2,9 @@ import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse } f
 import { toast } from 'sonner';
 
 // Base API URL - adjust this to match your Django server
-// const API_BASE_URL = 'http://127.0.0.1:8000/api';
-const API_BASE_URL = 'https://system.evyatayatsewa.com/api';
-const MEDIA_BASE_URL = 'https://system.evyatayatsewa.com/media/';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
+// const API_BASE_URL = 'https://system.evyatayatsewa.com/api';
+// const MEDIA_BASE_URL = 'https://system.evyatayatsewa.com/media/';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -50,14 +50,16 @@ apiClient.interceptors.response.use(
           toast.error(data?.error || 'Bad request. Please check your input.');
           break;
         case 401:
-          // Don't show error toast for login page (it will show its own error)
           if (!window.location.pathname.includes('/login')) {
             toast.error('Unauthorized. Please login again.');
           }
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_user');
-          // Redirect to login if not already there
-          if (!window.location.pathname.includes('/login')) {
+          if (window.location.pathname.startsWith('/app')) {
+            if (!window.location.pathname.includes('/app/login')) {
+              window.location.href = '/app/login';
+            }
+          } else if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
           break;

@@ -89,7 +89,7 @@ export default function Wallets() {
         title="Wallets"
         subtitle="Manage user wallets"
         actions={
-          <Button onClick={() => navigate('/app/wallets/add')}>
+          <Button onClick={() => navigate('/admin/wallets/add')}>
             <Plus className="w-4 h-4 mr-2" />
             Add Wallet
           </Button>
@@ -105,8 +105,8 @@ export default function Wallets() {
           data={wallets}
           columns={columns}
           searchPlaceholder="Search wallets..."
-          onView={(wallet) => navigate(`/app/wallets/${wallet.id}`)}
-          onEdit={(wallet) => navigate(`/app/wallets/${wallet.id}/edit`)}
+          onView={(wallet) => navigate(`/admin/wallets/${wallet.id}`)}
+          onEdit={(wallet) => navigate(`/admin/wallets/${wallet.id}/edit`)}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
         />

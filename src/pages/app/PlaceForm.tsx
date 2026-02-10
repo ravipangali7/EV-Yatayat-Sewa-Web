@@ -61,7 +61,7 @@ export default function PlaceForm() {
         await placeApi.create(formData);
         toast.success('Place created successfully');
       }
-      navigate('/app/places');
+      navigate('/admin/places');
     } catch (error) {
       console.error(error);
       // Error is already handled by API interceptor
@@ -84,7 +84,7 @@ export default function PlaceForm() {
       <PageHeader
         title={isEdit ? 'Edit Place' : 'Add Place'}
         subtitle={isEdit ? 'Update place information' : 'Create a new place'}
-        backUrl="/app/places"
+        backUrl="/admin/places"
       />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
@@ -159,7 +159,7 @@ export default function PlaceForm() {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} Place</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/places')} disabled={loading}>
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/places')} disabled={loading}>
             Cancel
           </Button>
         </div>

@@ -46,7 +46,7 @@ export default function TransactionView() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Transaction not found</p>
-        <Button className="mt-4" onClick={() => navigate('/app/transactions')}>
+        <Button className="mt-4" onClick={() => navigate('/admin/transactions')}>
           Back to Transactions
         </Button>
       </div>
@@ -58,9 +58,9 @@ export default function TransactionView() {
       <PageHeader
         title="Transaction Details"
         subtitle={`Transaction #${transaction.id}`}
-        backUrl="/app/transactions"
+        backUrl="/admin/transactions"
         actions={
-          <Button onClick={() => navigate(`/app/transactions/${id}/edit`)}>
+          <Button onClick={() => navigate(`/admin/transactions/${id}/edit`)}>
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>

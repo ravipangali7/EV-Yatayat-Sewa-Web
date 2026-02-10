@@ -72,7 +72,7 @@ export default function Vehicles() {
         title="Vehicles"
         subtitle="Manage fleet vehicles"
         actions={
-          <Button onClick={() => navigate('/app/vehicles/add')}>
+          <Button onClick={() => navigate('/admin/vehicles/add')}>
             <Plus className="w-4 h-4 mr-2" />
             Add Vehicle
           </Button>
@@ -88,8 +88,8 @@ export default function Vehicles() {
           data={vehicles}
           columns={columns}
           searchPlaceholder="Search vehicles..."
-          onView={(vehicle) => navigate(`/app/vehicles/${vehicle.id}`)}
-          onEdit={(vehicle) => navigate(`/app/vehicles/${vehicle.id}/edit`)}
+          onView={(vehicle) => navigate(`/admin/vehicles/${vehicle.id}`)}
+          onEdit={(vehicle) => navigate(`/admin/vehicles/${vehicle.id}/edit`)}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
         />

@@ -71,7 +71,7 @@ export default function WalletForm() {
         await walletApi.create(formData);
         toast.success('Wallet created successfully');
       }
-      navigate('/app/wallets');
+      navigate('/admin/wallets');
     } catch (error) {
       console.error(error);
       // Error is already handled by API interceptor
@@ -87,7 +87,7 @@ export default function WalletForm() {
       <PageHeader
         title={isEdit ? 'Edit Wallet' : 'Add Wallet'}
         subtitle={isEdit ? 'Update wallet information' : 'Create a new wallet'}
-        backUrl="/app/wallets"
+        backUrl="/admin/wallets"
       />
 
       <form onSubmit={handleSubmit} className="form-section max-w-xl">
@@ -141,7 +141,7 @@ export default function WalletForm() {
 
         <div className="flex gap-4 mt-8">
           <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} Wallet</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/wallets')} disabled={loading}>
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/wallets')} disabled={loading}>
             Cancel
           </Button>
         </div>

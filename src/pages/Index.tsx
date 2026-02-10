@@ -45,7 +45,7 @@ export default function Index() {
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <Bus className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">FleetHub</span>
+            <span className="text-xl font-bold text-foreground">EV Yatayat Sewa</span>
           </Link>
           <Link to="/login">
             <Button>
@@ -126,7 +126,7 @@ export default function Index() {
               Ready to Get Started?
             </h2>
             <p className="text-primary-foreground/80 max-w-xl mx-auto mb-8">
-              Join thousands of fleet operators who trust FleetHub for their daily operations.
+              Join EV Yatayat Sewa for green rides and smart commute.
             </p>
             <Link to="/login">
               <Button size="lg" variant="secondary">
@@ -141,7 +141,7 @@ export default function Index() {
       {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} FleetHub. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} EV Yatayat Sewa. All rights reserved.</p>
         </div>
       </footer>
     </div>

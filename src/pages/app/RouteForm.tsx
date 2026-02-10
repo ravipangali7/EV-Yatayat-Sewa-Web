@@ -95,7 +95,7 @@ export default function RouteForm() {
         await routeApi.create(routeData);
         toast.success('Route created successfully');
       }
-      navigate('/app/routes');
+      navigate('/admin/routes');
     } catch (error) {
       console.error(error);
       // Error is already handled by API interceptor
@@ -111,7 +111,7 @@ export default function RouteForm() {
       <PageHeader
         title={isEdit ? 'Edit Route' : 'Add Route'}
         subtitle={isEdit ? 'Update route information' : 'Create a new route'}
-        backUrl="/app/routes"
+        backUrl="/admin/routes"
       />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
@@ -166,7 +166,7 @@ export default function RouteForm() {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} Route</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/routes')} disabled={loading}>
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/routes')} disabled={loading}>
             Cancel
           </Button>
         </div>

@@ -50,7 +50,7 @@ export default function TransactionForm() {
         await transactionApi.edit(id, formData);
         toast.success('Transaction updated successfully');
       }
-      navigate('/app/transactions');
+      navigate('/admin/transactions');
     } catch (error) {
       console.error(error);
       // Error is already handled by API interceptor
@@ -64,7 +64,7 @@ export default function TransactionForm() {
       <PageHeader
         title="Edit Transaction"
         subtitle="Update transaction information"
-        backUrl="/app/transactions"
+        backUrl="/admin/transactions"
       />
 
       <form onSubmit={handleSubmit} className="form-section max-w-xl">
@@ -98,7 +98,7 @@ export default function TransactionForm() {
 
         <div className="flex gap-4 mt-8">
           <Button type="submit" disabled={loading}>Update Transaction</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/transactions')} disabled={loading}>
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/transactions')} disabled={loading}>
             Cancel
           </Button>
         </div>

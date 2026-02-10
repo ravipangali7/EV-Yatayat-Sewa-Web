@@ -138,7 +138,7 @@ export default function RouteView() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Route not found</p>
-        <Button className="mt-4" onClick={() => navigate('/app/routes')}>
+        <Button className="mt-4" onClick={() => navigate('/admin/routes')}>
           Back to Routes
         </Button>
       </div>
@@ -154,9 +154,9 @@ export default function RouteView() {
       <PageHeader
         title="Route Details"
         subtitle={route.name}
-        backUrl="/app/routes"
+        backUrl="/admin/routes"
         actions={
-          <Button onClick={() => navigate(`/app/routes/${id}/edit`)}>
+          <Button onClick={() => navigate(`/admin/routes/${id}/edit`)}>
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>

@@ -52,7 +52,7 @@ export default function WalletView() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Wallet not found</p>
-        <Button className="mt-4" onClick={() => navigate('/app/wallets')}>
+        <Button className="mt-4" onClick={() => navigate('/admin/wallets')}>
           Back to Wallets
         </Button>
       </div>
@@ -64,9 +64,9 @@ export default function WalletView() {
       <PageHeader
         title="Wallet Details"
         subtitle={wallet.user_details?.name || 'Unknown User'}
-        backUrl="/app/wallets"
+        backUrl="/admin/wallets"
         actions={
-          <Button onClick={() => navigate(`/app/wallets/${id}/edit`)}>
+          <Button onClick={() => navigate(`/admin/wallets/${id}/edit`)}>
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>

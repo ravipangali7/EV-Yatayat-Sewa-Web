@@ -71,7 +71,7 @@ export default function Users() {
         title="Users"
         subtitle="Manage all system users"
         actions={
-          <Button onClick={() => navigate('/app/users/add')}>
+          <Button onClick={() => navigate('/admin/users/add')}>
             <Plus className="w-4 h-4 mr-2" />
             Add User
           </Button>
@@ -87,8 +87,8 @@ export default function Users() {
           data={users}
           columns={columns}
           searchPlaceholder="Search users..."
-          onView={(user) => navigate(`/app/users/${user.id}`)}
-          onEdit={(user) => navigate(`/app/users/${user.id}/edit`)}
+          onView={(user) => navigate(`/admin/users/${user.id}`)}
+          onEdit={(user) => navigate(`/admin/users/${user.id}/edit`)}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
         />

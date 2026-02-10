@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 199 89% 48%;
+    --primary: 142 71% 40%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96%;
@@ -38,27 +38,34 @@
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 199 89% 48%;
+    --ring: 142 71% 40%;
 
     --radius: 0.75rem;
 
     /* Sidebar */
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary: 142 71% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 47% 18%;
     --sidebar-accent-foreground: 210 40% 96%;
     --sidebar-border: 222 47% 18%;
-    --sidebar-ring: 199 89% 48%;
+    --sidebar-ring: 142 71% 40%;
 
     /* Seat colors */
     --seat-available: 142 71% 45%;
     --seat-booked: 0 84% 60%;
     --seat-empty: 210 40% 90%;
+    --seat-selected: 142 71% 40%;
+    --seat-driver: 215 16% 47%;
+
+    /* App shell (driver/user portals) */
+    --app-surface: 0 0% 100%;
+    --app-warning: 38 92% 50%;
+    --app-info: 210 80% 55%;
 
     /* Chart colors */
-    --chart-1: 199 89% 48%;
+    --chart-1: 142 71% 40%;
     --chart-2: 172 66% 50%;
     --chart-3: 142 71% 45%;
     --chart-4: 38 92% 50%;
@@ -75,7 +82,7 @@
     --popover: 222 47% 9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 199 89% 48%;
+    --primary: 142 71% 40%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 222 47% 15%;
@@ -98,16 +105,16 @@
 
     --border: 222 47% 18%;
     --input: 222 47% 18%;
-    --ring: 199 89% 48%;
+    --ring: 142 71% 40%;
 
     --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary: 142 71% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 47% 12%;
     --sidebar-accent-foreground: 210 40% 96%;
     --sidebar-border: 222 47% 12%;
-    --sidebar-ring: 199 89% 48%;
+    --sidebar-ring: 142 71% 40%;
   }
 }
 
@@ -173,6 +180,38 @@
 
   .seat-empty {
     @apply bg-muted border-2 border-border opacity-30;
+  }
+
+  .seat-selected {
+    @apply bg-primary/20 text-primary border-2 border-primary/50 hover:bg-primary/30;
+  }
+
+  .seat-driver {
+    @apply bg-muted-foreground/20 text-muted-foreground border-2 border-muted-foreground/30;
+  }
+
+  .app-container {
+    @apply min-h-screen bg-background;
+  }
+
+  .app-surface {
+    @apply bg-card border border-border;
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-br from-primary to-primary/80;
+  }
+
+  .gradient-wallet {
+    @apply bg-gradient-to-br from-primary to-primary/90;
+  }
+
+  .text-app-warning {
+    @apply text-warning;
+  }
+
+  .text-app-info {
+    @apply text-primary;
   }
 
   .bus-container {

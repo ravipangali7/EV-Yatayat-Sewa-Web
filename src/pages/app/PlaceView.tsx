@@ -45,7 +45,7 @@ export default function PlaceView() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Place not found</p>
-        <Button className="mt-4" onClick={() => navigate('/app/places')}>
+        <Button className="mt-4" onClick={() => navigate('/admin/places')}>
           Back to Places
         </Button>
       </div>
@@ -60,9 +60,9 @@ export default function PlaceView() {
       <PageHeader
         title="Place Details"
         subtitle={place.name}
-        backUrl="/app/places"
+        backUrl="/admin/places"
         actions={
-          <Button onClick={() => navigate(`/app/places/${id}/edit`)}>
+          <Button onClick={() => navigate(`/admin/places/${id}/edit`)}>
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>

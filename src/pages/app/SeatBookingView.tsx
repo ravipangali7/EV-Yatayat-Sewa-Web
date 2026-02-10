@@ -57,7 +57,7 @@ export default function SeatBookingView() {
         title="Seat Booking Details"
         subtitle={`Booking for ${booking.vehicle_details?.name || booking.vehicle}`}
         actions={
-          <Button onClick={() => navigate(`/app/seat-bookings/${id}/edit`)}>
+          <Button onClick={() => navigate(`/admin/seat-bookings/${id}/edit`)}>
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>

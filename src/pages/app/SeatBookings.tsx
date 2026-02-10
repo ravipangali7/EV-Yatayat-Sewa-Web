@@ -115,7 +115,7 @@ export default function SeatBookings() {
         title="Seat Bookings"
         subtitle="Manage seat bookings"
         actions={
-          <Button onClick={() => navigate('/app/seat-bookings/add')}>
+          <Button onClick={() => navigate('/admin/seat-bookings/add')}>
             <Plus className="w-4 h-4 mr-2" />
             Add Booking
           </Button>
@@ -131,8 +131,8 @@ export default function SeatBookings() {
           data={bookings}
           columns={columns}
           searchPlaceholder="Search bookings..."
-          onView={(booking) => navigate(`/app/seat-bookings/${booking.id}`)}
-          onEdit={(booking) => navigate(`/app/seat-bookings/${booking.id}/edit`)}
+          onView={(booking) => navigate(`/admin/seat-bookings/${booking.id}`)}
+          onEdit={(booking) => navigate(`/admin/seat-bookings/${booking.id}/edit`)}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
         />

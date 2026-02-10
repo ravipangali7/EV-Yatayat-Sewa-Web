@@ -276,7 +276,7 @@ export default function SeatBookingForm() {
         await seatBookingApi.create(submitData);
         toast.success('Seat booking created successfully');
       }
-      navigate('/app/seat-bookings');
+      navigate('/admin/seat-bookings');
     } catch (error) {
       console.error(error);
       toast.error(`Failed to ${isEdit ? 'update' : 'create'} seat booking`);
@@ -475,7 +475,7 @@ export default function SeatBookingForm() {
 
         {/* Submit Button */}
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => navigate('/app/seat-bookings')}>
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/seat-bookings')}>
             Cancel
           </Button>
           <Button type="submit" disabled={loading || !isFormValid}>

@@ -44,7 +44,7 @@ export default function UserView() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">User not found</p>
-        <Button className="mt-4" onClick={() => navigate('/app/users')}>
+        <Button className="mt-4" onClick={() => navigate('/admin/users')}>
           Back to Users
         </Button>
       </div>
@@ -72,9 +72,9 @@ export default function UserView() {
       <PageHeader
         title="User Details"
         subtitle={user.name}
-        backUrl="/app/users"
+        backUrl="/admin/users"
         actions={
-          <Button onClick={() => navigate(`/app/users/${id}/edit`)}>
+          <Button onClick={() => navigate(`/admin/users/${id}/edit`)}>
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>

@@ -29,7 +29,7 @@ export default function Login() {
       const success = await login(phone, password);
       if (success) {
         toast.success('Login successful!');
-        navigate('/app');
+        navigate('/admin');
       } else {
         toast.error('Invalid phone number or password');
       }
@@ -50,7 +50,7 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4 shadow-lg shadow-primary/25">
             <Bus className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-white">FleetHub</h1>
+          <h1 className="text-3xl font-bold text-white">EV Yatayat Sewa</h1>
           <p className="text-white/60 mt-2">Fleet Management System</p>
         </div>
 

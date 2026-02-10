@@ -73,7 +73,7 @@ export default function Routes() {
         title="Routes"
         subtitle="Manage travel routes"
         actions={
-          <Button onClick={() => navigate('/app/routes/add')}>
+          <Button onClick={() => navigate('/admin/routes/add')}>
             <Plus className="w-4 h-4 mr-2" />
             Add Route
           </Button>
@@ -89,8 +89,8 @@ export default function Routes() {
           data={routes}
           columns={columns}
           searchPlaceholder="Search routes..."
-          onView={(route) => navigate(`/app/routes/${route.id}`)}
-          onEdit={(route) => navigate(`/app/routes/${route.id}/edit`)}
+          onView={(route) => navigate(`/admin/routes/${route.id}`)}
+          onEdit={(route) => navigate(`/admin/routes/${route.id}/edit`)}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
         />

@@ -192,7 +192,7 @@ export default function VehicleForm() {
         await vehicleApi.create(vehicleData);
         toast.success('Vehicle created successfully');
       }
-      navigate('/app/vehicles');
+      navigate('/admin/vehicles');
     } catch (error) {
       console.error(error);
       // Error is already handled by API interceptor
@@ -227,7 +227,7 @@ export default function VehicleForm() {
       <PageHeader
         title={isEdit ? 'Edit Vehicle' : 'Add Vehicle'}
         subtitle={isEdit ? 'Update vehicle information' : 'Create a new vehicle'}
-        backUrl="/app/vehicles"
+        backUrl="/admin/vehicles"
       />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
@@ -382,7 +382,7 @@ export default function VehicleForm() {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} Vehicle</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/vehicles')} disabled={loading}>
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/vehicles')} disabled={loading}>
             Cancel
           </Button>
         </div>

@@ -39,20 +39,20 @@ const navSections: NavSection[] = [
   {
     title: 'Main',
     items: [
-      { label: 'Dashboard', path: '/app', icon: <LayoutDashboard className="w-5 h-5" /> },
-      { label: 'Users', path: '/app/users', icon: <Users className="w-5 h-5" /> },
-      { label: 'Wallets', path: '/app/wallets', icon: <Wallet className="w-5 h-5" /> },
-      { label: 'Transactions', path: '/app/transactions', icon: <Receipt className="w-5 h-5" /> },
-      { label: 'Settings', path: '/app/settings', icon: <Settings className="w-5 h-5" /> },
+      { label: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
+      { label: 'Users', path: '/admin/users', icon: <Users className="w-5 h-5" /> },
+      { label: 'Wallets', path: '/admin/wallets', icon: <Wallet className="w-5 h-5" /> },
+      { label: 'Transactions', path: '/admin/transactions', icon: <Receipt className="w-5 h-5" /> },
+      { label: 'Settings', path: '/admin/settings', icon: <Settings className="w-5 h-5" /> },
     ],
   },
   {
     title: 'Booking',
     items: [
-      { label: 'Places', path: '/app/places', icon: <MapPin className="w-5 h-5" /> },
-      { label: 'Routes', path: '/app/routes', icon: <RouteIcon className="w-5 h-5" /> },
-      { label: 'Vehicles', path: '/app/vehicles', icon: <Bus className="w-5 h-5" /> },
-      { label: 'Seat Bookings', path: '/app/seat-bookings', icon: <Ticket className="w-5 h-5" /> },
+      { label: 'Places', path: '/admin/places', icon: <MapPin className="w-5 h-5" /> },
+      { label: 'Routes', path: '/admin/routes', icon: <RouteIcon className="w-5 h-5" /> },
+      { label: 'Vehicles', path: '/admin/vehicles', icon: <Bus className="w-5 h-5" /> },
+      { label: 'Seat Bookings', path: '/admin/seat-bookings', icon: <Ticket className="w-5 h-5" /> },
     ],
   },
 ];
@@ -70,8 +70,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
 
   const isActive = (path: string) => {
-    if (path === '/app') {
-      return location.pathname === '/app';
+    if (path === '/admin') {
+      return location.pathname === '/admin';
     }
     return location.pathname.startsWith(path);
   };
@@ -93,12 +93,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-        <Link to="/app" className="flex items-center gap-3">
+        <Link to="/admin" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <Bus className="w-6 h-6 text-primary-foreground" />
           </div>
           {sidebarOpen && (
-            <span className="text-xl font-bold text-sidebar-foreground">FleetHub</span>
+            <span className="text-xl font-bold text-sidebar-foreground">EV Yatayat Sewa</span>
           )}
         </Link>
       </div>

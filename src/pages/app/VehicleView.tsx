@@ -226,7 +226,7 @@ export default function VehicleView() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Vehicle not found</p>
-        <Button className="mt-4" onClick={() => navigate('/app/vehicles')}>
+        <Button className="mt-4" onClick={() => navigate('/admin/vehicles')}>
           Back to Vehicles
         </Button>
       </div>
@@ -272,7 +272,7 @@ export default function VehicleView() {
       <PageHeader
         title="Vehicle Details"
         subtitle={vehicle.name}
-        backUrl="/app/vehicles"
+        backUrl="/admin/vehicles"
         actions={
           <>
             <Button
@@ -283,7 +283,7 @@ export default function VehicleView() {
               <QrCode className="w-4 h-4 mr-2" />
               QR Code
             </Button>
-            <Button onClick={() => navigate(`/app/vehicles/${id}/edit`)}>
+            <Button onClick={() => navigate(`/admin/vehicles/${id}/edit`)}>
               <Edit className="w-4 h-4 mr-2" />
               Edit
             </Button>

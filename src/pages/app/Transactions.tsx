@@ -108,8 +108,8 @@ export default function Transactions() {
           data={transactions}
           columns={columns}
           searchPlaceholder="Search transactions..."
-          onView={(tx) => navigate(`/app/transactions/${tx.id}`)}
-          onEdit={(tx) => navigate(`/app/transactions/${tx.id}/edit`)}
+          onView={(tx) => navigate(`/admin/transactions/${tx.id}`)}
+          onEdit={(tx) => navigate(`/admin/transactions/${tx.id}/edit`)}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
         />

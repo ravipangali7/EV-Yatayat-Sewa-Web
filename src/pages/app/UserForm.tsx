@@ -169,7 +169,7 @@ export default function UserForm() {
           toast.success('User created successfully');
         }
       }
-      navigate('/app/users');
+      navigate('/admin/users');
     } catch (error) {
       console.error(error);
       // Error is already handled by API interceptor
@@ -187,7 +187,7 @@ export default function UserForm() {
       <PageHeader
         title={isEdit ? 'Edit User' : 'Add User'}
         subtitle={isEdit ? 'Update user information' : 'Create a new user'}
-        backUrl="/app/users"
+        backUrl="/admin/users"
       />
 
       <form onSubmit={handleSubmit} className="form-section max-w-2xl">
@@ -317,7 +317,7 @@ export default function UserForm() {
 
         <div className="flex gap-4 mt-8">
           <Button type="submit" disabled={loading}>{isEdit ? 'Update' : 'Create'} User</Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/app/users')} disabled={loading}>
+          <Button type="button" variant="outline" onClick={() => navigate('/admin/users')} disabled={loading}>
             Cancel
           </Button>
         </div>
