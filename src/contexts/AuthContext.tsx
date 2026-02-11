@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '@/modules/auth/services/authApi';
 import { User } from '@/types';
+import { authSync as flutterAuthSync } from '@/lib/flutterBridge';
 
 interface AuthContextType {
   user: User | null;
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('auth_token', response.token);
       localStorage.setItem('auth_user', JSON.stringify(response.user));
       setUser(response.user);
+      flutterAuthSync(response.token, JSON.stringify(response.user));
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -58,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
+      flutterAuthSync('', '');
     }
   };
 

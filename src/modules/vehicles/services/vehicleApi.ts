@@ -23,6 +23,17 @@ export const vehicleApi = {
     return api.get<Vehicle>(`vehicles/${id}/`);
   },
 
+  // Get vehicle where current user is active driver
+  getMyActiveVehicle: async (): Promise<Vehicle | null> => {
+    const res = await api.get<{ vehicle: Vehicle | null }>('vehicles/my-active-vehicle/');
+    return res.vehicle ?? null;
+  },
+
+  // Connect to vehicle (set current user as active driver)
+  connectVehicle: async (vehicleId: string): Promise<Vehicle> => {
+    return api.post<Vehicle>('vehicles/connect/', { vehicle_id: vehicleId });
+  },
+
   // Create vehicle
   create: async (data: Partial<Vehicle> & { 
     seats?: Array<{ side: string; number: number; status: string }>;

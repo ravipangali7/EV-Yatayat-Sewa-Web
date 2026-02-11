@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
+import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
 import { toast } from "sonner";
 
@@ -79,17 +80,32 @@ export default function Vehicle() {
   const [switchStep, setSwitchStep] = useState<"select" | "confirm">("select");
   const [switchTarget, setSwitchTarget] = useState<Seat | null>(null);
   const [showEndTripModal, setShowEndTripModal] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
         if (user?.id) {
-          const [vehiclesRes, routesRes] = await Promise.all([
+          const [myActiveRes, vehiclesRes, routesRes] = await Promise.all([
+            vehicleApi.getMyActiveVehicle(),
             vehicleApi.list({ driver: user.id, per_page: 100 }),
             routeApi.list({ per_page: 100 }),
           ]);
           setVehicles(vehiclesRes.results);
           setRoutes(routesRes.results.map(routeToRouteInfo));
+          if (myActiveRes) {
+            setSelectedVehicle(myActiveRes);
+            setSeats(buildSeatsFromVehicle(myActiveRes));
+            const routeInfo = myActiveRes.active_route_details
+              ? routeToRouteInfo(myActiveRes.active_route_details as ApiRoute)
+              : null;
+            if (routeInfo) {
+              setSelectedRoute(routeInfo);
+              setDriverState("route_selected");
+            } else {
+              setDriverState("no_route");
+            }
+          }
         }
       } catch {
         setVehicles([]);
@@ -104,7 +120,27 @@ export default function Vehicle() {
   const availableSelected = selectedSeats.filter((s) => s.status === "available");
   const singleBookedSelected = bookedSelected.length === 1 && availableSelected.length === 0;
 
-  const handleScan = () => {
+  const handleScan = async () => {
+    if (isFlutterBridgeAvailable()) {
+      setIsScanning(true);
+      try {
+        const result = await requestNativeScan();
+        if (result.success && result.vehicleId) {
+          const vehicle = await vehicleApi.connectVehicle(result.vehicleId);
+          setSelectedVehicle(vehicle);
+          setSeats(buildSeatsFromVehicle(vehicle));
+          setDriverState("no_route");
+          toast.success("Vehicle connected!");
+        } else if (!result.success && result.error) {
+          toast.error(result.error);
+        }
+      } catch (e) {
+        toast.error("Failed to connect vehicle");
+      } finally {
+        setIsScanning(false);
+      }
+      return;
+    }
     if (vehicles.length > 0) {
       setSelectedVehicle(vehicles[0]);
       setSeats(buildSeatsFromVehicle(vehicles[0]));
@@ -189,8 +225,8 @@ export default function Vehicle() {
           </div>
           <h2 className="text-lg font-bold mb-2">Connect Your Vehicle</h2>
           <p className="text-sm text-muted-foreground mb-8">Scan QR code on your vehicle or use your assigned vehicle</p>
-          <Button onClick={handleScan} className="h-12 px-8 rounded-xl text-base font-semibold">
-            <QrCode size={18} className="mr-2" /> {vehicles.length > 0 ? "Use My Vehicle" : "Scan & Connect"}
+          <Button onClick={handleScan} className="h-12 px-8 rounded-xl text-base font-semibold" disabled={isScanning}>
+            <QrCode size={18} className="mr-2" /> {isScanning ? "Opening scanner…" : isFlutterBridgeAvailable() ? "Scan & Connect" : vehicles.length > 0 ? "Use My Vehicle" : "Scan & Connect"}
           </Button>
         </motion.div>
       </div>
