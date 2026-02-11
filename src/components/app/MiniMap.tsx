@@ -44,7 +44,7 @@ const MiniMap = ({ points, className = "" }: MiniMapProps) => {
               <div className="pb-2">
                 <p className="text-xs font-medium">{point.name}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
+                  {Number(point.lat).toFixed(4)}, {Number(point.lng).toFixed(4)}
                 </p>
               </div>
             </div>
