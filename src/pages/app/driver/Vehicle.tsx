@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAuth } from "@/contexts/AuthContext";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
+import { tripApi, type ActiveTrip } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
 import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
@@ -80,7 +81,11 @@ export default function Vehicle() {
   const [switchStep, setSwitchStep] = useState<"select" | "confirm">("select");
   const [switchTarget, setSwitchTarget] = useState<Seat | null>(null);
   const [showEndTripModal, setShowEndTripModal] = useState(false);
+  const [showEndTripOutOfRangeModal, setShowEndTripOutOfRangeModal] = useState(false);
+  const [pendingEndTripLocation, setPendingEndTripLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isEndingTrip, setIsEndingTrip] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -99,8 +104,12 @@ export default function Vehicle() {
             const routeInfo = myActiveRes.active_route_details
               ? routeToRouteInfo(myActiveRes.active_route_details as ApiRoute)
               : null;
-            if (routeInfo) {
-              setSelectedRoute(routeInfo);
+            if (routeInfo) setSelectedRoute(routeInfo);
+            const at = myActiveRes.active_trip as ActiveTrip | null | undefined;
+            if (at?.id && at.start_time && !at.end_time) {
+              setActiveTrip(at);
+              setDriverState("trip_started");
+            } else if (routeInfo) {
               setDriverState("route_selected");
             } else {
               setDriverState("no_route");
@@ -156,9 +165,17 @@ export default function Vehicle() {
     setShowRouteModal(false);
   };
 
-  const handleStartTrip = () => {
-    setDriverState("trip_started");
-    toast.success("Trip started!");
+  const handleStartTrip = async () => {
+    if (!selectedVehicle?.id) return;
+    try {
+      const trip = await tripApi.startTrip(selectedVehicle.id);
+      setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null });
+      setDriverState("trip_started");
+      toast.success("Trip started!");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } } };
+      toast.error(err?.response?.data?.error ?? "Failed to start trip");
+    }
   };
 
   const confirmCheckIn = () => {
@@ -203,10 +220,69 @@ export default function Vehicle() {
   };
 
   const confirmEndTrip = () => {
-    setDriverState("route_selected");
     setShowEndTripModal(false);
-    setSeats(buildSeatsFromVehicle(selectedVehicle));
-    toast.success("Trip ended!");
+    if (!activeTrip?.id) {
+      setDriverState("route_selected");
+      setActiveTrip(null);
+      setSeats(buildSeatsFromVehicle(selectedVehicle));
+      return;
+    }
+    setIsEndingTrip(true);
+    const getLocation = (): Promise<{ lat: number; lng: number }> =>
+      new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Geolocation not supported"));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+          reject,
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      });
+    getLocation()
+      .then((loc) => {
+        setPendingEndTripLocation(loc);
+        return tripApi.endTrip(activeTrip.id, { latitude: loc.lat, longitude: loc.lng });
+      })
+      .then((res) => {
+        if (res.within_destination === false) {
+          setShowEndTripOutOfRangeModal(true);
+          return;
+        }
+        setDriverState("route_selected");
+        setActiveTrip(null);
+        setPendingEndTripLocation(null);
+        setSeats(buildSeatsFromVehicle(selectedVehicle));
+        setShowEndTripOutOfRangeModal(false);
+        toast.success("Trip ended!");
+      })
+      .catch((e) => {
+        toast.error(e?.message ?? "Failed to get location or end trip");
+      })
+      .finally(() => setIsEndingTrip(false));
+  };
+
+  const confirmEndTripOutOfRange = async () => {
+    if (!activeTrip?.id || !pendingEndTripLocation) return;
+    setIsEndingTrip(true);
+    try {
+      await tripApi.endTrip(activeTrip.id, {
+        latitude: pendingEndTripLocation.lat,
+        longitude: pendingEndTripLocation.lng,
+        confirm_out_of_range: true,
+      });
+      setDriverState("route_selected");
+      setActiveTrip(null);
+      setPendingEndTripLocation(null);
+      setSeats(buildSeatsFromVehicle(selectedVehicle));
+      setShowEndTripOutOfRangeModal(false);
+      toast.success("Trip ended.");
+    } catch {
+      toast.error("Failed to end trip");
+    } finally {
+      setIsEndingTrip(false);
+    }
   };
 
   const currentLocation: MapPoint = {
@@ -262,15 +338,18 @@ export default function Vehicle() {
   }
 
   if (driverState === "route_selected" && selectedRoute && vehicleInfo) {
+    const hasActiveTrip = !!selectedVehicle?.active_trip?.id && selectedVehicle?.active_trip?.start_time && !selectedVehicle?.active_trip?.end_time;
     return (
       <div className="min-h-screen px-5 pt-6">
         <VehicleCard vehicle={vehicleInfo} compact />
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold">Active Route</h3>
-            <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => setShowRouteModal(true)}>
-              <RotateCcw size={12} className="mr-1" /> Change
-            </Button>
+            {!hasActiveTrip && (
+              <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => setShowRouteModal(true)}>
+                <RotateCcw size={12} className="mr-1" /> Change
+              </Button>
+            )}
           </div>
           <RouteCard route={selectedRoute} active showMap />
         </div>
@@ -366,6 +445,7 @@ export default function Vehicle() {
       </Dialog>
 
       <ConfirmModal open={showEndTripModal} onClose={() => setShowEndTripModal(false)} onConfirm={confirmEndTrip} title="End Trip?" description="Are you sure you want to end this trip?" confirmLabel="End Trip" variant="destructive" />
+      <ConfirmModal open={showEndTripOutOfRangeModal} onClose={() => { setShowEndTripOutOfRangeModal(false); setPendingEndTripLocation(null); setIsEndingTrip(false); }} onConfirm={confirmEndTripOutOfRange} title="Not at destination" description="You are not at the proper destination. Are you sure you want to end the trip?" confirmLabel="Yes, end trip" variant="destructive" />
     </div>
   );
 }

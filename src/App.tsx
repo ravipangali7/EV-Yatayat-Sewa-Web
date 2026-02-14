@@ -33,26 +33,28 @@ import VehicleView from "./pages/app/VehicleView";
 import SeatBookings from "./pages/app/SeatBookings";
 import SeatBookingForm from "./pages/app/SeatBookingForm";
 import SeatBookingView from "./pages/app/SeatBookingView";
+import Trips from "./pages/app/Trips";
+import TripView from "./pages/app/TripView";
+import Locations from "./pages/app/Locations";
+import VehicleSchedules from "./pages/app/VehicleSchedules";
+import VehicleScheduleForm from "./pages/app/VehicleScheduleForm";
+import VehicleScheduleView from "./pages/app/VehicleScheduleView";
+import VehicleTicketBookings from "./pages/app/VehicleTicketBookings";
+import VehicleTicketBookingForm from "./pages/app/VehicleTicketBookingForm";
+import VehicleTicketBookingView from "./pages/app/VehicleTicketBookingView";
 
 // App (driver/user) pages
 import AppLogin from "./pages/app/AppLogin";
 import AppRegister from "./pages/app/AppRegister";
 import AppForgotPassword from "./pages/app/AppForgotPassword";
 import AppResetPassword from "./pages/app/AppResetPassword";
-import DriverLayout from "./pages/app/driver/DriverLayout";
-import DriverHome from "./pages/app/driver/DriverHome";
-import DriverVehicle from "./pages/app/driver/Vehicle";
-import DriverWallet from "./pages/app/driver/DriverWallet";
-import DriverProfile from "./pages/app/driver/DriverProfile";
-import UserLayout from "./pages/app/user/UserLayout";
-import UserHome from "./pages/app/user/UserHome";
-import UserBooking from "./pages/app/user/UserBooking";
-import UserProfile from "./pages/app/user/UserProfile";
+import AppRoleLayout from "./pages/app/AppRoleLayout";
+import { getAppRoles, getAppRoleConfig } from "@/config/appRoles";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -64,6 +66,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!user?.is_superuser) {
+    return <Navigate to="/app/login" replace />;
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -145,6 +151,25 @@ function AppRoutes() {
       <Route path="/admin/seat-bookings/:id" element={<ProtectedRoute><SeatBookingView /></ProtectedRoute>} />
       <Route path="/admin/seat-bookings/:id/edit" element={<ProtectedRoute><SeatBookingForm /></ProtectedRoute>} />
 
+      {/* Trips */}
+      <Route path="/admin/trips" element={<ProtectedRoute><Trips /></ProtectedRoute>} />
+      <Route path="/admin/trips/:id" element={<ProtectedRoute><TripView /></ProtectedRoute>} />
+
+      {/* Locations */}
+      <Route path="/admin/locations" element={<ProtectedRoute><Locations /></ProtectedRoute>} />
+
+      {/* Vehicle Schedules */}
+      <Route path="/admin/vehicle-schedules" element={<ProtectedRoute><VehicleSchedules /></ProtectedRoute>} />
+      <Route path="/admin/vehicle-schedules/add" element={<ProtectedRoute><VehicleScheduleForm /></ProtectedRoute>} />
+      <Route path="/admin/vehicle-schedules/:id" element={<ProtectedRoute><VehicleScheduleView /></ProtectedRoute>} />
+      <Route path="/admin/vehicle-schedules/:id/edit" element={<ProtectedRoute><VehicleScheduleForm /></ProtectedRoute>} />
+
+      {/* Vehicle Ticket Bookings */}
+      <Route path="/admin/vehicle-ticket-bookings" element={<ProtectedRoute><VehicleTicketBookings /></ProtectedRoute>} />
+      <Route path="/admin/vehicle-ticket-bookings/add" element={<ProtectedRoute><VehicleTicketBookingForm /></ProtectedRoute>} />
+      <Route path="/admin/vehicle-ticket-bookings/:id" element={<ProtectedRoute><VehicleTicketBookingView /></ProtectedRoute>} />
+      <Route path="/admin/vehicle-ticket-bookings/:id/edit" element={<ProtectedRoute><VehicleTicketBookingForm /></ProtectedRoute>} />
+
       {/* App (driver/user) auth */}
       <Route path="/app" element={<Navigate to="/app/login" replace />} />
       <Route path="/app/login" element={<AppLogin />} />
@@ -152,22 +177,26 @@ function AppRoutes() {
       <Route path="/app/forgot-password" element={<AppForgotPassword />} />
       <Route path="/app/reset-password" element={<AppResetPassword />} />
 
-      {/* Driver portal */}
-      <Route path="/app/driver" element={<AppProtectedRoute><DriverLayout /></AppProtectedRoute>}>
-        <Route index element={<Navigate to="home" replace />} />
-        <Route path="home" element={<DriverHome />} />
-        <Route path="vehicle" element={<DriverVehicle />} />
-        <Route path="wallet" element={<DriverWallet />} />
-        <Route path="profile" element={<DriverProfile />} />
-      </Route>
-
-      {/* User portal */}
-      <Route path="/app/user" element={<AppProtectedRoute><UserLayout /></AppProtectedRoute>}>
-        <Route index element={<Navigate to="home" replace />} />
-        <Route path="home" element={<UserHome />} />
-        <Route path="booking" element={<UserBooking />} />
-        <Route path="profile" element={<UserProfile />} />
-      </Route>
+      {/* App (driver/user) portals - generated from config */}
+      {getAppRoles().map((role) => {
+        const config = getAppRoleConfig(role);
+        return (
+          <Route
+            key={role}
+            path={config.basePath}
+            element={
+              <AppProtectedRoute>
+                <AppRoleLayout role={role} />
+              </AppProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to={config.defaultPath} replace />} />
+            {Object.entries(config.routes).map(([path, Component]) => (
+              <Route key={path} path={path} element={<Component />} />
+            ))}
+          </Route>
+        );
+      })}
       
       <Route path="*" element={<NotFound />} />
     </Routes>

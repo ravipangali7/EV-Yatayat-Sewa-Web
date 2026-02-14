@@ -1,7 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Car, Wallet, User, CalendarDays } from "lucide-react";
 
-interface NavItem {
+export interface NavItem {
   label: string;
   path: string;
   icon: React.ReactNode;
@@ -40,18 +39,5 @@ const BottomNav = ({ items }: BottomNavProps) => {
     </nav>
   );
 };
-
-export const driverNavItems: NavItem[] = [
-  { label: "Home", path: "/app/driver/home", icon: <Home size={20} /> },
-  { label: "Vehicle", path: "/app/driver/vehicle", icon: <Car size={20} /> },
-  { label: "Wallet", path: "/app/driver/wallet", icon: <Wallet size={20} /> },
-  { label: "Profile", path: "/app/driver/profile", icon: <User size={20} /> },
-];
-
-export const userNavItems: NavItem[] = [
-  { label: "Home", path: "/app/user/home", icon: <Home size={20} /> },
-  { label: "Booking", path: "/app/user/booking", icon: <CalendarDays size={20} /> },
-  { label: "Profile", path: "/app/user/profile", icon: <User size={20} /> },
-];
 
 export default BottomNav;

@@ -34,4 +34,9 @@ export const walletApi = {
   delete: async (id: string): Promise<void> => {
     return api.get<void>(`wallets/${id}/delete/`);
   },
+
+  // Deposit to current user's wallet
+  deposit: async (amount: number): Promise<{ balance: string; message: string }> => {
+    return api.post<{ balance: string; message: string }>('wallets/my/deposit/', { amount });
+  },
 };

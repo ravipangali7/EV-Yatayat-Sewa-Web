@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
-import { BusSeatVisualizer } from '@/components/vehicles/BusSeatVisualizer';
+import { SeatLayoutVisualizer, type SeatPosition } from '@/components/vehicles/SeatLayoutVisualizer';
 import { SeatBookingMap } from '@/components/seat-bookings/SeatBookingMap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { seatBookingApi } from '@/modules/seat-bookings/services/seatBookingApi';
@@ -193,8 +193,9 @@ export default function SeatBookingForm() {
     }));
   };
 
-  const handleSeatClick = (seat: VehicleSeat) => {
-    if (seat.status === 'available') {
+  const handleSeatLayoutClick = (pos: SeatPosition) => {
+    const seat = selectedVehicle?.seats?.find(s => s.side === pos.side && s.number === pos.number);
+    if (seat && seat.status === 'available') {
       setFormData(prev => ({ ...prev, vehicle_seat: seat.id }));
     }
   };
@@ -325,19 +326,32 @@ export default function SeatBookingForm() {
               </p>
             </CardHeader>
             <CardContent>
-              <BusSeatVisualizer
-                seats={selectedVehicle.seats}
-                selectedSeatId={formData.vehicle_seat}
-                onSeatClick={handleSeatClick}
-                onlyAvailable={true}
-              />
-              {formData.vehicle_seat && (
-                <div className="mt-4 p-3 bg-primary/10 rounded-md">
-                  <p className="text-sm font-medium">
-                    Selected: {selectedVehicle.seats.find(s => s.id === formData.vehicle_seat)?.side}
-                    {selectedVehicle.seats.find(s => s.id === formData.vehicle_seat)?.number}
-                  </p>
-                </div>
+              {selectedVehicle.seat_layout?.length > 0 ? (
+                <>
+                  <SeatLayoutVisualizer
+                    seatLayout={selectedVehicle.seat_layout}
+                    seats={selectedVehicle.seats.map((s) => ({ side: s.side, number: s.number }))}
+                    bookedSeats={new Set(selectedVehicle.seats.filter((s) => s.status === 'booked').map((s) => `${s.side}${s.number}`))}
+                    selectedSeats={formData.vehicle_seat
+                      ? (() => {
+                          const s = selectedVehicle.seats.find(se => se.id === formData.vehicle_seat);
+                          return s ? [{ side: s.side, number: s.number }] : [];
+                        })()
+                      : []}
+                    onSeatClick={handleSeatLayoutClick}
+                    onlyAvailable
+                  />
+                  {formData.vehicle_seat && (
+                    <div className="mt-4 p-3 bg-primary/10 rounded-md">
+                      <p className="text-sm font-medium">
+                        Selected: {selectedVehicle.seats.find(s => s.id === formData.vehicle_seat)?.side}
+                        {selectedVehicle.seats.find(s => s.id === formData.vehicle_seat)?.number}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No seat layout defined for this vehicle.</p>
               )}
             </CardContent>
           </Card>

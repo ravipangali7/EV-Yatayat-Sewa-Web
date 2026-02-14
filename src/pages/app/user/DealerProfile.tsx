@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Lock, Wallet, CreditCard, CalendarDays, LogOut, ChevronRight, Camera, Edit, Receipt, PlusCircle } from "lucide-react";
+import { User, Lock, Wallet, CreditCard, CalendarDays, LogOut, ChevronRight, Camera, Edit, Receipt, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,7 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-export default function UserProfile() {
+export default function DealerProfile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showEditModal, setShowEditModal] = useState(false);
@@ -21,11 +21,11 @@ export default function UserProfile() {
   const menuItems: { icon: typeof Edit; label: string; to?: string; onClick?: () => void }[] = [
     { icon: Edit, label: "Edit Profile", onClick: () => setShowEditModal(true) },
     { icon: Lock, label: "Change Password", onClick: () => setShowPasswordModal(true) },
-    { icon: Wallet, label: "Wallet", to: "/app/user/wallet" },
-    { icon: CreditCard, label: "Card", to: "/app/user/card" },
-    { icon: CalendarDays, label: "My Booking", to: "/app/user/booking" },
-    { icon: PlusCircle, label: "Deposit", to: "/app/user/deposit" },
-    { icon: Receipt, label: "Transaction", to: "/app/user/wallet" },
+    { icon: Wallet, label: "Wallet", to: "/app/ticket-dealer/wallet" },
+    { icon: CreditCard, label: "Card", to: "/app/ticket-dealer/card" },
+    { icon: CalendarDays, label: "Booking", to: "/app/ticket-dealer/booking" },
+    { icon: TrendingUp, label: "Revenue", to: "/app/ticket-dealer/revenue" },
+    { icon: Receipt, label: "Transaction", to: "/app/ticket-dealer/wallet" },
   ];
 
   const handleLogout = () => {
@@ -45,9 +45,9 @@ export default function UserProfile() {
             <Camera size={12} className="text-primary-foreground" />
           </button>
         </div>
-        <h2 className="font-bold text-lg">{user?.name ?? (name || "Passenger")}</h2>
+        <h2 className="font-bold text-lg">{user?.name ?? (name || "Dealer")}</h2>
         <p className="text-sm text-muted-foreground">{user?.phone ?? phone}</p>
-        <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-accent text-accent-foreground font-medium">Passenger</span>
+        <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-accent text-accent-foreground font-medium">Ticket Dealer</span>
       </motion.div>
 
       <div className="space-y-1">

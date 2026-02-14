@@ -97,15 +97,15 @@ export default function WalletView() {
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
-              <span className="text-muted-foreground">To Be Paid</span>
+              <span className="text-muted-foreground">To Pay</span>
               <span className="font-medium text-warning">
-                ${toNumber(wallet.to_be_pay, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${toNumber(wallet.to_pay, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
-              <span className="text-muted-foreground">To Be Received</span>
+              <span className="text-muted-foreground">To Receive</span>
               <span className="font-medium text-success">
-                ${toNumber(wallet.to_be_received, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${toNumber(wallet.to_receive, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">

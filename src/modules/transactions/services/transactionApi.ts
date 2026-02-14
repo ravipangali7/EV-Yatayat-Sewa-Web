@@ -12,6 +12,7 @@ export const transactionApi = {
     if (params?.type) queryParams.append('type', params.type);
     if (params?.wallet) queryParams.append('wallet', params.wallet);
     if (params?.user) queryParams.append('user', params.user);
+    if (params?.card) queryParams.append('card', params.card);
     
     const queryString = queryParams.toString();
     const url = `transactions/${queryString ? `?${queryString}` : ''}`;

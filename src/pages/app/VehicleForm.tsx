@@ -8,9 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { SearchableSelect, MultiSelect } from '@/components/common/SearchableSelect';
 import { VehicleSeatsForm } from '@/components/vehicles/VehicleSeatsForm';
 import { VehicleImagesForm, ImageForm } from '@/components/vehicles/VehicleImagesForm';
+import { SeatLayoutVisualizer } from '@/components/vehicles/SeatLayoutVisualizer';
 import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
 import { userApi } from '@/modules/users/services/userApi';
 import { routeApi } from '@/modules/routes/services/routeApi';
+import { superSettingApi } from '@/modules/settings/services/superSettingApi';
 import { VehicleSeatSide, VehicleSeatStatus } from '@/types';
 import { toast } from 'sonner';
 
@@ -43,29 +45,42 @@ export default function VehicleForm() {
     active_driver: '',
     active_route: '',
     is_active: true,
+    bill_book: '',
+    bill_book_expiry_date: '',
+    insurance_expiry_date: '',
+    road_permit_expiry_date: '',
+    seat_layout: [] as string[],
   });
 
   const [seats, setSeats] = useState<SeatForm[]>([]);
   const [images, setImages] = useState<ImageForm[]>([]);
   const [loading, setLoading] = useState(false);
   const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
+  const [seatLayoutRaw, setSeatLayoutRaw] = useState('[]');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch drivers
-        const driversResponse = await userApi.list({ is_driver: true, per_page: 1000 });
+        const [driversResponse, routesResponse] = await Promise.all([
+          userApi.list({ is_driver: true, per_page: 1000 }),
+          routeApi.list({ per_page: 1000 }),
+        ]);
         setUsers(driversResponse.results.map(u => ({ id: u.id, name: u.name || u.username })));
-
-        // Fetch routes
-        const routesResponse = await routeApi.list({ per_page: 1000 });
         setRoutes(routesResponse.results.map(r => ({ id: r.id, name: r.name })));
+        if (!isEdit) {
+          const settingsRes = await superSettingApi.list({ per_page: 1 });
+          if (settingsRes?.results?.length && settingsRes.results[0].seat_layout?.length) {
+            const layout = settingsRes.results[0].seat_layout!;
+            setFormData((prev) => ({ ...prev, seat_layout: layout }));
+            setSeatLayoutRaw(JSON.stringify(layout));
+          }
+        }
       } catch (error) {
         console.error('Failed to load data:', error);
       }
     };
     fetchData();
-  }, []);
+  }, [isEdit]);
 
   useEffect(() => {
     const fetchVehicle = async () => {
@@ -95,7 +110,13 @@ export default function VehicleForm() {
             active_driver: vehicle.active_driver || '',
             active_route: vehicle.active_route || '',
             is_active: vehicle.is_active ?? true,
+            bill_book: vehicle.bill_book || '',
+            bill_book_expiry_date: vehicle.bill_book_expiry_date ? vehicle.bill_book_expiry_date.slice(0, 10) : '',
+            insurance_expiry_date: vehicle.insurance_expiry_date ? vehicle.insurance_expiry_date.slice(0, 10) : '',
+            road_permit_expiry_date: vehicle.road_permit_expiry_date ? vehicle.road_permit_expiry_date.slice(0, 10) : '',
+            seat_layout: Array.isArray(vehicle.seat_layout) ? vehicle.seat_layout : [],
           });
+          setSeatLayoutRaw(JSON.stringify(Array.isArray(vehicle.seat_layout) ? vehicle.seat_layout : []));
 
           if (vehicle.seats) {
             setSeats(vehicle.seats.map(s => ({
@@ -160,6 +181,16 @@ export default function VehicleForm() {
         number: seat.number,
         status: seat.status,
       }));
+      vehicleData.bill_book = formData.bill_book || null;
+      vehicleData.bill_book_expiry_date = formData.bill_book_expiry_date || null;
+      vehicleData.insurance_expiry_date = formData.insurance_expiry_date || null;
+      vehicleData.road_permit_expiry_date = formData.road_permit_expiry_date || null;
+      try {
+        const layout = JSON.parse(seatLayoutRaw.trim() || '[]');
+        vehicleData.seat_layout = Array.isArray(layout) ? layout : [];
+      } catch {
+        vehicleData.seat_layout = formData.seat_layout?.length ? formData.seat_layout : [];
+      }
       
       // For images: only include ones with File objects (new uploads)
       // Existing images (strings) are preserved by Django if images_data is not sent
@@ -317,6 +348,42 @@ export default function VehicleForm() {
                 />
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bill_book">Bill Book</Label>
+              <Input
+                id="bill_book"
+                value={formData.bill_book}
+                onChange={(e) => setFormData({ ...formData, bill_book: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bill_book_expiry_date">Bill Book Expiry</Label>
+              <Input
+                id="bill_book_expiry_date"
+                type="date"
+                value={formData.bill_book_expiry_date}
+                onChange={(e) => setFormData({ ...formData, bill_book_expiry_date: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="insurance_expiry_date">Insurance Expiry</Label>
+              <Input
+                id="insurance_expiry_date"
+                type="date"
+                value={formData.insurance_expiry_date}
+                onChange={(e) => setFormData({ ...formData, insurance_expiry_date: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="road_permit_expiry_date">Road Permit Expiry</Label>
+              <Input
+                id="road_permit_expiry_date"
+                type="date"
+                value={formData.road_permit_expiry_date}
+                onChange={(e) => setFormData({ ...formData, road_permit_expiry_date: e.target.value })}
+              />
+            </div>
           </div>
         </div>
 
@@ -370,9 +437,39 @@ export default function VehicleForm() {
           </div>
         </div>
 
-        {/* Vehicle Seats */}
+        {/* Vehicle Seats & Layout */}
         <div className="form-section">
-          <VehicleSeatsForm value={seats} onChange={setSeats} />
+          <h3 className="font-semibold text-foreground mb-4">Vehicle Seats</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <VehicleSeatsForm value={seats} onChange={setSeats} />
+            {seats.length > 0 && formData.seat_layout.length > 0 && (
+              <div>
+                <Label className="mb-2 block">Seat Layout</Label>
+                <SeatLayoutVisualizer
+                  seatLayout={formData.seat_layout}
+                  seats={seats.map((s) => ({ side: s.side, number: s.number }))}
+                  bookedSeats={new Set(seats.filter((s) => s.status === 'booked').map((s) => `${s.side}${s.number}`))}
+                />
+                <div className="mt-2">
+                  <Label className="text-xs text-muted-foreground">Edit layout as JSON (x=seat, y=driver, -=empty, :=new row)</Label>
+                  <textarea
+                    className="mt-1 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono"
+                    value={seatLayoutRaw}
+                    onChange={(e) => setSeatLayoutRaw(e.target.value)}
+                    onBlur={() => {
+                      try {
+                        const p = JSON.parse(seatLayoutRaw.trim() || '[]');
+                        if (Array.isArray(p)) setFormData((prev) => ({ ...prev, seat_layout: p }));
+                      } catch {
+                        // ignore invalid
+                      }
+                    }}
+                    placeholder='["x","-","-","y",":"]'
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Vehicle Images */}

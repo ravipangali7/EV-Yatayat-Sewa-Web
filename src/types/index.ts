@@ -11,6 +11,12 @@ export interface User {
   is_superuser?: boolean;
   is_staff?: boolean;
   is_active?: boolean;
+  license_no?: string;
+  license_image?: string;
+  license_type?: string;
+  license_expiry_date?: string;
+  is_ticket_dealer?: boolean;
+  ticket_commission?: number;
   created_at: string;
   updated_at: string;
 }
@@ -20,8 +26,8 @@ export interface Wallet {
   user: string;
   user_details?: User;
   balance: number;
-  to_be_pay: number;
-  to_be_received: number;
+  to_pay: number;
+  to_receive: number;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +45,8 @@ export interface Transaction {
   wallet_details?: Wallet;
   user: string;
   user_details?: User;
+  card?: string | null;
+  card_details?: { id: string; card_number: string; balance: string; is_active: boolean } | null;
   type: TransactionType;
   remarks?: string;
   created_at: string;
@@ -48,6 +56,18 @@ export interface Transaction {
 export interface SuperSetting {
   id: string;
   per_km_charge: number;
+  gps_threshold: number;
+  seat_layout?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Card {
+  id: string;
+  user: string | null;
+  card_number: string;
+  balance: number;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -109,6 +129,13 @@ export interface VehicleImage {
   updated_at: string;
 }
 
+export interface ActiveTrip {
+  id: string;
+  trip_id: string;
+  start_time: string | null;
+  end_time: string | null;
+}
+
 export interface Vehicle {
   id: string;
   imei: string;
@@ -127,7 +154,13 @@ export interface Vehicle {
   route_details?: Route[];
   active_route?: string;
   active_route_details?: Route;
+  active_trip?: ActiveTrip | null;
   is_active: boolean;
+  bill_book?: string;
+  bill_book_expiry_date?: string;
+  insurance_expiry_date?: string;
+  road_permit_expiry_date?: string;
+  seat_layout?: string[];
   seats?: VehicleSeat[];
   images?: VehicleImage[];
   created_at: string;
@@ -148,6 +181,8 @@ export interface SeatBooking {
   };
   vehicle_seat: string;
   vehicle_seat_details?: VehicleSeat;
+  trip?: string | null;
+  trip_details?: ActiveTrip | null;
   check_in_lat: number;
   check_in_lng: number;
   check_in_datetime: string;

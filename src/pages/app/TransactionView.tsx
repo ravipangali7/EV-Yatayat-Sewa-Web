@@ -169,18 +169,18 @@ export default function TransactionView() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-muted-foreground">To Be Paid</span>
+                  <span className="text-muted-foreground">To Pay</span>
                   <span className="font-medium">
-                    ${toNumber(transaction.wallet_details?.to_be_pay || 0, 0).toLocaleString(undefined, {
+                    ${toNumber(transaction.wallet_details?.to_pay || 0, 0).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-muted-foreground">To Be Received</span>
+                  <span className="text-muted-foreground">To Receive</span>
                   <span className="font-medium">
-                    ${toNumber(transaction.wallet_details?.to_be_received || 0, 0).toLocaleString(undefined, {
+                    ${toNumber(transaction.wallet_details?.to_receive || 0, 0).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}

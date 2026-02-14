@@ -85,6 +85,13 @@ export default function SeatBookingView() {
               </Badge>
             </div>
 
+            {(booking.trip_details?.trip_id || booking.trip) && (
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-muted-foreground">Trip</span>
+                <span className="font-medium">{booking.trip_details?.trip_id || booking.trip}</span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">User Type</span>
               <Badge variant={booking.is_guest ? 'secondary' : 'default'}>

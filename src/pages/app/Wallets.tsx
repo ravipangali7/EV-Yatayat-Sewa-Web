@@ -52,14 +52,14 @@ export default function Wallets() {
       render: (wallet) => `$${toNumber(wallet.balance, 0).toLocaleString()}`,
     },
     {
-      key: 'to_be_pay',
-      header: 'To Be Paid',
-      render: (wallet) => `$${toNumber(wallet.to_be_pay, 0).toLocaleString()}`,
+      key: 'to_pay',
+      header: 'To Pay',
+      render: (wallet) => `$${toNumber(wallet.to_pay, 0).toLocaleString()}`,
     },
     {
-      key: 'to_be_received',
-      header: 'To Be Received',
-      render: (wallet) => `$${toNumber(wallet.to_be_received, 0).toLocaleString()}`,
+      key: 'to_receive',
+      header: 'To Receive',
+      render: (wallet) => `$${toNumber(wallet.to_receive, 0).toLocaleString()}`,
     },
   ];
 

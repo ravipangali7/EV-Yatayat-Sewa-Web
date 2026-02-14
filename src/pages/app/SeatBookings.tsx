@@ -46,6 +46,12 @@ export default function SeatBookings() {
           : 'N/A',
     },
     {
+      key: 'trip',
+      header: 'Trip',
+      render: (booking) => 
+        booking.trip_details?.trip_id || booking.trip || '-',
+    },
+    {
       key: 'user',
       header: 'User',
       render: (booking) => 
@@ -72,10 +78,10 @@ export default function SeatBookings() {
     {
       key: 'trip_amount',
       header: 'Amount',
-      render: (booking) => 
-        booking.trip_amount 
-          ? `Rs. ${booking.trip_amount.toFixed(2)}`
-          : '-',
+      render: (booking) => {
+        const amount = Number(booking.trip_amount);
+        return Number.isFinite(amount) ? `Rs. ${amount.toFixed(2)}` : '-';
+      },
     },
     {
       key: 'is_paid',

@@ -6,6 +6,7 @@ import { Phone, Lock, Eye, EyeOff, User, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import AppLayout from "@/components/app/AppLayout";
 import { authApi } from "@/modules/auth/services/authApi";
+import { getDefaultPathForRole } from "@/config/appRoles";
 import { toast } from "sonner";
 
 export default function AppRegister() {
@@ -39,7 +40,7 @@ export default function AppRegister() {
       localStorage.setItem("auth_token", res.token);
       localStorage.setItem("auth_user", JSON.stringify(res.user));
       toast.success("Account created! Welcome.");
-      window.location.href = "/app/user/home";
+      window.location.href = getDefaultPathForRole("user");
     } catch (err: unknown) {
       const msg = err && typeof err === "object" && "response" in err
         ? (err as { response?: { data?: { phone?: string[] } } }).response?.data?.phone?.[0]

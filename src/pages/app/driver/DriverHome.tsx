@@ -26,8 +26,8 @@ export default function DriverHome() {
         const wallet = walletsRes.results[0];
         if (wallet) {
           setBalance(toNumber(wallet.balance, 0));
-          setToReceive(toNumber(wallet.to_be_received, 0));
-          setToPay(toNumber(wallet.to_be_pay, 0));
+          setToReceive(toNumber(wallet.to_receive, 0));
+          setToPay(toNumber(wallet.to_pay, 0));
           const txRes = await transactionApi.list({ wallet: wallet.id, per_page: 10 });
           setTransactions(txRes.results.map(transactionToAppTransaction));
         }

@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import AppLayout from "@/components/app/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/modules/auth/services/authApi";
+import { resolveAppRole, getDefaultPathForRole } from "@/config/appRoles";
 import { toast } from "sonner";
 
 export default function AppLogin() {
@@ -29,12 +30,11 @@ export default function AppLogin() {
       if (success) {
         const user = await authApi.getCurrentUser();
         toast.success("Welcome back!");
-        if (user.is_staff || user.is_superuser) {
+        const appRole = resolveAppRole(user);
+        if (appRole === null) {
           navigate("/admin", { replace: true });
-        } else if (user.is_driver) {
-          navigate("/app/driver/home", { replace: true });
         } else {
-          navigate("/app/user/home", { replace: true });
+          navigate(getDefaultPathForRole(appRole), { replace: true });
         }
       } else {
         toast.error("Invalid phone number or password");

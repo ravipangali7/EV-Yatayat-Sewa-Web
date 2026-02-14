@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { VehicleSeatSide, VehicleSeatStatus } from '@/types';
-import { BusSeatVisualizer } from './BusSeatVisualizer';
 
 interface SeatForm {
   id: string;
@@ -39,17 +38,6 @@ export function VehicleSeatsForm({ value, onChange }: VehicleSeatsFormProps) {
     onChange(updated);
   };
 
-  // Convert to VehicleSeat format for visualizer
-  const seatsForVisualizer = value.map((s, i) => ({
-    id: s.id,
-    vehicle: '',
-    side: s.side,
-    number: s.number,
-    status: s.status,
-    created_at: '',
-    updated_at: '',
-  }));
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -60,9 +48,7 @@ export function VehicleSeatsForm({ value, onChange }: VehicleSeatsFormProps) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Seat Forms */}
-        <div className="space-y-3 max-h-96 overflow-y-auto pr-2 scrollbar-thin">
+      <div className="space-y-3 max-h-96 overflow-y-auto pr-2 scrollbar-thin">
           {value.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg border border-dashed border-border">
               No seats added. Click "Add Seat" to add seats.
@@ -140,10 +126,6 @@ export function VehicleSeatsForm({ value, onChange }: VehicleSeatsFormProps) {
               </div>
             ))
           )}
-        </div>
-
-        {/* Bus Seat Visualizer */}
-        {value.length > 0 && <BusSeatVisualizer seats={seatsForVisualizer} />}
       </div>
     </div>
   );

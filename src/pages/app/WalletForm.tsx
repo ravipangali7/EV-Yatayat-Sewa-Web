@@ -18,8 +18,8 @@ export default function WalletForm() {
   const [formData, setFormData] = useState({
     user: '',
     balance: 0,
-    to_be_pay: 0,
-    to_be_received: 0,
+    to_pay: 0,
+    to_receive: 0,
   });
 
   const [loading, setLoading] = useState(false);
@@ -45,8 +45,8 @@ export default function WalletForm() {
           setFormData({
             user: wallet.user || '',
             balance: wallet.balance || 0,
-            to_be_pay: wallet.to_be_pay || 0,
-            to_be_received: wallet.to_be_received || 0,
+            to_pay: wallet.to_pay || 0,
+            to_receive: wallet.to_receive || 0,
           });
         } catch (error) {
           toast.error('Failed to load wallet');
@@ -115,25 +115,25 @@ export default function WalletForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="to_be_pay">To Be Paid</Label>
+            <Label htmlFor="to_pay">To Pay</Label>
             <Input
-              id="to_be_pay"
+              id="to_pay"
               type="number"
               step="0.01"
-              value={formData.to_be_pay}
-              onChange={(e) => setFormData({ ...formData, to_be_pay: parseFloat(e.target.value) || 0 })}
+              value={formData.to_pay}
+              onChange={(e) => setFormData({ ...formData, to_pay: parseFloat(e.target.value) || 0 })}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="to_be_received">To Be Received</Label>
+            <Label htmlFor="to_receive">To Receive</Label>
             <Input
-              id="to_be_received"
+              id="to_receive"
               type="number"
               step="0.01"
-              value={formData.to_be_received}
-              onChange={(e) => setFormData({ ...formData, to_be_received: parseFloat(e.target.value) || 0 })}
+              value={formData.to_receive}
+              onChange={(e) => setFormData({ ...formData, to_receive: parseFloat(e.target.value) || 0 })}
               required
             />
           </div>

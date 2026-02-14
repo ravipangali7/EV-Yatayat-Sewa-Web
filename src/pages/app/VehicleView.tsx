@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Badge } from '@/components/ui/badge';
-import { BusSeatVisualizer } from '@/components/vehicles/BusSeatVisualizer';
+import { SeatLayoutVisualizer } from '@/components/vehicles/SeatLayoutVisualizer';
 import { MiniMap } from '@/components/maps/MiniMap';
 import { QRCodeDisplay } from '@/components/common/QRCodeDisplay';
 import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
@@ -400,14 +400,18 @@ export default function VehicleView() {
           </CardContent>
         </Card>
 
-        {/* Seat Layout */}
-        {seats.length > 0 && (
+        {/* Seat Layout (from vehicle seat_layout JSON) */}
+        {vehicle?.seat_layout?.length > 0 && seats.length > 0 && (
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Seat Layout</CardTitle>
             </CardHeader>
             <CardContent>
-              <BusSeatVisualizer seats={seats} />
+              <SeatLayoutVisualizer
+                seatLayout={vehicle.seat_layout}
+                seats={seats.map((s) => ({ side: s.side, number: s.number }))}
+                bookedSeats={new Set(seats.filter((s) => s.status === 'booked').map((s) => `${s.side}${s.number}`))}
+              />
             </CardContent>
           </Card>
         )}

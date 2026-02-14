@@ -24,6 +24,12 @@ export default function UserForm() {
     is_staff: false,
     is_active: true,
     profile_picture: null as File | null,
+    license_no: '',
+    license_image: null as File | null,
+    license_type: '',
+    license_expiry_date: '',
+    is_ticket_dealer: false,
+    ticket_commission: 0,
   });
 
   const [profilePicturePreview, setProfilePicturePreview] = useState<string>('');
@@ -48,6 +54,12 @@ export default function UserForm() {
             is_staff: user.is_staff || false,
             is_active: user.is_active ?? true,
             profile_picture: null,
+            license_no: user.license_no || '',
+            license_image: null,
+            license_type: user.license_type || '',
+            license_expiry_date: user.license_expiry_date ? user.license_expiry_date.slice(0, 10) : '',
+            is_ticket_dealer: user.is_ticket_dealer || false,
+            ticket_commission: user.ticket_commission ?? 0,
           });
           // Set preview if profile picture exists
           if (user.profile_picture) {
@@ -127,6 +139,14 @@ export default function UserForm() {
         formDataToSend.append('is_staff', formData.is_staff.toString());
         formDataToSend.append('is_active', formData.is_active.toString());
         formDataToSend.append('profile_picture', formData.profile_picture);
+        formDataToSend.append('license_no', formData.license_no);
+        formDataToSend.append('license_type', formData.license_type);
+        formDataToSend.append('license_expiry_date', formData.license_expiry_date || '');
+        formDataToSend.append('is_ticket_dealer', formData.is_ticket_dealer.toString());
+        formDataToSend.append('ticket_commission', formData.ticket_commission.toString());
+        if (formData.license_image instanceof File) {
+          formDataToSend.append('license_image', formData.license_image);
+        }
 
         if (isEdit && id) {
           await userApi.editWithFile(id, formDataToSend);
@@ -149,6 +169,11 @@ export default function UserForm() {
           is_superuser: formData.is_superuser,
           is_staff: formData.is_staff,
           is_active: formData.is_active,
+          license_no: formData.license_no || undefined,
+          license_type: formData.license_type || undefined,
+          license_expiry_date: formData.license_expiry_date || undefined,
+          is_ticket_dealer: formData.is_ticket_dealer,
+          ticket_commission: formData.ticket_commission,
         };
         
         // Only include email if it has a value
@@ -311,6 +336,65 @@ export default function UserForm() {
                 onCheckedChange={(checked) => handleChange('is_active', checked)}
               />
               <Label htmlFor="is_active">Is Active</Label>
+            </div>
+          </div>
+
+          <h3 className="font-semibold text-foreground mt-6 mb-2">License & Ticket Dealer</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="license_no">License No</Label>
+              <Input
+                id="license_no"
+                value={formData.license_no}
+                onChange={(e) => handleChange('license_no', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="license_type">License Type</Label>
+              <Input
+                id="license_type"
+                value={formData.license_type}
+                onChange={(e) => handleChange('license_type', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="license_expiry_date">License Expiry Date</Label>
+              <Input
+                id="license_expiry_date"
+                type="date"
+                value={formData.license_expiry_date}
+                onChange={(e) => handleChange('license_expiry_date', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="license_image">License Image</Label>
+              <Input
+                id="license_image"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  setFormData((prev) => ({ ...prev, license_image: file || null }));
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="is_ticket_dealer"
+                checked={formData.is_ticket_dealer}
+                onCheckedChange={(checked) => handleChange('is_ticket_dealer', checked)}
+              />
+              <Label htmlFor="is_ticket_dealer">Is Ticket Dealer</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ticket_commission">Ticket Commission</Label>
+              <Input
+                id="ticket_commission"
+                type="number"
+                step="0.01"
+                value={formData.ticket_commission}
+                onChange={(e) => setFormData((prev) => ({ ...prev, ticket_commission: parseFloat(e.target.value) || 0 }))}
+              />
             </div>
           </div>
         </div>
