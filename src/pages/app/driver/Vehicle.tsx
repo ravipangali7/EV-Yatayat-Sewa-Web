@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { QrCode, MapPin, Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import SeatLayout, { Seat } from "@/components/app/SeatLayout";
 import SwipeButton from "@/components/app/SwipeButton";
 import ConfirmModal from "@/components/app/ConfirmModal";
 import MiniMap, { MapPoint } from "@/components/app/MiniMap";
+import DriverNavigationMap from "@/components/app/DriverNavigationMap";
 import TransactionCard from "@/components/app/TransactionCard";
 import type { AppTransaction } from "@/components/app/TransactionCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -183,7 +184,11 @@ export default function Vehicle() {
   const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number } | null>(null);
+  const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
+  const prevLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  const NEPAL_CENTER = { lat: 27.7172, lng: 85.324 };
 
   useEffect(() => {
     const load = async () => {
@@ -269,12 +274,29 @@ export default function Vehicle() {
       locationApi.list({ trip: activeTrip.id, per_page: 1 })
         .then((r) => {
           const loc = r.results?.[0];
-          if (loc) setLastLocation({ lat: Number(loc.latitude), lng: Number(loc.longitude), speed: loc.speed ? Number(loc.speed) : undefined });
+          if (loc) {
+            const next = { lat: Number(loc.latitude), lng: Number(loc.longitude), speed: loc.speed ? Number(loc.speed) : undefined };
+            setLastLocation((prev) => {
+              if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
+              return next;
+            });
+          }
         })
         .catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
   }, [activeTrip?.id, driverState]);
+
+  useEffect(() => {
+    if (driverState !== "trip_started" || tripTab !== "map") return;
+    if (lastLocation) return;
+    getCurrentLocation()
+      .then((loc) => {
+        setLastLocation({ lat: loc.lat, lng: loc.lng });
+        setMapInitialCenter(loc);
+      })
+      .catch(() => setMapInitialCenter(NEPAL_CENTER));
+  }, [driverState, tripTab, lastLocation]);
 
   const vehicleInfo = selectedVehicle ? vehicleToVehicleInfo(selectedVehicle) : null;
   const bookedSelected = selectedSeats.filter((s) => s.status === "booked");
@@ -486,12 +508,12 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
     }
   };
 
-  const currentLocation: MapPoint = {
-    name: "Current Location",
-    lat: 27.695,
-    lng: 85.332,
-    type: "current",
-  };
+  const currentLocationPoint = lastLocation
+    ? { name: "Current Location", lat: lastLocation.lat, lng: lastLocation.lng, type: "current" as const }
+    : mapInitialCenter
+      ? { name: "Current Location", lat: mapInitialCenter.lat, lng: mapInitialCenter.lng, type: "current" as const }
+      : { name: "Current Location", lat: NEPAL_CENTER.lat, lng: NEPAL_CENTER.lng, type: "current" as const };
+  const currentLocation: MapPoint = currentLocationPoint;
 
   if (driverState === "no_vehicle") {
     return (
@@ -698,7 +720,25 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
               Speed: {lastLocation.speed != null ? `${Number(lastLocation.speed).toFixed(0)} km/h` : "—"}
             </p>
           )}
-          <MiniMap points={tripMapPoints.length > 0 ? tripMapPoints : [currentLocation]} className="flex-1 min-h-0 rounded-2xl border border-border" fillHeight />
+          {(() => {
+            const navCenter = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+            const navCenterPoint = { lat: navCenter.lat, lng: navCenter.lng };
+            const routeWaypoints: Array<{ lat: number; lng: number }> = selectedRoute
+              ? [
+                  ...(selectedRoute.startPoint ? [{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }] : []),
+                  ...(selectedRoute.stops ?? []).map((s) => ({ lat: s.lat, lng: s.lng })),
+                  ...(selectedRoute.endPoint ? [{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }] : []),
+                ].filter((p) => p.lat !== 0 || p.lng !== 0)
+              : [];
+            return (
+              <DriverNavigationMap
+                center={navCenterPoint}
+                previousCenter={prevLocationRef.current}
+                routeWaypoints={routeWaypoints.length >= 2 ? routeWaypoints : []}
+                className="flex-1 min-h-0 rounded-2xl border border-border"
+              />
+            );
+          })()}
         </div>
       )}
 
