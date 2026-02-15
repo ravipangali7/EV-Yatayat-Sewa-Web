@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useAuth } from "@/contexts/AuthContext";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
-import { tripApi, type ActiveTrip, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
+import { tripApi, type ActiveTrip, type CurrentStopResponse, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
 import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
@@ -26,8 +26,64 @@ import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicle
 import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
 import { locationApi } from "@/modules/locations/services/locationApi";
 import { superSettingApi } from "@/modules/settings/services/superSettingApi";
+import { seatBookingApi } from "@/modules/seat-bookings/services/seatBookingApi";
 import AppBar from "@/components/app/AppBar";
 import { toast } from "sonner";
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 100) / 100;
+}
+
+export interface DestinationOption {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+function getDestinationOptions(vehicle: ApiVehicle | null): DestinationOption[] {
+  const route = vehicle?.active_route_details as ApiRoute | undefined;
+  if (!route) return [];
+  const opts: DestinationOption[] = [];
+  const toNum = (v: unknown) => (typeof v === "number" && !Number.isNaN(v) ? v : Number(v) || 0);
+  if (route.start_point_details) {
+    const p = route.start_point_details;
+    opts.push({
+      id: route.start_point,
+      name: `Start: ${p.name ?? "Start"}`,
+      lat: toNum(p.latitude),
+      lng: toNum(p.longitude),
+    });
+  }
+  (route.stop_points ?? []).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach((sp) => {
+    const p = sp.place_details;
+    if (p) {
+      opts.push({
+        id: sp.place,
+        name: p.name ?? "Stop",
+        lat: toNum(p.latitude),
+        lng: toNum(p.longitude),
+      });
+    }
+  });
+  if (route.end_point_details) {
+    const p = route.end_point_details;
+    opts.push({
+      id: route.end_point,
+      name: `End: ${p.name ?? "End"}`,
+      lat: toNum(p.latitude),
+      lng: toNum(p.longitude),
+    });
+  }
+  return opts;
+}
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 function imageUrl(path: string | null | undefined): string {
@@ -187,6 +243,14 @@ export default function Vehicle() {
   const [vehicleToConnect, setVehicleToConnect] = useState<ApiVehicle | null>(null);
   const [pendingVehicleId, setPendingVehicleId] = useState<string | null>(null);
   const [isSettingRoute, setIsSettingRoute] = useState(false);
+  const [checkinStep, setCheckinStep] = useState<null | "destination" | "amount">(null);
+  const [selectedDestination, setSelectedDestination] = useState<DestinationOption | null>(null);
+  const [checkinAmount, setCheckinAmount] = useState<{ distanceKm: number; totalAmount: number; perKmCharge: number } | null>(null);
+  const [isCreatingCheckin, setIsCreatingCheckin] = useState(false);
+  const [showDropoffModal, setShowDropoffModal] = useState(false);
+  const [dropoffData, setDropoffData] = useState<{ placeId: string; placeName: string; dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string }> } | null>(null);
+  const lastDropoffPlaceIdRef = useRef<string | null>(null);
+  const [destinationSearch, setDestinationSearch] = useState("");
   const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number } | null>(null);
@@ -225,9 +289,9 @@ export default function Vehicle() {
               ? routeToRouteInfo(myActiveRes.active_route_details as ApiRoute)
               : null;
             if (routeInfo) setSelectedRoute(routeInfo);
-            const at = myActiveRes.active_trip as ActiveTrip | null | undefined;
+            const at = myActiveRes.active_trip as (ActiveTrip & { is_scheduled?: boolean }) | null | undefined;
             if (at?.id && at.start_time && !at.end_time) {
-              setActiveTrip(at);
+              setActiveTrip({ id: at.id, trip_id: at.trip_id, start_time: at.start_time ?? null, end_time: at.end_time ?? null, is_scheduled: at.is_scheduled });
               setDriverState("trip_started");
             } else if (routeInfo) {
               setDriverState("route_selected");
@@ -292,6 +356,21 @@ export default function Vehicle() {
     }, 5000);
     return () => clearInterval(interval);
   }, [activeTrip?.id, driverState]);
+
+  useEffect(() => {
+    if (!activeTrip?.id || driverState !== "trip_started" || !lastLocation) return;
+    const t = activeTrip.id;
+    const lat = lastLocation.lat;
+    const lng = lastLocation.lng;
+    tripApi.getCurrentStop(t, lat, lng).then((res) => {
+      const at = res.at_stop;
+      if (at?.dropoffs?.length && at.place_id !== lastDropoffPlaceIdRef.current) {
+        lastDropoffPlaceIdRef.current = at.place_id;
+        setDropoffData({ placeId: at.place_id, placeName: at.name, dropoffs: at.dropoffs });
+        setShowDropoffModal(true);
+      }
+    }).catch(() => {});
+  }, [activeTrip?.id, driverState, lastLocation?.lat, lastLocation?.lng]);
 
   useEffect(() => {
     if (driverState !== "trip_started" || tripTab !== "map") return;
@@ -413,8 +492,8 @@ export default function Vehicle() {
         setShowScheduledConfirmModal(true);
         return;
       }
-      const trip = res as ActiveTrip & { vehicle?: string; driver?: string; route?: string };
-      setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null });
+      const trip = res as ActiveTrip & { vehicle?: string; driver?: string; route?: string; is_scheduled?: boolean };
+      setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null, is_scheduled: trip.is_scheduled });
       setDriverState("trip_started");
       if (selectedVehicle?.id) startLocationStream(trip.id, selectedVehicle.id, 30);
       toast.success("Trip started!");
@@ -429,8 +508,8 @@ export default function Vehicle() {
     setShowScheduledConfirmModal(false);
     try {
       const res = await tripApi.startTrip(selectedVehicle.id, { vehicle_schedule_id: scheduledConfirmData.schedule.id });
-      const trip = res as ActiveTrip & { vehicle?: string; driver?: string; route?: string };
-      setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null });
+      const trip = res as ActiveTrip & { vehicle?: string; driver?: string; route?: string; is_scheduled?: boolean };
+      setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null, is_scheduled: trip.is_scheduled });
       setDriverState("trip_started");
       setScheduledConfirmData(null);
       if (selectedVehicle?.id) startLocationStream(trip.id, selectedVehicle.id, 30);
@@ -447,8 +526,8 @@ export default function Vehicle() {
     if (!selectedVehicle?.id) return;
     try {
       const trip = await tripApi.startTrip(selectedVehicle.id);
-      const t = trip as ActiveTrip & { vehicle?: string; driver?: string; route?: string };
-      setActiveTrip({ id: t.id, trip_id: t.trip_id, start_time: t.start_time ?? null, end_time: t.end_time ?? null });
+      const t = trip as ActiveTrip & { vehicle?: string; driver?: string; route?: string; is_scheduled?: boolean };
+      setActiveTrip({ id: t.id, trip_id: t.trip_id, start_time: t.start_time ?? null, end_time: t.end_time ?? null, is_scheduled: t.is_scheduled });
       setDriverState("trip_started");
       if (selectedVehicle?.id) startLocationStream(t.id, selectedVehicle.id, 30);
       toast.success("Trip started!");
@@ -471,7 +550,130 @@ export default function Vehicle() {
     toast.success("Check-in successful!");
   };
 
-  const confirmCheckOut = () => {
+  const getVehicleSeatId = (seatLabel: string): string | undefined =>
+    selectedVehicle?.seats?.find((s) => `${s.side}${s.number}` === seatLabel)?.id;
+
+  const handleDestinationNext = async () => {
+    if (!selectedDestination || !selectedVehicle?.id || !activeTrip?.id) return;
+    try {
+      const [settingsRes, loc] = await Promise.all([
+        superSettingApi.list({ per_page: 1 }),
+        lastLocation ? Promise.resolve({ lat: lastLocation.lat, lng: lastLocation.lng }) : getCurrentLocation(),
+      ]);
+      const perKmCharge = Number(settingsRes.results?.[0]?.per_km_charge ?? 0);
+      if (!perKmCharge) {
+        toast.error("Per km charge not configured");
+        return;
+      }
+      const distanceKm = haversineKm(loc.lat, loc.lng, selectedDestination.lat, selectedDestination.lng);
+      const totalAmount = Math.round(distanceKm * perKmCharge * availableSelected.length * 100) / 100;
+      setCheckinAmount({ distanceKm, totalAmount, perKmCharge });
+      setCheckinStep("amount");
+    } catch (e) {
+      toast.error("Could not get location or settings");
+    }
+  };
+
+  const handleConfirmCheckinWithDestination = async () => {
+    if (!selectedVehicle?.id || !activeTrip?.id || !selectedDestination || !checkinAmount) return;
+    const checkInLoc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+    const now = new Date().toISOString();
+    const checkInAddress = "Current location";
+    const checkOutAddress = selectedDestination.name;
+    const tripDistance = checkinAmount.distanceKm;
+    const tripAmountPerSeat = Math.round((checkinAmount.totalAmount / availableSelected.length) * 100) / 100;
+    setIsCreatingCheckin(true);
+    try {
+      for (const seat of availableSelected) {
+        const vehicleSeatId = getVehicleSeatId(seat.id);
+        if (!vehicleSeatId) {
+          toast.error(`Seat ${seat.id} not found`);
+          continue;
+        }
+        await seatBookingApi.create({
+          vehicle: selectedVehicle.id,
+          vehicle_seat: vehicleSeatId,
+          trip: activeTrip.id,
+          is_guest: true,
+          is_paid: true,
+          check_in_lat: checkInLoc.lat,
+          check_in_lng: checkInLoc.lng,
+          check_in_datetime: now,
+          check_in_address: checkInAddress,
+          check_out_lat: selectedDestination.lat,
+          check_out_lng: selectedDestination.lng,
+          check_out_address: checkOutAddress,
+          trip_distance: tripDistance,
+          trip_amount: tripAmountPerSeat,
+          destination_place: selectedDestination.id,
+        });
+      }
+      const updatedSeats = seats.map((s) =>
+        availableSelected.some((sel) => sel.id === s.id) ? { ...s, status: "booked" as const, passengerName: "Walk-in" } : s
+      );
+      setSeats(updatedSeats);
+      setSelectedSeats([]);
+      setCheckinStep(null);
+      setSelectedDestination(null);
+      setCheckinAmount(null);
+      toast.success("Check-in successful!");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } }; message?: string };
+      toast.error(err?.response?.data?.error ?? err?.message ?? "Check-in failed");
+    } finally {
+      setIsCreatingCheckin(false);
+    }
+  };
+
+  const confirmCheckOut = async () => {
+    if (dropoffData) {
+      const requiredLabels = new Set(dropoffData.dropoffs.map((d) => d.seat_label));
+      const selectedLabels = new Set(bookedSelected.map((s) => s.id));
+      const match = requiredLabels.size === selectedLabels.size && [...requiredLabels].every((l) => selectedLabels.has(l));
+      if (!match) {
+        toast.error(`Selected seats don't match passengers to drop off at this stop. Expected: ${[...requiredLabels].sort().join(", ")}`);
+        return;
+      }
+      const loc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+      try {
+        for (const d of dropoffData.dropoffs) {
+          await seatBookingApi.checkout({
+            vehicle_seat_id: d.vehicle_seat_id,
+            check_out_lat: loc.lat,
+            check_out_lng: loc.lng,
+            check_out_address: dropoffData.placeName,
+            is_paid: true,
+            place_id: dropoffData.placeId,
+          });
+        }
+        setShowDropoffModal(false);
+        setDropoffData(null);
+        lastDropoffPlaceIdRef.current = null;
+      } catch (e: unknown) {
+        const err = e as { response?: { data?: { error?: string } }; message?: string };
+        toast.error(err?.response?.data?.error ?? err?.message ?? "Check-out failed");
+        return;
+      }
+    } else {
+      const loc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+      for (const seat of bookedSelected) {
+        const vehicleSeatId = getVehicleSeatId(seat.id);
+        if (vehicleSeatId) {
+          try {
+            await seatBookingApi.checkout({
+              vehicle_seat_id: vehicleSeatId,
+              check_out_lat: loc.lat,
+              check_out_lng: loc.lng,
+              check_out_address: "Current location",
+              is_paid: false,
+            });
+          } catch {
+            toast.error("Check-out failed");
+            return;
+          }
+        }
+      }
+    }
     const updatedSeats = seats.map((s) => {
       if (bookedSelected.some((sel) => sel.id === s.id)) {
         return { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined };
@@ -797,7 +999,19 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       {selectedSeats.length > 0 && (
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mt-4 space-y-2">
           {availableSelected.length > 0 && (
-            <Button onClick={() => setShowCheckinModal(true)} className="w-full h-11 rounded-xl font-semibold">
+            <Button
+              onClick={() => {
+                const isScheduled = (activeTrip as { is_scheduled?: boolean } | null)?.is_scheduled === true;
+                if (activeTrip && !isScheduled && getDestinationOptions(selectedVehicle).length > 0) {
+                  setSelectedDestination(null);
+                  setCheckinAmount(null);
+                  setCheckinStep("destination");
+                } else {
+                  setShowCheckinModal(true);
+                }
+              }}
+              className="w-full h-11 rounded-xl font-semibold"
+            >
               Check In ({availableSelected.length} seat{availableSelected.length > 1 ? "s" : ""})
             </Button>
           )}
@@ -852,6 +1066,71 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         </div>
       )}
 
+      <Dialog open={checkinStep === "destination"} onOpenChange={(open) => { if (!open) { setCheckinStep(null); setSelectedDestination(null); setDestinationSearch(""); } }}>
+        <DialogContent className="max-w-md rounded-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Select destination</DialogTitle>
+            <DialogDescription>Where are these passengers getting off?</DialogDescription>
+          </DialogHeader>
+          <input
+            type="text"
+            placeholder="Search stops..."
+            className="border rounded-lg px-3 py-2 text-sm mb-2"
+            value={destinationSearch}
+            onChange={(e) => setDestinationSearch(e.target.value)}
+          />
+          <div className="overflow-y-auto flex-1 space-y-1">
+            {getDestinationOptions(selectedVehicle)
+              .filter((o) => !destinationSearch.trim() || o.name.toLowerCase().includes(destinationSearch.toLowerCase()))
+              .map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSelectedDestination(opt)}
+                  className={`w-full text-left rounded-xl p-3 border ${selectedDestination?.id === opt.id ? "border-primary bg-primary/10" : "border-border"}`}
+                >
+                  <span className="font-medium">{opt.name}</span>
+                </button>
+              ))}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1" onClick={() => { setCheckinStep(null); setSelectedDestination(null); setDestinationSearch(""); }}>Cancel</Button>
+            <Button className="flex-1" onClick={handleDestinationNext} disabled={!selectedDestination}>Next</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={checkinStep === "amount"} onOpenChange={(open) => { if (!open) { setCheckinStep(null); setCheckinAmount(null); } }}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Confirm amount</DialogTitle>
+            <DialogDescription>Distance and total for {availableSelected.length} seat(s)</DialogDescription>
+          </DialogHeader>
+          {checkinAmount && (
+            <div className="space-y-3 py-2">
+              <p className="text-sm">Distance: <strong>{checkinAmount.distanceKm} km</strong></p>
+              <p className="text-sm">Total: <strong>Rs {checkinAmount.totalAmount.toFixed(2)}</strong></p>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => { setCheckinStep("destination"); setCheckinAmount(null); }}>Back</Button>
+                <Button className="flex-1" onClick={handleConfirmCheckinWithDestination} disabled={isCreatingCheckin}>{isCreatingCheckin ? "Creating…" : "Confirm and check in"}</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showDropoffModal} onOpenChange={(open) => { if (!open) { setShowDropoffModal(false); setDropoffData(null); } }}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Check out at {dropoffData?.placeName ?? "stop"}</DialogTitle>
+            <DialogDescription>These passengers should get off here. Select these seats and tap Check Out.</DialogDescription>
+          </DialogHeader>
+          {dropoffData && (
+            <div className="py-2">
+              <p className="text-sm font-medium">Seats: {dropoffData.dropoffs.map((d) => d.seat_label).join(", ")}</p>
+              <Button className="w-full mt-3" onClick={() => { setShowDropoffModal(false); setDropoffData(null); }}>OK</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <ConfirmModal open={showCheckinModal} onClose={() => setShowCheckinModal(false)} onConfirm={confirmCheckIn} title="Confirm Check-In" description={`Check in ${availableSelected.length} passenger(s)?`} confirmLabel="Check In" />
       <ConfirmModal open={showCheckoutModal} onClose={() => setShowCheckoutModal(false)} onConfirm={confirmCheckOut} title="Confirm Check-Out" confirmLabel="Check Out">
         <MiniMap points={[currentLocation]} className="mb-3" />

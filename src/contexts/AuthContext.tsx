@@ -31,6 +31,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Sync token to Flutter on load so location POST and other native calls have auth (e.g. when driver opens WebView with existing session)
+    const token = localStorage.getItem('auth_token');
+    const storedUser = localStorage.getItem('auth_user');
+    if (token && storedUser) {
+      flutterAuthSync(token, storedUser);
+    }
+
     // Check for existing session and validate token
     const validateSession = async () => {
       const token = localStorage.getItem('auth_token');

@@ -5,6 +5,16 @@ export interface ActiveTrip {
   trip_id: string;
   start_time: string | null;
   end_time: string | null;
+  is_scheduled?: boolean;
+}
+
+export interface CurrentStopResponse {
+  at_stop: {
+    place_id: string;
+    name: string;
+    pickups: Array<{ pnr: string; name: string; phone?: string; seat: string }>;
+    dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string }>;
+  } | null;
 }
 
 export interface TripEndResponse {
@@ -51,4 +61,7 @@ export const tripApi = {
   },
 
   get: async (id: string) => api.get<ActiveTrip>(`trips/${id}/`),
+
+  getCurrentStop: async (tripId: string, lat: number, lng: number) =>
+    api.get<CurrentStopResponse>(`trips/current-stop/?trip=${tripId}&latitude=${lat}&longitude=${lng}`),
 };

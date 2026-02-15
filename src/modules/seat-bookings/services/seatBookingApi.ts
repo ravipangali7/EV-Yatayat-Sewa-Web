@@ -67,13 +67,14 @@ export const seatBookingApi = {
     return api.post<SeatBooking>('seat-bookings/switch/', data);
   },
 
-  // Checkout
+  // Checkout (optional place_id for at-stop validation)
   checkout: async (data: {
     vehicle_seat_id: string;
     check_out_lat: number;
     check_out_lng: number;
     check_out_address: string;
     is_paid: boolean;
+    place_id?: string;
   }): Promise<SeatBooking> => {
     return api.post<SeatBooking>('seat-bookings/checkout/', data);
   },
