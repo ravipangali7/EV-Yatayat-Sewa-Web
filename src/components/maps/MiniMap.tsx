@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from '@react-google-maps/api';
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
+import { MARKER_ICONS, ROUTE_MARKER_ANCHOR, ROUTE_MARKER_SIZE } from '@/config/mapConstants';
 import { Card } from '@/components/ui/card';
 
 interface MarkerData {
@@ -40,13 +41,6 @@ const defaultCenter = {
 
 /** Stable reference so LoadScript is not reloaded. */
 const MAP_LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
-
-const MARKER_ICONS = {
-  start: '/start_point.png',
-  end: '/end_point.png',
-  stop: '/stop_point.png',
-  default: '/navigation.png',
-} as const;
 
 const TYPE_LABELS: Record<'start' | 'end' | 'stop', string> = {
   start: 'Start',
@@ -161,7 +155,7 @@ export function MiniMap({
 
         {/* Render markers */}
         {markers.map((marker, index) => {
-          let iconUrl: string = MARKER_ICONS.default;
+          let iconUrl: string = MARKER_ICONS.current;
           if (marker.icon) {
             iconUrl = marker.icon;
           } else if (marker.type === 'start' || marker.label === 'start') {
@@ -173,8 +167,8 @@ export function MiniMap({
           }
           const icon = {
             url: iconUrl,
-            scaledSize: new google.maps.Size(24, 24),
-            anchor: new google.maps.Point(12, 12),
+            scaledSize: new google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE),
+            anchor: new google.maps.Point(ROUTE_MARKER_ANCHOR, ROUTE_MARKER_ANCHOR),
           };
 
           const markerKey = (marker as MarkerData & { routeId?: string }).routeId 

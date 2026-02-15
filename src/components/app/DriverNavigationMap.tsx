@@ -1,11 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, Polyline, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import { GOOGLE_MAPS_API_KEY } from "@/config/maps";
+import {
+  MARKER_ICONS,
+  NAVIGATION_MARKER_SIZE,
+  NAV_ZOOM,
+  POLYLINE_STROKE_COLOR,
+  POLYLINE_STROKE_OPACITY,
+  POLYLINE_STROKE_WEIGHT,
+  ROUTE_MARKER_ANCHOR,
+  ROUTE_MARKER_SIZE,
+} from "@/config/mapConstants";
 import { getDirectionsPath } from "@/lib/directions";
 
 const MAP_LIBRARIES: ("geometry")[] = ["geometry"];
-const NEPAL_CENTER = { lat: 27.7172, lng: 85.324 };
-const NAV_ZOOM = 16;
+
+export type RouteMarkerType = "start" | "stop" | "end";
+
+export interface RouteMarkerPoint {
+  lat: number;
+  lng: number;
+  name?: string;
+  type: RouteMarkerType;
+}
 
 export interface DriverNavigationMapProps {
   /** Current position (map pans so this stays under the fixed marker). */
@@ -14,6 +31,8 @@ export interface DriverNavigationMapProps {
   previousCenter?: { lat: number; lng: number } | null;
   /** Route waypoints for polyline (start, stops, end). */
   routeWaypoints?: Array<{ lat: number; lng: number }>;
+  /** Start, stop, and end markers to show on the map. */
+  routeMarkers?: RouteMarkerPoint[];
   className?: string;
 }
 
@@ -32,6 +51,7 @@ export default function DriverNavigationMap({
   center,
   previousCenter,
   routeWaypoints = [],
+  routeMarkers = [],
   className = "",
 }: DriverNavigationMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -122,19 +142,35 @@ export default function DriverNavigationMap({
           <Polyline
             path={polylinePath}
             options={{
-              strokeColor: "#3b82f6",
-              strokeOpacity: 0.8,
-              strokeWeight: 3,
+              strokeColor: POLYLINE_STROKE_COLOR,
+              strokeOpacity: POLYLINE_STROKE_OPACITY,
+              strokeWeight: POLYLINE_STROKE_WEIGHT,
             }}
           />
         )}
+        {routeMarkers.map((marker, i) => (
+          <Marker
+            key={`${marker.type}-${i}-${marker.lat}-${marker.lng}`}
+            position={{ lat: marker.lat, lng: marker.lng }}
+            title={marker.name}
+            icon={{
+              url: MARKER_ICONS[marker.type],
+              scaledSize: new google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE),
+              anchor: new google.maps.Point(ROUTE_MARKER_ANCHOR, ROUTE_MARKER_ANCHOR),
+            }}
+          />
+        ))}
       </GoogleMap>
       <div
-        className="absolute left-1/2 top-8 -translate-x-1/2 pointer-events-none z-10 flex justify-center"
-        style={{ top: "28px" }}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 flex justify-center items-center"
+        style={{ width: NAVIGATION_MARKER_SIZE, height: NAVIGATION_MARKER_SIZE }}
         aria-hidden
       >
-        <img src="/navigation.png" alt="" className="w-10 h-10 object-contain drop-shadow-md" />
+        <img
+          src={MARKER_ICONS.current}
+          alt=""
+          className="object-contain drop-shadow-md w-full h-full"
+        />
       </div>
     </div>
   );

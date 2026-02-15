@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import { GOOGLE_MAPS_API_KEY } from "@/config/maps";
+import {
+  FIT_BOUNDS_PADDING,
+  MARKER_ICONS,
+  MAX_ZOOM_AFTER_FIT,
+  NEPAL_CENTER,
+  POLYLINE_STROKE_COLOR,
+  POLYLINE_STROKE_OPACITY,
+  POLYLINE_STROKE_WEIGHT,
+  ROUTE_MARKER_ANCHOR,
+  ROUTE_MARKER_SIZE,
+} from "@/config/mapConstants";
 import { getDirectionsPath } from "@/lib/directions";
 
 /** Stable reference so LoadScript is not reloaded. */
@@ -26,19 +37,6 @@ interface MiniMapProps {
   /** When true, map and wrapper use height 100% so the map fills the parent. */
   fillHeight?: boolean;
 }
-
-const NEPAL_CENTER = { lat: 27.7172, lng: 85.324 };
-
-const MARKER_ICONS = {
-  start: "/start_point.png",
-  stop: "/stop_point.png",
-  end: "/end_point.png",
-  current: "/navigation.png",
-} as const;
-
-const FIT_BOUNDS_PADDING = 120;
-/** Cap zoom so the default view is zoomed out (second-image style) with margins. */
-const MAX_ZOOM_AFTER_FIT = 12;
 
 const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) => {
   const [selectedPoint, setSelectedPoint] = useState<MapPoint | null>(null);
@@ -198,9 +196,9 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
           <Polyline
             path={polylinePath}
             options={{
-              strokeColor: "#3b82f6",
-              strokeOpacity: 0.8,
-              strokeWeight: 3,
+              strokeColor: POLYLINE_STROKE_COLOR,
+              strokeOpacity: POLYLINE_STROKE_OPACITY,
+              strokeWeight: POLYLINE_STROKE_WEIGHT,
             }}
           />
         )}
@@ -211,8 +209,8 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
             title={point.name}
             icon={{
               url: MARKER_ICONS[point.type],
-              scaledSize: new google.maps.Size(24, 24),
-              anchor: new google.maps.Point(12, 12),
+              scaledSize: new google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE),
+              anchor: new google.maps.Point(ROUTE_MARKER_ANCHOR, ROUTE_MARKER_ANCHOR),
             }}
             onClick={() => handleMarkerClick(point)}
           />

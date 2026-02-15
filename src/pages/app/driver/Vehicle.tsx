@@ -730,11 +730,15 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
                   ...(selectedRoute.endPoint ? [{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }] : []),
                 ].filter((p) => p.lat !== 0 || p.lng !== 0)
               : [];
+            const routeMarkers = tripMapPoints.filter(
+              (p): p is MapPoint & { type: "start" | "stop" | "end" } => p.type !== "current"
+            );
             return (
               <DriverNavigationMap
                 center={navCenterPoint}
                 previousCenter={prevLocationRef.current}
                 routeWaypoints={routeWaypoints.length >= 2 ? routeWaypoints : []}
+                routeMarkers={routeMarkers}
                 className="flex-1 min-h-0 rounded-2xl border border-border"
               />
             );
