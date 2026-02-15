@@ -25,7 +25,7 @@ declare global {
       requestScan: () => void;
       requestLocation: () => void;
       authSync: (token: string, userStr: string) => void;
-      startLocationStream: (tripId: string, vehicleId: string, intervalSeconds?: number) => void;
+      startLocationStream: (tripId: string, vehicleId: string, intervalSeconds?: number, token?: string, userStr?: string) => void;
       stopLocationStream: () => void;
       playSound: (text: string) => void;
       playReachedStop: (placeName: string) => void;
@@ -82,9 +82,15 @@ export function authSync(token: string, userStr: string): void {
   }
 }
 
-export function startLocationStream(tripId: string, vehicleId: string, intervalSeconds?: number): void {
+export function startLocationStream(
+  tripId: string,
+  vehicleId: string,
+  intervalSeconds?: number,
+  token?: string,
+  userStr?: string
+): void {
   if (isAvailable() && window.FlutterBridge?.startLocationStream) {
-    window.FlutterBridge.startLocationStream(tripId, vehicleId, intervalSeconds ?? 30);
+    window.FlutterBridge.startLocationStream(tripId, vehicleId, intervalSeconds ?? 30, token, userStr);
   }
 }
 

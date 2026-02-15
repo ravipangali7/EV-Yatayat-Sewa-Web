@@ -498,8 +498,7 @@ export default function Vehicle() {
       if (selectedVehicle?.id) {
         const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
         const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
-        if (token && userStr) flutterAuthSync(token, userStr);
-        startLocationStream(trip.id, selectedVehicle.id, 30);
+        startLocationStream(trip.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
       }
       toast.success("Trip started!");
     } catch (e: unknown) {
@@ -520,8 +519,7 @@ export default function Vehicle() {
       if (selectedVehicle?.id) {
         const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
         const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
-        if (token && userStr) flutterAuthSync(token, userStr);
-        startLocationStream(trip.id, selectedVehicle.id, 30);
+        startLocationStream(trip.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
       }
       toast.success("Scheduled trip started!");
     } catch (e: unknown) {
@@ -539,7 +537,11 @@ export default function Vehicle() {
       const t = trip as ActiveTrip & { vehicle?: string; driver?: string; route?: string; is_scheduled?: boolean };
       setActiveTrip({ id: t.id, trip_id: t.trip_id, start_time: t.start_time ?? null, end_time: t.end_time ?? null, is_scheduled: t.is_scheduled });
       setDriverState("trip_started");
-      if (selectedVehicle?.id) startLocationStream(t.id, selectedVehicle.id, 30);
+      if (selectedVehicle?.id) {
+        const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
+        const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
+        startLocationStream(t.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
+      }
       toast.success("Trip started!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } };
