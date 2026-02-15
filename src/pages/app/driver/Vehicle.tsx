@@ -20,7 +20,7 @@ import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
 import { tripApi, type ActiveTrip, type CurrentStopResponse, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
-import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream } from "@/lib/flutterBridge";
+import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
 import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicleScheduleApi";
 import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
@@ -495,7 +495,12 @@ export default function Vehicle() {
       const trip = res as ActiveTrip & { vehicle?: string; driver?: string; route?: string; is_scheduled?: boolean };
       setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null, is_scheduled: trip.is_scheduled });
       setDriverState("trip_started");
-      if (selectedVehicle?.id) startLocationStream(trip.id, selectedVehicle.id, 30);
+      if (selectedVehicle?.id) {
+        const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
+        const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
+        if (token && userStr) flutterAuthSync(token, userStr);
+        startLocationStream(trip.id, selectedVehicle.id, 30);
+      }
       toast.success("Trip started!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -512,7 +517,12 @@ export default function Vehicle() {
       setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null, is_scheduled: trip.is_scheduled });
       setDriverState("trip_started");
       setScheduledConfirmData(null);
-      if (selectedVehicle?.id) startLocationStream(trip.id, selectedVehicle.id, 30);
+      if (selectedVehicle?.id) {
+        const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
+        const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
+        if (token && userStr) flutterAuthSync(token, userStr);
+        startLocationStream(trip.id, selectedVehicle.id, 30);
+      }
       toast.success("Scheduled trip started!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } };
