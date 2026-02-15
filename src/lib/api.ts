@@ -49,20 +49,25 @@ apiClient.interceptors.response.use(
         case 400:
           toast.error(data?.error || 'Bad request. Please check your input.');
           break;
-        case 401:
-          if (!window.location.pathname.includes('/login')) {
-            toast.error('Unauthorized. Please login again.');
-          }
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_user');
-          if (window.location.pathname.startsWith('/app')) {
-            if (!window.location.pathname.includes('/app/login')) {
-              window.location.href = '/app/login';
+        case 401: {
+          // Let AuthContext own clear+redirect for session check (auth/me) so we avoid duplicate toast/redirect
+          const isSessionCheck = error.config?.url?.includes('auth/me') === true;
+          if (!isSessionCheck) {
+            if (!window.location.pathname.includes('/login')) {
+              toast.error('Unauthorized. Please login again.');
             }
-          } else if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            if (window.location.pathname.startsWith('/app')) {
+              if (!window.location.pathname.includes('/app/login')) {
+                window.location.href = '/app/login';
+              }
+            } else if (!window.location.pathname.includes('/login')) {
+              window.location.href = '/login';
+            }
           }
           break;
+        }
         case 403:
           toast.error('Forbidden. You do not have permission.');
           break;

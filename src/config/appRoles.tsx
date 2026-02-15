@@ -129,3 +129,13 @@ export function resolveAppRole(user: UserType | null): AppRoleId | null {
   if (user.is_ticket_dealer) return "ticket_dealer";
   return "user";
 }
+
+/**
+ * Home path for a user: /admin for superuser, else app portal by role. Use for redirects when already logged in or after login.
+ */
+export function getHomePathForUser(user: UserType | null): string {
+  if (!user) return "/app/login";
+  if (user.is_superuser) return "/admin";
+  const role = resolveAppRole(user);
+  return role ? getDefaultPathForRole(role) : "/app/login";
+}

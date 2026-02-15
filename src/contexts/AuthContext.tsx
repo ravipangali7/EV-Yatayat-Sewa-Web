@@ -1,7 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { AxiosError } from 'axios';
 import { authApi } from '@/modules/auth/services/authApi';
 import { User } from '@/types';
 import { authSync as flutterAuthSync } from '@/lib/flutterBridge';
+
+function getInitialUser(): User | null {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return null;
+    const stored = localStorage.getItem('auth_user');
+    if (!stored) return null;
+    return JSON.parse(stored) as User;
+  } catch {
+    return null;
+  }
+}
 
 interface AuthContextType {
   user: User | null;
@@ -14,7 +27,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(getInitialUser);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -26,10 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userData = await authApi.getCurrentUser();
           setUser(userData);
         } catch (error) {
-          // Token is invalid, clear it
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_user');
-          setUser(null);
+          // Only clear session on 401/403 (invalid/forbidden); keep cached user on network/other errors
+          const status = error instanceof AxiosError && error.response ? error.response.status : null;
+          if (status === 401 || status === 403) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            setUser(null);
+          }
         }
       }
       setIsLoading(false);

@@ -70,7 +70,10 @@ interface SeatLayoutVisualizerProps {
   multiSelect?: boolean;
   onSeatClick?: (position: SeatPosition) => void;
   onlyAvailable?: boolean;
+  size?: 'default' | 'large';
 }
+
+const cellSize = (size: 'default' | 'large') => (size === 'large' ? 'h-12 w-12' : 'h-8 w-8');
 
 export function SeatLayoutVisualizer({
   seatLayout,
@@ -80,7 +83,9 @@ export function SeatLayoutVisualizer({
   multiSelect = false,
   onSeatClick,
   onlyAvailable = false,
+  size = 'default',
 }: SeatLayoutVisualizerProps) {
+  const cellClass = cellSize(size);
   const rows = useMemo(() => parseSeatLayout(seatLayout), [seatLayout]);
   const positionMap = useMemo(() => buildPositionMap(rows, seats), [rows, seats]);
 
@@ -135,13 +140,13 @@ export function SeatLayoutVisualizer({
           <div key={ri} className="flex items-center gap-1">
             {row.map((cell, ci) => {
               if (cell === '-') {
-                return <div key={ci} className="h-8 w-8" />;
+                return <div key={ci} className={cellClass} />;
               }
               if (cell === 'y') {
                 return (
                   <div
                     key={ci}
-                    className="flex h-8 w-8 items-center justify-center rounded bg-amber-500/30 text-xs font-bold text-amber-700"
+                    className={cn('flex items-center justify-center rounded bg-amber-500/30 text-xs font-bold text-amber-700', cellClass)}
                     title="Driver"
                   >
                     D
@@ -151,7 +156,7 @@ export function SeatLayoutVisualizer({
               if (cell === 'x') {
                 const pos = getPositionAt(ri, ci);
                 if (!pos) {
-                  return <div key={ci} className="h-8 w-8" />;
+                  return <div key={ci} className={cellClass} />;
                 }
                 const booked = isBooked(pos);
                 const selected = isSelected(pos);
@@ -162,7 +167,8 @@ export function SeatLayoutVisualizer({
                     type="button"
                     title={`${pos.side}${pos.number}${booked ? ' (booked)' : ''}`}
                     className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded text-xs font-medium transition-colors',
+                      'flex items-center justify-center rounded text-xs font-medium transition-colors',
+                      cellClass,
                       selected && 'ring-2 ring-primary ring-offset-1',
                       booked && 'bg-destructive/20 text-destructive cursor-not-allowed opacity-70',
                       !booked && !selected && 'bg-success/20 text-success hover:bg-success/40',
@@ -175,7 +181,7 @@ export function SeatLayoutVisualizer({
                   </button>
                 );
               }
-              return <div key={ci} className="h-8 w-8" />;
+              return <div key={ci} className={cellClass} />;
             })}
           </div>
         ))}

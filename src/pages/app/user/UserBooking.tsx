@@ -16,8 +16,9 @@ import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { vehicleTicketBookingApi, type SeatEntry, type VehicleTicketBookingRecord } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import AppBar from "@/components/app/AppBar";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 function imageUrl(path: string | null | undefined): string {
@@ -28,16 +29,28 @@ function imageUrl(path: string | null | undefined): string {
 
 type BookingTab = "book" | "my-booking";
 
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+function tomorrowStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function UserBooking() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<BookingTab>("book");
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [tab, setTab] = useState<BookingTab>(tabParam === "my-booking" ? "my-booking" : "book");
   const [myBookings, setMyBookings] = useState<VehicleTicketBookingRecord[]>([]);
   const [myBookingsLoading, setMyBookingsLoading] = useState(false);
   const [startPlaces, setStartPlaces] = useState<SchedulePlace[]>([]);
   const [endPlaces, setEndPlaces] = useState<SchedulePlace[]>([]);
   const [fromPlaceId, setFromPlaceId] = useState("");
   const [toPlaceId, setToPlaceId] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(todayStr());
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<VehicleScheduleExpandedRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -139,8 +152,8 @@ export default function UserBooking() {
   const handleBookNow = (result: VehicleScheduleExpandedRecord) => {
     setSelectedResult(null);
     setCheckoutSchedule(result);
-    setCheckoutName("");
-    setCheckoutPhone("");
+    setCheckoutName(user?.name ?? "");
+    setCheckoutPhone(user?.phone ?? "");
     setCheckoutStep("form");
     loadCheckoutData(result);
   };
@@ -204,6 +217,8 @@ export default function UserBooking() {
         name: checkoutName.trim(),
         phone: checkoutPhone.trim(),
         vehicle_schedule: checkoutSchedule.id,
+        pickup_point: fromPlaceId || undefined,
+        destination_point: toPlaceId || undefined,
         seats: seatsPayload,
         price: totalAmount,
         is_paid: false,
@@ -239,7 +254,9 @@ export default function UserBooking() {
   const toOptions = endPlaces.map((p) => ({ id: p.id, name: p.name, code: p.code }));
 
   return (
-    <div className="min-h-screen px-5 pt-6 pb-20">
+    <div className="min-h-screen pb-20">
+      <AppBar title="Book a Ride" />
+      <div className="px-5 pt-4">
       <div className="flex gap-2 mb-4">
         <button
           type="button"
@@ -315,8 +332,7 @@ export default function UserBooking() {
 
       {tab === "book" && (
         <>
-      <h2 className="text-lg font-bold mb-4">Book a Ride</h2>
-
+      <p className="text-sm text-muted-foreground mb-3">From & to</p>
       <form onSubmit={handleSearch} className="space-y-3 mb-6">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">From</label>
@@ -343,14 +359,37 @@ export default function UserBooking() {
             className="h-12 rounded-xl"
           />
         </div>
-        <div className="relative">
-          <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="pl-10 h-12 rounded-xl"
-          />
+        <div>
+          <label className="text-xs text-muted-foreground mb-2 block">Departure Date</label>
+          <div className="flex gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setDate(todayStr())}
+              className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${
+                date === todayStr() ? "bg-primary text-primary-foreground" : "app-glass border border-border"
+              }`}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => setDate(tomorrowStr())}
+              className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${
+                date === tomorrowStr() ? "bg-primary text-primary-foreground" : "app-glass border border-border"
+              }`}
+            >
+              Tomorrow
+            </button>
+          </div>
+          <div className="relative">
+            <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="pl-10 h-12 rounded-xl"
+            />
+          </div>
         </div>
         <Button type="submit" className="w-full h-12 rounded-xl font-semibold" disabled={loading}>
           <Search size={16} className="mr-2" /> {loading ? "Searching..." : "Search Vehicles"}
@@ -511,6 +550,11 @@ export default function UserBooking() {
                 {checkoutVehicleLayout.length > 0 && (
                   <div className="mb-6">
                     <p className="text-sm font-medium mb-2">Select seats (click to toggle)</p>
+                    <p className="text-xs text-muted-foreground mb-2 flex flex-wrap gap-4">
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-success/30 border border-success" /> Available</span>
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/30 border border-destructive" /> Booked</span>
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-primary/30 border-2 border-primary" /> Selected</span>
+                    </p>
                     <SeatLayoutVisualizer
                       seatLayout={checkoutVehicleLayout}
                       seats={checkoutVehicleSeats}
@@ -519,6 +563,7 @@ export default function UserBooking() {
                       multiSelect
                       onSeatClick={handleCheckoutSeatClick}
                       onlyAvailable
+                      size="large"
                     />
                     {checkoutSelectedSeats.length > 0 && (
                       <p className="mt-2 text-sm text-muted-foreground">
@@ -572,6 +617,8 @@ export default function UserBooking() {
                             name: checkoutName.trim(),
                             phone: checkoutPhone.trim(),
                             vehicle_schedule: checkoutSchedule.id,
+                            pickup_point: fromPlaceId || undefined,
+                            destination_point: toPlaceId || undefined,
                             seats: seatsPayload,
                             price: totalAmount,
                             is_paid: false,
@@ -597,6 +644,7 @@ export default function UserBooking() {
       </AnimatePresence>
         </>
       )}
+      </div>
     </div>
   );
 }

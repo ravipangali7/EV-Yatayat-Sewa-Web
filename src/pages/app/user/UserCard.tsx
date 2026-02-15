@@ -10,6 +10,7 @@ import type { AppTransaction } from "@/components/app/TransactionCard";
 import { toNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import TransactionCard from "@/components/app/TransactionCard";
+import AppBar from "@/components/app/AppBar";
 
 export default function UserCard() {
   const { user } = useAuth();
@@ -40,7 +41,8 @@ export default function UserCard() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="px-5 pt-6">
+      <AppBar title="My Card" />
+      <div className="px-5 pt-4">
         <h2 className="text-lg font-bold mb-4">My Card</h2>
         {cards.length > 0 ? (
           <div className="space-y-4">
@@ -85,17 +87,6 @@ export default function UserCard() {
           </div>
         </div>
       </div>
-      {cards.length > 0 && (
-        <div className="fixed bottom-24 right-5 z-40">
-          <Button
-            size="icon"
-            className="rounded-full h-14 w-14 shadow-lg"
-            onClick={() => navigate("/app/user/card/topup")}
-          >
-            <Plus size={24} />
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

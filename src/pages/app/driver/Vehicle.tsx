@@ -17,11 +17,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAuth } from "@/contexts/AuthContext";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
-import { tripApi, type ActiveTrip } from "@/modules/trips/services/tripApi";
+import { tripApi, type ActiveTrip, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
-import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan } from "@/lib/flutterBridge";
+import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
+import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicleScheduleApi";
+import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
+import { locationApi } from "@/modules/locations/services/locationApi";
+import AppBar from "@/components/app/AppBar";
 import { toast } from "sonner";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+function imageUrl(path: string | null | undefined): string {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  return `${API_BASE}${path.startsWith("/") ? path : "/" + path}`;
+}
 
 type DriverState = "no_vehicle" | "no_route" | "route_selected" | "trip_started";
 
@@ -60,11 +71,6 @@ function buildSeatsFromVehicle(vehicle: ApiVehicle | null): Seat[] {
   return [driverSeat, ...seats];
 }
 
-const mockBookings: AppTransaction[] = [
-  { id: "b1", type: "credit", title: "A2 - Passenger", subtitle: "Route", amount: 100, date: "10:30 AM" },
-  { id: "b2", type: "credit", title: "B1 - Passenger", subtitle: "Route", amount: 150, date: "10:25 AM" },
-];
-
 export default function Vehicle() {
   const { user } = useAuth();
   const [driverState, setDriverState] = useState<DriverState>("no_vehicle");
@@ -75,6 +81,9 @@ export default function Vehicle() {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [showRouteModal, setShowRouteModal] = useState(false);
+  const [showVehicleDetailModal, setShowVehicleDetailModal] = useState(false);
+  const [showScheduledConfirmModal, setShowScheduledConfirmModal] = useState(false);
+  const [scheduledConfirmData, setScheduledConfirmData] = useState<TripStartConfirmScheduled | null>(null);
   const [showCheckinModal, setShowCheckinModal] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
@@ -86,6 +95,9 @@ export default function Vehicle() {
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isEndingTrip, setIsEndingTrip] = useState(false);
+  const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
+  const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
+  const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -123,6 +135,49 @@ export default function Vehicle() {
     };
     load();
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!selectedVehicle?.id || driverState !== "route_selected") return;
+    const today = new Date().toISOString().slice(0, 10);
+    vehicleScheduleApi.list({ vehicle: selectedVehicle.id, date: today, per_page: 5 })
+      .then((r) => {
+        const scheduleIds = (r.results ?? []).map((s) => s.id);
+        if (scheduleIds.length === 0) {
+          setScheduleBookings([]);
+          return;
+        }
+        return Promise.all(scheduleIds.map((id) => vehicleTicketBookingApi.list({ vehicle_schedule: id, per_page: 50 })));
+      })
+      .then((results) => {
+        if (!results) return;
+        const list: Array<{ pnr: string; name: string; seat: string; price: string }> = [];
+        results.forEach((res) => {
+          (res.results ?? []).forEach((b) => {
+            const seatStr = Array.isArray(b.seat)
+              ? (b.seat as { side: string; number: number }[]).map((s) => `${s.side}${s.number}`).join(", ")
+              : typeof b.seat === "object" && b.seat && "side" in b.seat
+                ? `${(b.seat as { side: string }).side}${(b.seat as { number: number }).number}`
+                : "";
+            list.push({ pnr: b.pnr, name: b.name, seat: seatStr, price: String(b.price) });
+          });
+        });
+        setScheduleBookings(list);
+      })
+      .catch(() => setScheduleBookings([]));
+  }, [selectedVehicle?.id, driverState]);
+
+  useEffect(() => {
+    if (!activeTrip?.id || driverState !== "trip_started") return;
+    const interval = setInterval(() => {
+      locationApi.list({ trip: activeTrip.id, per_page: 1 })
+        .then((r) => {
+          const loc = r.results?.[0];
+          if (loc) setLastLocation({ lat: Number(loc.latitude), lng: Number(loc.longitude), speed: loc.speed ? Number(loc.speed) : undefined });
+        })
+        .catch(() => {});
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeTrip?.id, driverState]);
 
   const vehicleInfo = selectedVehicle ? vehicleToVehicleInfo(selectedVehicle) : null;
   const bookedSelected = selectedSeats.filter((s) => s.status === "booked");
@@ -165,12 +220,70 @@ export default function Vehicle() {
     setShowRouteModal(false);
   };
 
+  const getCurrentLocation = (): Promise<{ lat: number; lng: number }> => {
+    if (isFlutterBridgeAvailable()) {
+      return requestLocation().then((r) =>
+        r.success && r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng } : Promise.reject(new Error(r.error || "No location"))
+      );
+    }
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
+      navigator.geolocation.getCurrentPosition(
+        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        reject,
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  };
+
   const handleStartTrip = async () => {
     if (!selectedVehicle?.id) return;
     try {
-      const trip = await tripApi.startTrip(selectedVehicle.id);
+      const loc = await getCurrentLocation();
+      const res = await tripApi.startTrip(selectedVehicle.id, { latitude: loc.lat, longitude: loc.lng });
+      if ("need_confirm_scheduled" in res && res.need_confirm_scheduled) {
+        setScheduledConfirmData(res);
+        setShowScheduledConfirmModal(true);
+        return;
+      }
+      const trip = res as ActiveTrip & { vehicle?: string; driver?: string; route?: string };
       setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null });
       setDriverState("trip_started");
+      if (selectedVehicle?.id) startLocationStream(trip.id, selectedVehicle.id, 30);
+      toast.success("Trip started!");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } }; message?: string };
+      toast.error(err?.response?.data?.error ?? err?.message ?? "Failed to start trip");
+    }
+  };
+
+  const handleConfirmScheduledStart = async () => {
+    if (!selectedVehicle?.id || !scheduledConfirmData?.schedule?.id) return;
+    setShowScheduledConfirmModal(false);
+    try {
+      const res = await tripApi.startTrip(selectedVehicle.id, { vehicle_schedule_id: scheduledConfirmData.schedule.id });
+      const trip = res as ActiveTrip & { vehicle?: string; driver?: string; route?: string };
+      setActiveTrip({ id: trip.id, trip_id: trip.trip_id, start_time: trip.start_time ?? null, end_time: trip.end_time ?? null });
+      setDriverState("trip_started");
+      setScheduledConfirmData(null);
+      if (selectedVehicle?.id) startLocationStream(trip.id, selectedVehicle.id, 30);
+      toast.success("Scheduled trip started!");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } } };
+      toast.error(err?.response?.data?.error ?? "Failed to start scheduled trip");
+    }
+  };
+
+  const handleStartNormalTrip = async () => {
+    setShowScheduledConfirmModal(false);
+    setScheduledConfirmData(null);
+    if (!selectedVehicle?.id) return;
+    try {
+      const trip = await tripApi.startTrip(selectedVehicle.id);
+      const t = trip as ActiveTrip & { vehicle?: string; driver?: string; route?: string };
+      setActiveTrip({ id: t.id, trip_id: t.trip_id, start_time: t.start_time ?? null, end_time: t.end_time ?? null });
+      setDriverState("trip_started");
+      if (selectedVehicle?.id) startLocationStream(t.id, selectedVehicle.id, 30);
       toast.success("Trip started!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } };
@@ -222,6 +335,7 @@ export default function Vehicle() {
   const confirmEndTrip = () => {
     setShowEndTripModal(false);
     if (!activeTrip?.id) {
+      stopLocationStream();
       setDriverState("route_selected");
       setActiveTrip(null);
       setSeats(buildSeatsFromVehicle(selectedVehicle));
@@ -250,6 +364,7 @@ export default function Vehicle() {
           setShowEndTripOutOfRangeModal(true);
           return;
         }
+        stopLocationStream();
         setDriverState("route_selected");
         setActiveTrip(null);
         setPendingEndTripLocation(null);
@@ -272,6 +387,7 @@ export default function Vehicle() {
         longitude: pendingEndTripLocation.lng,
         confirm_out_of_range: true,
       });
+      stopLocationStream();
       setDriverState("route_selected");
       setActiveTrip(null);
       setPendingEndTripLocation(null);
@@ -309,22 +425,16 @@ export default function Vehicle() {
     );
   }
 
-  if (driverState === "no_route" && vehicleInfo) {
+  if (driverState === "no_route" && vehicleInfo && selectedVehicle) {
+    const activeRouteDetails = selectedVehicle.active_route_details as ApiRoute | undefined;
     return (
-      <div className="min-h-screen px-5 pt-6">
+      <div className="min-h-screen">
+        <AppBar title="Vehicle" />
+        <div className="px-5 pt-4">
         <h2 className="text-lg font-bold mb-4">Your Vehicle</h2>
-        <Accordion type="single" collapsible>
-          <AccordionItem value="vehicle" className="border-none">
-            <AccordionTrigger className="p-0 hover:no-underline">
-              <VehicleCard vehicle={vehicleInfo} />
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="mt-3 space-y-2 pl-2">
-                <p className="text-xs text-muted-foreground">Phone: {vehicleInfo.phone}</p>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+        <button type="button" className="w-full text-left" onClick={() => setShowVehicleDetailModal(true)}>
+          <VehicleCard vehicle={vehicleInfo} />
+        </button>
 
         <h3 className="text-sm font-bold mt-6 mb-3">Select Route</h3>
         <div className="space-y-3">
@@ -333,6 +443,26 @@ export default function Vehicle() {
           ))}
           {routes.length === 0 && <p className="text-sm text-muted-foreground">No routes available</p>}
         </div>
+        </div>
+        <Dialog open={showVehicleDetailModal} onOpenChange={setShowVehicleDetailModal}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>{selectedVehicle.name} · {selectedVehicle.vehicle_no}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {(selectedVehicle.images?.length ? selectedVehicle.images : []).map((img, i) => (
+                <img key={i} src={imageUrl(typeof img === "object" ? (img as { image?: string }).image : img)} alt="" className="w-full h-40 object-cover rounded-xl border" />
+              ))}
+              {activeRouteDetails && (
+                <div className="app-glass-card rounded-xl p-4 border border-border/50">
+                  <h4 className="font-semibold text-sm mb-2">Active route</h4>
+                  <RouteCard route={routeToRouteInfo(activeRouteDetails)} showMap />
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Type: {selectedVehicle.vehicle_type}</p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -340,7 +470,9 @@ export default function Vehicle() {
   if (driverState === "route_selected" && selectedRoute && vehicleInfo) {
     const hasActiveTrip = !!selectedVehicle?.active_trip?.id && selectedVehicle?.active_trip?.start_time && !selectedVehicle?.active_trip?.end_time;
     return (
-      <div className="min-h-screen px-5 pt-6">
+      <div className="min-h-screen">
+        <AppBar title="Vehicle" />
+        <div className="px-5 pt-4">
         <VehicleCard vehicle={vehicleInfo} compact />
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
@@ -358,10 +490,38 @@ export default function Vehicle() {
         </div>
         <div className="mt-6">
           <h3 className="text-sm font-bold mb-3">Seat Bookings</h3>
-          {mockBookings.map((b) => (
-            <TransactionCard key={b.id} transaction={b} />
-          ))}
+          {scheduleBookings.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">No scheduled bookings for today</p>
+          ) : (
+            scheduleBookings.map((b, i) => (
+              <div key={b.pnr + i} className="app-glass-card rounded-xl p-4 border border-border/50 mb-2">
+                <p className="font-medium text-sm">{b.pnr} · {b.name}</p>
+                <p className="text-xs text-muted-foreground">Seat(s): {b.seat} · Rs. {b.price}</p>
+              </div>
+            ))
+          )}
         </div>
+        </div>
+        <Dialog open={showScheduledConfirmModal} onOpenChange={(open) => !open && setScheduledConfirmData(null)}>
+          <DialogContent className="max-w-md rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>Start scheduled trip?</DialogTitle>
+            </DialogHeader>
+            {scheduledConfirmData && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {scheduledConfirmData.schedule.route_name} · {scheduledConfirmData.schedule.date} {scheduledConfirmData.schedule.time}
+                </p>
+                <p className="text-xs">Tickets: {scheduledConfirmData.tickets.length}</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowScheduledConfirmModal(false)}>Cancel</Button>
+                  <Button variant="outline" className="flex-1" onClick={handleStartNormalTrip}>Start normal trip</Button>
+                  <Button className="flex-1" onClick={handleConfirmScheduledStart}>Confirm and Start</Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
         <Dialog open={showRouteModal} onOpenChange={setShowRouteModal}>
           <DialogContent className="max-w-[380px] rounded-2xl">
             <DialogHeader>
@@ -378,13 +538,47 @@ export default function Vehicle() {
     );
   }
 
-  return (
-    <div className="min-h-screen px-4 pt-4">
-      <div className="text-center mb-4">
-        <h2 className="text-base font-bold">Trip In Progress</h2>
-        <p className="text-xs text-muted-foreground">{selectedRoute?.name}</p>
-      </div>
+  const tripMapPoints: MapPoint[] = [
+    ...(selectedRoute ? [{
+      name: selectedRoute.startPoint?.name ?? "Start",
+      lat: selectedRoute.startPoint?.lat ?? 0,
+      lng: selectedRoute.startPoint?.lng ?? 0,
+      type: "start" as const,
+    }] : []),
+    ...(selectedRoute?.stops ?? []).map((s) => ({ name: s.name, lat: s.lat, lng: s.lng, type: "stop" as const })),
+    ...(selectedRoute ? [{
+      name: selectedRoute.endPoint?.name ?? "End",
+      lat: selectedRoute.endPoint?.lat ?? 0,
+      lng: selectedRoute.endPoint?.lng ?? 0,
+      type: "end" as const,
+    }] : []),
+  ];
+  if (lastLocation) {
+    tripMapPoints.push({ name: "Vehicle", lat: lastLocation.lat, lng: lastLocation.lng, type: "current" });
+  }
 
+  return (
+    <div className="min-h-screen">
+      <AppBar title={selectedVehicle ? `${selectedVehicle.vehicle_no} · ${selectedVehicle.name}` : "Trip"} />
+      <div className="flex gap-2 px-4 pt-3 border-b border-border bg-background/80 backdrop-blur">
+        <button
+          type="button"
+          onClick={() => setTripTab("seats")}
+          className={`flex-1 py-2.5 rounded-t-xl font-medium text-sm ${tripTab === "seats" ? "bg-primary text-primary-foreground" : "bg-muted/50"}`}
+        >
+          Seats
+        </button>
+        <button
+          type="button"
+          onClick={() => setTripTab("map")}
+          className={`flex-1 py-2.5 rounded-t-xl font-medium text-sm ${tripTab === "map" ? "bg-primary text-primary-foreground" : "bg-muted/50"}`}
+        >
+          Map
+        </button>
+      </div>
+      <div className="px-4 pt-4 pb-24">
+      {tripTab === "seats" && (
+        <>
       <SeatLayout seats={seats} selectedSeats={selectedSeats} onSeatSelect={setSelectedSeats} />
 
       {selectedSeats.length > 0 && (
@@ -410,6 +604,18 @@ export default function Vehicle() {
       <div className="mt-8 mb-4">
         <SwipeButton label="Swipe to End Trip →" onSwipe={() => setShowEndTripModal(true)} variant="destructive" />
       </div>
+        </>
+      )}
+      {tripTab === "map" && (
+        <div className="space-y-3">
+          {lastLocation && (
+            <p className="text-sm text-muted-foreground">
+              Speed: {lastLocation.speed != null ? `${Number(lastLocation.speed).toFixed(0)} km/h` : "—"}
+            </p>
+          )}
+          <MiniMap points={tripMapPoints.length > 0 ? tripMapPoints : [currentLocation]} className="min-h-[300px] rounded-2xl border border-border" />
+        </div>
+      )}
 
       <ConfirmModal open={showCheckinModal} onClose={() => setShowCheckinModal(false)} onConfirm={confirmCheckIn} title="Confirm Check-In" description={`Check in ${availableSelected.length} passenger(s)?`} confirmLabel="Check In" />
       <ConfirmModal open={showCheckoutModal} onClose={() => setShowCheckoutModal(false)} onConfirm={confirmCheckOut} title="Confirm Check-Out" confirmLabel="Check Out">
@@ -446,6 +652,7 @@ export default function Vehicle() {
 
       <ConfirmModal open={showEndTripModal} onClose={() => setShowEndTripModal(false)} onConfirm={confirmEndTrip} title="End Trip?" description="Are you sure you want to end this trip?" confirmLabel="End Trip" variant="destructive" />
       <ConfirmModal open={showEndTripOutOfRangeModal} onClose={() => { setShowEndTripOutOfRangeModal(false); setPendingEndTripLocation(null); setIsEndingTrip(false); }} onConfirm={confirmEndTripOutOfRange} title="Not at destination" description="You are not at the proper destination. Are you sure you want to end the trip?" confirmLabel="Yes, end trip" variant="destructive" />
+      </div>
     </div>
   );
 }

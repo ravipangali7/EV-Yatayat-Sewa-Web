@@ -49,7 +49,7 @@ import AppRegister from "./pages/app/AppRegister";
 import AppForgotPassword from "./pages/app/AppForgotPassword";
 import AppResetPassword from "./pages/app/AppResetPassword";
 import AppRoleLayout from "./pages/app/AppRoleLayout";
-import { getAppRoles, getAppRoleConfig } from "@/config/appRoles";
+import { getAppRoles, getAppRoleConfig, getHomePathForUser } from "@/config/appRoles";
 
 const queryClient = new QueryClient();
 
@@ -69,7 +69,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user?.is_superuser) {
-    return <Navigate to="/app/login" replace />;
+    return <Navigate to={getHomePathForUser(user)} replace />;
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -93,15 +93,23 @@ function AppProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AppLoginRoute() {
+  const { user, isAuthenticated } = useAuth();
+  if (isAuthenticated && user) {
+    return <Navigate to={getHomePathForUser(user)} replace />;
+  }
+  return <AppLogin />;
+}
+
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route 
         path="/login" 
-        element={isAuthenticated ? <Navigate to="/admin" replace /> : <Login />} 
+        element={isAuthenticated && user ? <Navigate to={getHomePathForUser(user)} replace /> : <Login />} 
       />
       
       {/* Admin Dashboard Routes */}
@@ -172,7 +180,7 @@ function AppRoutes() {
 
       {/* App (driver/user) auth */}
       <Route path="/app" element={<Navigate to="/app/login" replace />} />
-      <Route path="/app/login" element={<AppLogin />} />
+      <Route path="/app/login" element={<AppLoginRoute />} />
       <Route path="/app/register" element={<AppRegister />} />
       <Route path="/app/forgot-password" element={<AppForgotPassword />} />
       <Route path="/app/reset-password" element={<AppResetPassword />} />

@@ -25,6 +25,13 @@ declare global {
       requestScan: () => void;
       requestLocation: () => void;
       authSync: (token: string, userStr: string) => void;
+      startLocationStream: (tripId: string, vehicleId: string, intervalSeconds?: number) => void;
+      stopLocationStream: () => void;
+      playSound: (text: string) => void;
+      playReachedStop: (placeName: string) => void;
+      onTripStarted: () => void;
+      onTripEnded: () => void;
+      onReachedStop: (placeName: string, pickupDetails?: string) => void;
     };
     __onScanResult?: (jsonStr: string) => void;
     __onLocationResult?: (jsonStr: string) => void;
@@ -72,5 +79,47 @@ export function requestLocation(): Promise<LocationResult> {
 export function authSync(token: string, userStr: string): void {
   if (isAvailable() && window.FlutterBridge) {
     window.FlutterBridge.authSync(token, userStr);
+  }
+}
+
+export function startLocationStream(tripId: string, vehicleId: string, intervalSeconds?: number): void {
+  if (isAvailable() && window.FlutterBridge?.startLocationStream) {
+    window.FlutterBridge.startLocationStream(tripId, vehicleId, intervalSeconds ?? 30);
+  }
+}
+
+export function stopLocationStream(): void {
+  if (isAvailable() && window.FlutterBridge?.stopLocationStream) {
+    window.FlutterBridge.stopLocationStream();
+  }
+}
+
+export function playSound(text: string): void {
+  if (isAvailable() && window.FlutterBridge?.playSound) {
+    window.FlutterBridge.playSound(text);
+  }
+}
+
+export function playReachedStop(placeName: string): void {
+  if (isAvailable() && window.FlutterBridge?.playReachedStop) {
+    window.FlutterBridge.playReachedStop(placeName);
+  }
+}
+
+export function onTripStarted(): void {
+  if (isAvailable() && window.FlutterBridge?.onTripStarted) {
+    window.FlutterBridge.onTripStarted();
+  }
+}
+
+export function onTripEnded(): void {
+  if (isAvailable() && window.FlutterBridge?.onTripEnded) {
+    window.FlutterBridge.onTripEnded();
+  }
+}
+
+export function onReachedStop(placeName: string, pickupDetails?: string): void {
+  if (isAvailable() && window.FlutterBridge?.onReachedStop) {
+    window.FlutterBridge.onReachedStop(placeName, pickupDetails);
   }
 }

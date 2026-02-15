@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Bus, MapPin, Users, Route, ArrowRight, Shield, Zap, BarChart3 } from 'lucide-react';
+import { Bus, MapPin, Users, Route, ArrowRight, Shield, Zap, BarChart3, LayoutDashboard, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { getHomePathForUser } from '@/config/appRoles';
 
 export default function Index() {
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const homePath = user ? getHomePathForUser(user) : '/login';
   const features = [
     {
       icon: <Bus className="w-6 h-6" />,
@@ -44,12 +48,32 @@ export default function Index() {
           <Link to="/" className="flex items-center">
             <img src="/logo.png" alt="EV Yatayat Sewa" className="h-10 w-auto object-contain" />
           </Link>
-          <Link to="/login">
-            <Button>
+          {isLoading ? (
+            <Button disabled>
               Sign In
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-          </Link>
+          ) : isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <Link to={homePath}>
+                <Button variant="outline">
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+              <Button variant="ghost" onClick={() => logout()}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <Link to="/login">
+              <Button>
+                Sign In
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          )}
         </div>
       </header>
 
@@ -69,9 +93,9 @@ export default function Index() {
             Streamline your operations and boost efficiency.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
-            <Link to="/login">
+            <Link to={isAuthenticated ? homePath : '/login'}>
               <Button size="lg" className="w-full sm:w-auto">
-                Get Started
+                {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
@@ -125,9 +149,9 @@ export default function Index() {
             <p className="text-primary-foreground/80 max-w-xl mx-auto mb-8">
               Join EV Yatayat Sewa for green rides and smart commute.
             </p>
-            <Link to="/login">
+            <Link to={isAuthenticated ? homePath : '/login'}>
               <Button size="lg" variant="secondary">
-                Start Managing Your Fleet
+                {isAuthenticated ? 'Go to Dashboard' : 'Start Managing Your Fleet'}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>

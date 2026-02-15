@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
+import AppBar from "@/components/app/AppBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -37,9 +38,10 @@ export default function DriverWallet() {
   }, [user?.id]);
 
   return (
-    <div className="min-h-screen px-5 pt-6">
-      <h2 className="text-lg font-bold mb-4">Wallet</h2>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+    <div className="min-h-screen">
+      <AppBar title="Wallet" />
+      <div className="px-5 pt-4">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6">
         <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} />
       </motion.div>
 
@@ -47,14 +49,15 @@ export default function DriverWallet() {
         <h3 className="font-bold text-sm mb-3">Transaction History</h3>
         <div className="space-y-2">
           {transactions.map((t) => (
-            <motion.div key={t.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+            <div key={t.id} className="app-glass-card rounded-xl p-3 border border-border/50">
               <TransactionCard transaction={t} />
-            </motion.div>
+            </div>
           ))}
           {transactions.length === 0 && (
             <p className="text-sm text-muted-foreground py-4">No transactions yet</p>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

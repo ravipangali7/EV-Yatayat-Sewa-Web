@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
+import AppBar from "@/components/app/AppBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -31,7 +32,9 @@ export default function DriverProfile() {
   };
 
   return (
-    <div className="min-h-screen px-5 pt-8">
+    <div className="min-h-screen">
+      <AppBar title="Profile" />
+      <div className="px-5 pt-4">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center mb-8">
         <div className="relative mb-3">
           <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center">
@@ -49,7 +52,7 @@ export default function DriverProfile() {
       <div className="space-y-1">
         {menuItems.map((item) => {
           const content = (
-            <div className="flex items-center gap-3 p-3.5 app-surface rounded-xl border border-border">
+            <div className="flex items-center gap-3 p-3.5 app-glass-card rounded-xl border border-border/50">
               <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
                 <item.icon size={16} className="text-primary" />
               </div>
@@ -99,6 +102,7 @@ export default function DriverProfile() {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

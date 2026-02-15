@@ -14,9 +14,22 @@ export interface TripEndResponse {
   distance_km?: number;
 }
 
+export interface TripStartConfirmScheduled {
+  need_confirm_scheduled: true;
+  schedule: { id: string; date: string; time: string; route_name: string; start_point_name: string; end_point_name: string };
+  tickets: Array<{ id: string; pnr: string; name: string; phone: string; seat: unknown; price: string }>;
+}
+
 export const tripApi = {
-  startTrip: async (vehicleId: string) => {
-    return api.post<ActiveTrip & { vehicle: string; driver: string; route: string }>('trips/start/', { vehicle_id: vehicleId });
+  startTrip: async (
+    vehicleId: string,
+    options?: { latitude?: number; longitude?: number; vehicle_schedule_id?: string }
+  ): Promise<ActiveTrip & { vehicle?: string; driver?: string; route?: string } | TripStartConfirmScheduled> => {
+    const body: Record<string, unknown> = { vehicle_id: vehicleId };
+    if (options?.latitude != null) body.latitude = options.latitude;
+    if (options?.longitude != null) body.longitude = options.longitude;
+    if (options?.vehicle_schedule_id) body.vehicle_schedule_id = options.vehicle_schedule_id;
+    return api.post('trips/start/', body);
   },
 
   endTrip: async (

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import AppBar from "@/components/app/AppBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { toNumber } from "@/lib/utils";
@@ -45,9 +46,10 @@ export default function UserDeposit() {
   };
 
   return (
-    <div className="min-h-screen px-5 pt-6">
-      <h2 className="text-lg font-bold mb-4">Deposit</h2>
-      <div className="app-surface rounded-2xl p-5 border border-border mb-6">
+    <div className="min-h-screen">
+      <AppBar title="Deposit" showBack onBack={() => navigate(-1)} />
+      <div className="px-5 pt-4">
+      <div className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6">
         <p className="text-sm text-muted-foreground">Current balance</p>
         <p className="text-2xl font-bold">Rs. {balance.toLocaleString()}</p>
       </div>
@@ -71,6 +73,7 @@ export default function UserDeposit() {
       <Button variant="outline" className="w-full mt-4 rounded-xl" onClick={() => navigate(-1)}>
         Back
       </Button>
+      </div>
     </div>
   );
 }

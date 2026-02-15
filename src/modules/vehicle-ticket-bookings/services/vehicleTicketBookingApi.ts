@@ -54,6 +54,8 @@ export const vehicleTicketBookingApi = {
     name: string;
     phone: string;
     vehicle_schedule: string;
+    pickup_point?: string;
+    destination_point?: string;
     ticket_id?: string;
     seats?: SeatEntry[];
     seat?: Record<string, unknown>;

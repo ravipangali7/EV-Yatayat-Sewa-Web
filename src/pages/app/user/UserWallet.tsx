@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
+import AppBar from "@/components/app/AppBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -40,13 +41,12 @@ export default function UserWallet() {
 
   return (
     <div className="min-h-screen">
-      <div className="gradient-primary pt-12 pb-8 px-5 rounded-b-[2rem]">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <h2 className="text-lg font-bold text-primary-foreground mb-4">My Wallet</h2>
+      <AppBar title="My Wallet" />
+      <div className="px-5 pt-4 pb-8">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6">
           <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} />
         </motion.div>
-      </div>
-      <div className="px-5 pt-5 space-y-5">
+      <div className="space-y-5">
         <Link to="/app/user/deposit">
           <Button className="w-full h-12 rounded-xl font-semibold">Deposit</Button>
         </Link>
@@ -54,13 +54,16 @@ export default function UserWallet() {
           <h3 className="font-bold text-sm mb-3">Recent Transactions</h3>
           <div className="space-y-2">
             {transactions.slice(0, 15).map((t) => (
-              <TransactionCard key={t.id} transaction={t} />
+              <div key={t.id} className="app-glass-card rounded-xl p-3 border border-border/50">
+                <TransactionCard transaction={t} />
+              </div>
             ))}
             {transactions.length === 0 && (
               <p className="text-sm text-muted-foreground py-4">No transactions yet</p>
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

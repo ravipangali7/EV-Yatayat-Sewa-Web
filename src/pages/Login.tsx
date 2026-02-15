@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Phone, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/modules/auth/services/authApi';
+import { getHomePathForUser } from '@/config/appRoles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,11 +32,7 @@ export default function Login() {
       if (success) {
         toast.success('Login successful!');
         const user = await authApi.getCurrentUser();
-        if (user?.is_superuser) {
-          navigate('/admin');
-        } else {
-          navigate('/app/login', { replace: true });
-        }
+        navigate(getHomePathForUser(user ?? null), { replace: true });
       } else {
         toast.error('Invalid phone number or password');
       }

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import AppBar from "@/components/app/AppBar";
 
 export default function UserProfile() {
   const { user, logout } = useAuth();
@@ -35,25 +36,27 @@ export default function UserProfile() {
   };
 
   return (
-    <div className="min-h-screen px-5 pt-8">
+    <div className="min-h-screen">
+      <AppBar title="Profile" />
+      <div className="px-5 pt-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center mb-8">
         <div className="relative mb-3">
-          <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center backdrop-blur">
             <User size={36} className="text-primary-foreground" />
           </div>
-          <button type="button" className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+          <button type="button" className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center border-2 border-background">
             <Camera size={12} className="text-primary-foreground" />
           </button>
         </div>
         <h2 className="font-bold text-lg">{user?.name ?? (name || "Passenger")}</h2>
         <p className="text-sm text-muted-foreground">{user?.phone ?? phone}</p>
-        <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-accent text-accent-foreground font-medium">Passenger</span>
+        <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-primary/20 text-primary font-medium">Passenger</span>
       </motion.div>
 
-      <div className="space-y-1">
+      <div className="space-y-2">
         {menuItems.map((item) => {
           const content = (
-            <div className="flex items-center gap-3 p-3.5 app-surface rounded-xl border border-border">
+            <div className="flex items-center gap-3 p-3.5 app-glass-card rounded-xl border border-border/50">
               <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
                 <item.icon size={16} className="text-primary" />
               </div>
@@ -110,6 +113,7 @@ export default function UserProfile() {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
