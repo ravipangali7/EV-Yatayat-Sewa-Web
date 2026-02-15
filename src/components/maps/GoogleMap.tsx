@@ -23,16 +23,10 @@ const defaultCenter = {
   lng: 85.3240,
 };
 
-// Custom pin icon SVG as data URL
-const customPinIcon = {
-  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-    <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#FF0000"/>
-      <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-    </svg>
-  `),
-  scaledSize: { width: 32, height: 48 },
-  anchor: { x: 16, y: 48 },
+const defaultPinIcon = {
+  url: '/navigation.png',
+  scaledSize: { width: 32, height: 32 },
+  anchor: { x: 16, y: 16 },
 };
 
 export function GoogleMapComponent({
@@ -111,10 +105,10 @@ export function GoogleMapComponent({
   const pinIcon = customIcon
     ? {
         url: customIcon,
-        scaledSize: { width: 32, height: 48 },
-        anchor: { x: 16, y: 48 },
+        scaledSize: { width: 32, height: 32 },
+        anchor: { x: 16, y: 16 },
       }
-    : customPinIcon;
+    : defaultPinIcon;
 
   return (
     <Card className="overflow-hidden">
@@ -139,10 +133,10 @@ export function GoogleMapComponent({
             pinIcon
               ? {
                   ...pinIcon,
-                  scaledSize: new window.google.maps.Size(32, 48),
-                  anchor: new window.google.maps.Point(16, 48),
+                  scaledSize: new window.google.maps.Size(32, 32),
+                  anchor: new window.google.maps.Point(16, 16),
                 }
-              : customPinIcon
+              : defaultPinIcon
           }
           draggable={clickable}
           onDragEnd={async (e) => {

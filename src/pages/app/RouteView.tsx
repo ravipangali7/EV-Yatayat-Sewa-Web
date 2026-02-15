@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Edit, Check, X } from 'lucide-react';
+import { useJsApiLoader } from '@react-google-maps/api';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,8 @@ import { routeApi } from '@/modules/routes/services/routeApi';
 import { Route } from '@/types';
 import { toast } from 'sonner';
 import { toNumber } from '@/lib/utils';
+import { getDirectionsPath } from '@/lib/directions';
+import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 
 interface MarkerData {
   lat: number;
@@ -18,6 +21,7 @@ interface MarkerData {
   name?: string;
   code?: string;
   type?: 'start' | 'end' | 'stop';
+  icon?: string;
 }
 
 export default function RouteView() {
@@ -45,14 +49,19 @@ export default function RouteView() {
     fetchRoute();
   }, [id]);
 
-  // Prepare map data
+  const { isLoaded: isMapsLoaded } = useJsApiLoader({
+    id: 'google-mini-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: ['places', 'geometry'],
+  });
+
+  // Prepare map data (markers with icons, straight path, waypoints for directions)
   const mapData = useMemo(() => {
-    if (!route) return { markers: [], polylines: [] };
+    if (!route) return { markers: [] as MarkerData[], polylines: [] as Array<Array<{ lat: number; lng: number }>>, waypoints: [] as Array<{ lat: number; lng: number }> };
 
     const markers: MarkerData[] = [];
     const polylinePath: Array<{ lat: number; lng: number }> = [];
 
-    // Start point
     if (route.start_point_details) {
       const lat = toNumber(route.start_point_details.latitude, 0);
       const lng = toNumber(route.start_point_details.longitude, 0);
@@ -63,11 +72,11 @@ export default function RouteView() {
         name: route.start_point_details.name,
         code: route.start_point_details.code,
         type: 'start',
+        icon: '/start_point.png',
       });
       polylinePath.push({ lat, lng });
     }
 
-    // Stop points (sorted by order)
     if (route.stop_points && route.stop_points.length > 0) {
       const sortedStops = [...route.stop_points].sort((a, b) => (a.order || 0) - (b.order || 0));
       sortedStops.forEach((stop) => {
@@ -81,13 +90,13 @@ export default function RouteView() {
             name: stop.place_details.name,
             code: stop.place_details.code,
             type: 'stop',
+            icon: '/stop_point.png',
           });
           polylinePath.push({ lat, lng });
         }
       });
     }
 
-    // End point
     if (route.end_point_details) {
       const lat = toNumber(route.end_point_details.latitude, 0);
       const lng = toNumber(route.end_point_details.longitude, 0);
@@ -98,6 +107,7 @@ export default function RouteView() {
         name: route.end_point_details.name,
         code: route.end_point_details.code,
         type: 'end',
+        icon: '/end_point.png',
       });
       polylinePath.push({ lat, lng });
     }
@@ -105,8 +115,29 @@ export default function RouteView() {
     return {
       markers,
       polylines: polylinePath.length > 1 ? [polylinePath] : [],
+      waypoints: polylinePath,
     };
   }, [route]);
+
+  const [roadPath, setRoadPath] = useState<Array<{ lat: number; lng: number }> | null>(null);
+  const waypointsKey = useMemo(() => JSON.stringify(mapData.waypoints), [mapData.waypoints]);
+
+  useEffect(() => {
+    if (!isMapsLoaded || mapData.waypoints.length < 2) {
+      setRoadPath(null);
+      return;
+    }
+    let cancelled = false;
+    getDirectionsPath(mapData.waypoints).then((path) => {
+      if (!cancelled) setRoadPath(path);
+    });
+    return () => { cancelled = true; };
+  }, [isMapsLoaded, waypointsKey, mapData.waypoints]);
+
+  const polylinesToShow = useMemo(() => {
+    const path = roadPath && roadPath.length >= 2 ? roadPath : (mapData.polylines[0] ?? []);
+    return path.length >= 2 ? [path] : [];
+  }, [roadPath, mapData.polylines]);
 
   const handleMarkerClick = (marker: MarkerData) => {
     setSelectedMarker(marker);
@@ -247,7 +278,7 @@ export default function RouteView() {
           <CardContent>
             <MiniMap
               markers={mapData.markers}
-              polylines={mapData.polylines}
+              polylines={polylinesToShow}
               height="500px"
               onMarkerClick={handleMarkerClick}
             />

@@ -125,6 +125,7 @@ export default function PlaceView() {
                   lat,
                   lng,
                   label: place.name,
+                  icon: '/stop_point.png',
                 },
               ]}
               height="400px"

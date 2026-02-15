@@ -24,6 +24,7 @@ import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
 import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicleScheduleApi";
 import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
 import { locationApi } from "@/modules/locations/services/locationApi";
+import { superSettingApi } from "@/modules/settings/services/superSettingApi";
 import AppBar from "@/components/app/AppBar";
 import { toast } from "sonner";
 
@@ -48,27 +49,111 @@ function vehicleToVehicleInfo(v: ApiVehicle): VehicleInfo {
   };
 }
 
-function buildSeatsFromVehicle(vehicle: ApiVehicle | null): Seat[] {
-  if (!vehicle?.seats?.length) {
-    return [
-      { id: "A1", label: "A1", row: 0, col: 0, status: "available" },
-      { id: "DR", label: "Driver", row: 0, col: 3, status: "driver" },
-      { id: "A2", label: "A2", row: 1, col: 0, status: "available" },
-      { id: "B1", label: "B1", row: 1, col: 2, status: "available" },
-      { id: "B2", label: "B2", row: 1, col: 3, status: "available" },
-    ];
+/** Parse flat seat_layout (e.g. ["x","-","-","y",":","x","-","x","x",":"]) into rows.
+ * ":" = new row, x = seat, y = driver, - = empty.
+ */
+function parseSeatLayout(seatLayout: string[] | undefined): string[][] {
+  if (!seatLayout || !Array.isArray(seatLayout) || seatLayout.length === 0) {
+    return [];
   }
-  const driverSeat = { id: "DR", label: "Driver", row: 0, col: 3, status: "driver" as const };
-  const seats: Seat[] = vehicle.seats
-    .filter((s) => s.side !== undefined)
-    .map((s, i) => ({
-      id: `${s.side}${s.number}`,
-      label: `${s.side}${s.number}`,
-      row: Math.floor(i / 4),
-      col: i % 4,
-      status: (s.status === "booked" ? "booked" : "available") as Seat["status"],
-    }));
-  return [driverSeat, ...seats];
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  for (const cell of seatLayout) {
+    if (cell === ":") {
+      if (currentRow.length) {
+        rows.push(currentRow);
+        currentRow = [];
+      }
+    } else {
+      currentRow.push(String(cell));
+    }
+  }
+  if (currentRow.length) rows.push(currentRow);
+  return rows;
+}
+
+/** Build Seat[] from seat_layout array (x = seat, y = driver, - = empty, : = new row). */
+function buildSeatsFromLayout(layout: string[]): Seat[] {
+  const rows = parseSeatLayout(layout);
+  if (rows.length === 0) return [];
+  const sides = "ABCDEFGHIJ".split("");
+  const result: Seat[] = [];
+  for (let ri = 0; ri < rows.length; ri++) {
+    let numInRow = 0;
+    const row = rows[ri];
+    const side = sides[ri] ?? String.fromCharCode(65 + ri);
+    for (let ci = 0; ci < row.length; ci++) {
+      const cell = row[ci];
+      if (cell === "x") {
+        numInRow += 1;
+        const label = `${side}${numInRow}`;
+        result.push({
+          id: label,
+          label,
+          row: ri,
+          col: ci,
+          status: "available",
+        });
+      } else if (cell === "y") {
+        result.push({
+          id: "DR",
+          label: "Driver",
+          row: ri,
+          col: ci,
+          status: "driver",
+        });
+      }
+    }
+  }
+  return result;
+}
+
+const DEFAULT_SEATS_WHEN_NO_LAYOUT: Seat[] = [
+  { id: "A1", label: "A1", row: 0, col: 0, status: "available" },
+  { id: "DR", label: "Driver", row: 0, col: 3, status: "driver" },
+  { id: "A2", label: "A2", row: 1, col: 0, status: "available" },
+  { id: "B1", label: "B1", row: 1, col: 2, status: "available" },
+  { id: "B2", label: "B2", row: 1, col: 3, status: "available" },
+];
+
+function buildSeatsFromVehicle(vehicle: ApiVehicle | null, fallbackLayout?: string[]): Seat[] {
+  const layout = vehicle?.seat_layout?.length ? vehicle.seat_layout : fallbackLayout;
+
+  if (layout?.length) {
+    const seats = buildSeatsFromLayout(layout);
+    if (seats.length > 0 && vehicle?.seats?.length) {
+      const seatById = new Map(
+        vehicle.seats
+          .filter((s) => s.side !== undefined)
+          .map((s) => [`${s.side}${s.number}`, s])
+      );
+      return seats.map((seat) => {
+        if (seat.status === "driver") return seat;
+        const apiSeat = seatById.get(seat.id);
+        return {
+          ...seat,
+          status: (apiSeat?.status === "booked" ? "booked" : "available") as Seat["status"],
+        };
+      });
+    }
+    return seats;
+  }
+
+  if (vehicle?.seats?.length) {
+    const driverSeat = { id: "DR", label: "Driver", row: 0, col: 3, status: "driver" as const };
+    const seats: Seat[] = vehicle.seats
+      .filter((s) => s.side !== undefined)
+      .map((s, i) => ({
+        id: `${s.side}${s.number}`,
+        label: `${s.side}${s.number}`,
+        row: Math.floor(i / 4),
+        col: i % 4,
+        status: (s.status === "booked" ? "booked" : "available") as Seat["status"],
+      }));
+    return [driverSeat, ...seats];
+  }
+
+  return DEFAULT_SEATS_WHEN_NO_LAYOUT;
 }
 
 export default function Vehicle() {
@@ -98,6 +183,7 @@ export default function Vehicle() {
   const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number } | null>(null);
+  const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -112,7 +198,18 @@ export default function Vehicle() {
           setRoutes(routesRes.results.map(routeToRouteInfo));
           if (myActiveRes) {
             setSelectedVehicle(myActiveRes);
-            setSeats(buildSeatsFromVehicle(myActiveRes));
+            let fallbackLayout: string[] | undefined;
+            if (!myActiveRes.seats?.length && !myActiveRes.seat_layout?.length) {
+              try {
+                const settingsRes = await superSettingApi.list({ per_page: 1 });
+                const layout = settingsRes.results?.[0]?.seat_layout;
+                fallbackLayout = Array.isArray(layout) ? layout : undefined;
+                if (fallbackLayout?.length) setSuperSettingSeatLayout(fallbackLayout);
+              } catch {
+                fallbackLayout = undefined;
+              }
+            }
+            setSeats(buildSeatsFromVehicle(myActiveRes, fallbackLayout));
             const routeInfo = myActiveRes.active_route_details
               ? routeToRouteInfo(myActiveRes.active_route_details as ApiRoute)
               : null;
@@ -192,7 +289,7 @@ export default function Vehicle() {
         if (result.success && result.vehicleId) {
           const vehicle = await vehicleApi.connectVehicle(result.vehicleId);
           setSelectedVehicle(vehicle);
-          setSeats(buildSeatsFromVehicle(vehicle));
+          setSeats(buildSeatsFromVehicle(vehicle, superSettingSeatLayout ?? undefined));
           setDriverState("no_route");
           toast.success("Vehicle connected!");
         } else if (!result.success && result.error) {
@@ -207,7 +304,7 @@ export default function Vehicle() {
     }
     if (vehicles.length > 0) {
       setSelectedVehicle(vehicles[0]);
-      setSeats(buildSeatsFromVehicle(vehicles[0]));
+      setSeats(buildSeatsFromVehicle(vehicles[0], superSettingSeatLayout ?? undefined));
       setDriverState("no_route");
     } else {
       toast.info("No vehicle assigned. Contact admin.");
@@ -338,8 +435,8 @@ export default function Vehicle() {
       stopLocationStream();
       setDriverState("route_selected");
       setActiveTrip(null);
-      setSeats(buildSeatsFromVehicle(selectedVehicle));
-      return;
+setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
+        return;
     }
     setIsEndingTrip(true);
     getCurrentLocation()
@@ -356,7 +453,7 @@ export default function Vehicle() {
         setDriverState("route_selected");
         setActiveTrip(null);
         setPendingEndTripLocation(null);
-        setSeats(buildSeatsFromVehicle(selectedVehicle));
+        setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
         setShowEndTripOutOfRangeModal(false);
         toast.success("Trip ended!");
       })
@@ -379,7 +476,7 @@ export default function Vehicle() {
       setDriverState("route_selected");
       setActiveTrip(null);
       setPendingEndTripLocation(null);
-      setSeats(buildSeatsFromVehicle(selectedVehicle));
+      setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
       setShowEndTripOutOfRangeModal(false);
       toast.success("Trip ended.");
     } catch {
@@ -546,9 +643,9 @@ export default function Vehicle() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col overflow-hidden">
       <AppBar title={selectedVehicle ? `${selectedVehicle.vehicle_no} · ${selectedVehicle.name}` : "Trip"} />
-      <div className="flex gap-2 px-4 pt-3 border-b border-border bg-background/80 backdrop-blur">
+      <div className="flex gap-2 px-4 pt-3 border-b border-border bg-background/80 backdrop-blur shrink-0">
         <button
           type="button"
           onClick={() => setTripTab("seats")}
@@ -564,10 +661,10 @@ export default function Vehicle() {
           Map
         </button>
       </div>
-      <div className="px-4 pt-4 pb-24">
+      <div className={`px-4 pt-4 pb-24 flex-1 flex flex-col min-h-0 ${tripTab === "map" ? "overflow-hidden" : "overflow-auto"}`}>
       {tripTab === "seats" && (
         <>
-      <SeatLayout seats={seats} selectedSeats={selectedSeats} onSeatSelect={setSelectedSeats} />
+      <SeatLayout seats={seats} selectedSeats={selectedSeats} onSeatSelect={setSelectedSeats} size="large" />
 
       {selectedSeats.length > 0 && (
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mt-4 space-y-2">
@@ -595,13 +692,13 @@ export default function Vehicle() {
         </>
       )}
       {tripTab === "map" && (
-        <div className="space-y-3">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {lastLocation && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground shrink-0">
               Speed: {lastLocation.speed != null ? `${Number(lastLocation.speed).toFixed(0)} km/h` : "—"}
             </p>
           )}
-          <MiniMap points={tripMapPoints.length > 0 ? tripMapPoints : [currentLocation]} className="min-h-[300px] rounded-2xl border border-border" />
+          <MiniMap points={tripMapPoints.length > 0 ? tripMapPoints : [currentLocation]} className="flex-1 min-h-0 rounded-2xl border border-border" fillHeight />
         </div>
       )}
 

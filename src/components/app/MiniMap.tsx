@@ -1,6 +1,10 @@
-import { useMemo } from "react";
-import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
 import { GOOGLE_MAPS_API_KEY } from "@/config/maps";
+import { getDirectionsPath } from "@/lib/directions";
+
+/** Stable reference so LoadScript is not reloaded. */
+const MAP_LIBRARIES: ("geometry")[] = ["geometry"];
 
 export interface MapPoint {
   name: string;
@@ -9,40 +13,105 @@ export interface MapPoint {
   type: "start" | "end" | "stop" | "current";
 }
 
+const TYPE_LABELS: Record<MapPoint["type"], string> = {
+  start: "Start",
+  stop: "Stop",
+  end: "End",
+  current: "Vehicle",
+};
+
 interface MiniMapProps {
   points: MapPoint[];
   className?: string;
+  /** When true, map and wrapper use height 100% so the map fills the parent. */
+  fillHeight?: boolean;
 }
 
 const NEPAL_CENTER = { lat: 27.7172, lng: 85.324 };
 
-const createPinIcon = (fillColor: string) =>
-  "data:image/svg+xml;charset=UTF-8," +
-  encodeURIComponent(`
-    <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="${fillColor}"/>
-      <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-    </svg>
-  `);
+const MARKER_ICONS = {
+  start: "/start_point.png",
+  stop: "/stop_point.png",
+  end: "/end_point.png",
+  current: "/navigation.png",
+} as const;
 
-const pinIcons = {
-  start: createPinIcon("#22c55e"),
-  end: createPinIcon("#ef4444"),
-  stop: createPinIcon("#f97316"),
-  current: createPinIcon("#3b82f6"),
-};
+const FIT_BOUNDS_PADDING = 120;
+/** Cap zoom so the default view is zoomed out (second-image style) with margins. */
+const MAX_ZOOM_AFTER_FIT = 12;
 
-const MiniMap = ({ points, className = "" }: MiniMapProps) => {
+const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) => {
+  const [selectedPoint, setSelectedPoint] = useState<MapPoint | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
   const { isLoaded } = useJsApiLoader({
     id: "google-app-minimap",
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ["geometry"],
+    libraries: MAP_LIBRARIES,
   });
 
-  const path = useMemo(
+  const routeWaypoints = useMemo(
+    () => points.filter((p) => p.type !== "current").map((p) => ({ lat: p.lat, lng: p.lng })),
+    [points]
+  );
+
+  const straightPath = useMemo(
     () => points.map((p) => ({ lat: p.lat, lng: p.lng })),
     [points]
   );
+
+  const [roadPath, setRoadPath] = useState<Array<{ lat: number; lng: number }> | null>(null);
+
+  const routeWaypointsKey = useMemo(() => JSON.stringify(routeWaypoints), [routeWaypoints]);
+
+  useEffect(() => {
+    if (!isLoaded || routeWaypoints.length < 2) {
+      setRoadPath(null);
+      return;
+    }
+    let cancelled = false;
+    getDirectionsPath(routeWaypoints).then((path) => {
+      if (!cancelled && path) setRoadPath(path);
+      else if (!cancelled) setRoadPath(null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, routeWaypointsKey, routeWaypoints]);
+
+  const polylinePath = roadPath && roadPath.length >= 2 ? roadPath : (straightPath.length >= 2 ? straightPath : null);
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+  }, []);
+  const onMapUnmount = useCallback(() => {
+    mapRef.current = null;
+  }, []);
+
+  const routePointsForBounds = useMemo(
+    () => points.filter((p) => p.type !== "current"),
+    [points]
+  );
+  const pointsKey = useMemo(
+    () => routePointsForBounds.map((p) => `${p.lat},${p.lng}`).join("|"),
+    [routePointsForBounds]
+  );
+  useEffect(() => {
+    if (!isLoaded || typeof google === "undefined" || !mapRef.current || routePointsForBounds.length < 2) return;
+    const map = mapRef.current;
+    const bounds = new google.maps.LatLngBounds();
+    routePointsForBounds.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
+    map.fitBounds(bounds, FIT_BOUNDS_PADDING);
+    const listener = map.addListener("idle", () => {
+      google.maps.event.removeListener(listener);
+      const zoom = map.getZoom();
+      if (zoom != null && zoom > MAX_ZOOM_AFTER_FIT) {
+        map.setZoom(MAX_ZOOM_AFTER_FIT);
+      }
+    });
+    return () => {
+      google.maps.event.removeListener(listener);
+    };
+  }, [isLoaded, routePointsForBounds.length, pointsKey, routePointsForBounds]);
 
   const mapCenter = useMemo(() => {
     if (points.length === 0) return NEPAL_CENTER;
@@ -63,6 +132,13 @@ const MiniMap = ({ points, className = "" }: MiniMapProps) => {
     return 10;
   }, [points.length]);
 
+  const containerHeight = fillHeight ? "100%" : "280px";
+  const containerStyle = fillHeight
+    ? { width: "100%", height: "100%", minHeight: 200 }
+    : { width: "100%", height: containerHeight };
+  const wrapperStyle = fillHeight ? { height: "100%", minHeight: 200 } : { minHeight: 200 };
+  const wrapperClass = fillHeight ? `rounded-xl overflow-hidden h-full ${className}` : `rounded-xl overflow-hidden ${className}`;
+
   if (!isLoaded) {
     return (
       <div
@@ -76,9 +152,9 @@ const MiniMap = ({ points, className = "" }: MiniMapProps) => {
 
   if (points.length === 0) {
     return (
-      <div className={`rounded-xl overflow-hidden ${className}`} style={{ minHeight: 200 }}>
+      <div className={wrapperClass} style={wrapperStyle}>
         <GoogleMap
-          mapContainerStyle={{ width: "100%", height: "200px" }}
+          mapContainerStyle={fillHeight ? { width: "100%", height: "100%", minHeight: 200 } : { width: "100%", height: "200px" }}
           center={NEPAL_CENTER}
           zoom={6}
           options={{
@@ -88,18 +164,25 @@ const MiniMap = ({ points, className = "" }: MiniMapProps) => {
             streetViewControl: false,
             mapTypeControl: false,
             fullscreenControl: false,
+            gestureHandling: "greedy",
           }}
         />
       </div>
     );
   }
 
+  const handleMarkerClick = (point: MapPoint) => {
+    setSelectedPoint((prev) => (prev === point ? null : point));
+  };
+
   return (
-    <div className={`rounded-xl overflow-hidden ${className}`} style={{ minHeight: 200 }}>
+    <div className={wrapperClass} style={wrapperStyle}>
       <GoogleMap
-        mapContainerStyle={{ width: "100%", height: "280px" }}
+        mapContainerStyle={containerStyle}
         center={mapCenter}
         zoom={mapZoom}
+        onLoad={onMapLoad}
+        onUnmount={onMapUnmount}
         options={{
           clickableIcons: false,
           disableDefaultUI: true,
@@ -107,11 +190,13 @@ const MiniMap = ({ points, className = "" }: MiniMapProps) => {
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
+          gestureHandling: "greedy",
         }}
+        onClick={() => setSelectedPoint(null)}
       >
-        {path.length >= 2 && (
+        {polylinePath && (
           <Polyline
-            path={path}
+            path={polylinePath}
             options={{
               strokeColor: "#3b82f6",
               strokeOpacity: 0.8,
@@ -125,12 +210,24 @@ const MiniMap = ({ points, className = "" }: MiniMapProps) => {
             position={{ lat: point.lat, lng: point.lng }}
             title={point.name}
             icon={{
-              url: pinIcons[point.type],
-              scaledSize: new google.maps.Size(28, 42),
-              anchor: new google.maps.Point(14, 42),
+              url: MARKER_ICONS[point.type],
+              scaledSize: new google.maps.Size(24, 24),
+              anchor: new google.maps.Point(12, 12),
             }}
+            onClick={() => handleMarkerClick(point)}
           />
         ))}
+        {selectedPoint && (
+          <InfoWindow
+            position={{ lat: selectedPoint.lat, lng: selectedPoint.lng }}
+            onCloseClick={() => setSelectedPoint(null)}
+          >
+            <div className="p-1 min-w-[120px]">
+              <div className="font-medium text-foreground">{selectedPoint.name}</div>
+              <div className="text-xs text-muted-foreground">{TYPE_LABELS[selectedPoint.type]}</div>
+            </div>
+          </InfoWindow>
+        )}
       </GoogleMap>
     </div>
   );

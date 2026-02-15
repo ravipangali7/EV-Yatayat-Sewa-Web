@@ -39,27 +39,16 @@ const defaultCenter = {
 // Google Maps libraries - defined as constant to prevent LoadScript reloads
 const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry'] as const;
 
-// Custom pin icons
 const checkInPinIcon = {
-  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-    <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#00FF00"/>
-      <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-    </svg>
-  `),
-  scaledSize: { width: 32, height: 48 },
-  anchor: { x: 16, y: 48 },
+  url: '/start_point.png',
+  scaledSize: { width: 32, height: 32 },
+  anchor: { x: 16, y: 16 },
 };
 
 const checkOutPinIcon = {
-  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-    <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#FF0000"/>
-      <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-    </svg>
-  `),
-  scaledSize: { width: 32, height: 48 },
-  anchor: { x: 16, y: 48 },
+  url: '/end_point.png',
+  scaledSize: { width: 32, height: 32 },
+  anchor: { x: 16, y: 16 },
 };
 
 export function SeatBookingMap({

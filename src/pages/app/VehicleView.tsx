@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Edit, QrCode } from 'lucide-react';
+import { useJsApiLoader } from '@react-google-maps/api';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,8 @@ import { routeApi } from '@/modules/routes/services/routeApi';
 import { Vehicle, User, Route, VehicleSeat, VehicleImage } from '@/types';
 import { toast } from 'sonner';
 import { toNumber } from '@/lib/utils';
+import { getDirectionsPath } from '@/lib/directions';
+import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 
 interface MarkerData {
   lat: number;
@@ -26,6 +29,7 @@ interface MarkerData {
   type?: 'start' | 'end' | 'stop';
   routeId?: string;
   routeName?: string;
+  icon?: string;
 }
 
 // Color palette for routes
@@ -73,11 +77,16 @@ export default function VehicleView() {
     fetchData();
   }, [id]);
 
-  // Prepare map data for all routes
+  const { isLoaded: isMapsLoaded } = useJsApiLoader({
+    id: 'google-mini-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: ['places', 'geometry'],
+  });
+
+  // Prepare map data for all routes (markers with icons, straight paths, waypoints per route)
   const mapData = useMemo(() => {
     if (!vehicle || !vehicle.routes || !Array.isArray(vehicle.routes)) {
-      console.log('[VehicleView] No vehicle or routes data available');
-      return { markers: [], polylines: [] };
+      return { markers: [] as MarkerData[], polylines: [] as Array<{ path: Array<{ lat: number; lng: number }>; color: string; routeId: string; routeName: string }>, routeWaypoints: [] as Array<Array<{ lat: number; lng: number }>> };
     }
 
     const markers: MarkerData[] = [];
@@ -87,22 +96,17 @@ export default function VehicleView() {
       routeId: string;
       routeName: string;
     }> = [];
+    const routeWaypoints: Array<Array<{ lat: number; lng: number }>> = [];
 
-    // Get all route details
     const vehicleRoutes = routes.filter((r) => vehicle.routes?.includes(r.id));
-    console.log(`[VehicleView] Processing ${vehicleRoutes.length} routes for vehicle`);
 
     vehicleRoutes.forEach((route, routeIndex) => {
       const routeColor = routeColors[routeIndex % routeColors.length];
       const polylinePath: Array<{ lat: number; lng: number }> = [];
 
-      // Helper function to validate coordinates
-      const isValidCoordinate = (lat: number, lng: number): boolean => {
-        // Reject if both are 0,0 (invalid) or if either is NaN
-        return !(lat === 0 && lng === 0) && !isNaN(lat) && !isNaN(lng);
-      };
+      const isValidCoordinate = (lat: number, lng: number): boolean =>
+        !(lat === 0 && lng === 0) && !isNaN(lat) && !isNaN(lng);
 
-      // Start point - pin and add to polyline path
       if (route.start_point_details) {
         const lat = toNumber(route.start_point_details.latitude, 0);
         const lng = toNumber(route.start_point_details.longitude, 0);
@@ -116,47 +120,36 @@ export default function VehicleView() {
             type: 'start',
             routeId: route.id,
             routeName: route.name,
+            icon: '/start_point.png',
           });
           polylinePath.push({ lat, lng });
         }
       }
 
-      // Stop points (sorted by order) - pin each stop point and add to polyline path
       if (route.stop_points && route.stop_points.length > 0) {
         const sortedStops = [...route.stop_points].sort((a, b) => (a.order || 0) - (b.order || 0));
-        console.log(`[VehicleView] Route "${route.name}" has ${sortedStops.length} stop points`);
-        
-        sortedStops.forEach((stop, stopIndex) => {
+        sortedStops.forEach((stop) => {
           if (stop.place_details) {
             const lat = toNumber(stop.place_details.latitude, 0);
             const lng = toNumber(stop.place_details.longitude, 0);
-            
             if (isValidCoordinate(lat, lng)) {
-              const stopMarker = {
+              markers.push({
                 lat,
                 lng,
                 label: 'stop',
                 name: stop.place_details.name,
                 code: stop.place_details.code,
-                type: 'stop' as const,
+                type: 'stop',
                 routeId: route.id,
                 routeName: route.name,
-              };
-              markers.push(stopMarker);
+                icon: '/stop_point.png',
+              });
               polylinePath.push({ lat, lng });
-              console.log(`[VehicleView] Added stop point ${stopIndex + 1}: ${stop.place_details.name} at (${lat}, ${lng})`);
-            } else {
-              console.warn(`[VehicleView] Skipped invalid stop point coordinates: (${lat}, ${lng}) for ${stop.place_details.name}`);
             }
-          } else {
-            console.warn(`[VehicleView] Stop point ${stopIndex + 1} missing place_details`);
           }
         });
-      } else {
-        console.log(`[VehicleView] Route "${route.name}" has no stop points`);
       }
 
-      // End point - pin and add to polyline path
       if (route.end_point_details) {
         const lat = toNumber(route.end_point_details.latitude, 0);
         const lng = toNumber(route.end_point_details.longitude, 0);
@@ -170,13 +163,12 @@ export default function VehicleView() {
             type: 'end',
             routeId: route.id,
             routeName: route.name,
+            icon: '/end_point.png',
           });
           polylinePath.push({ lat, lng });
         }
       }
 
-      // Create polyline connecting: Start → Stop1 → Stop2 → ... → End
-      // Only create polyline if we have at least 2 points to connect
       if (polylinePath.length > 1) {
         polylines.push({
           path: polylinePath,
@@ -184,17 +176,35 @@ export default function VehicleView() {
           routeId: route.id,
           routeName: route.name,
         });
+        routeWaypoints.push(polylinePath);
       }
     });
 
-    // Summary logging
-    const stopMarkers = markers.filter(m => m.type === 'stop');
-    const startMarkers = markers.filter(m => m.type === 'start');
-    const endMarkers = markers.filter(m => m.type === 'end');
-    console.log(`[VehicleView] Map data summary: ${markers.length} total markers (${startMarkers.length} start, ${stopMarkers.length} stop, ${endMarkers.length} end), ${polylines.length} polylines`);
-
-    return { markers, polylines };
+    return { markers, polylines, routeWaypoints };
   }, [vehicle, routes]);
+
+  const [roadPaths, setRoadPaths] = useState<Array<Array<{ lat: number; lng: number }> | null>>([]);
+  const routeWaypointsKey = useMemo(() => JSON.stringify(mapData.routeWaypoints), [mapData.routeWaypoints]);
+
+  useEffect(() => {
+    if (!isMapsLoaded || mapData.routeWaypoints.length === 0) {
+      setRoadPaths([]);
+      return;
+    }
+    let cancelled = false;
+    const promises = mapData.routeWaypoints.map((waypoints) => getDirectionsPath(waypoints));
+    Promise.all(promises).then((paths) => {
+      if (!cancelled) setRoadPaths(paths.map((p) => p ?? null));
+    });
+    return () => { cancelled = true; };
+  }, [isMapsLoaded, routeWaypointsKey, mapData.routeWaypoints]);
+
+  const polylinesToShow = useMemo(() => {
+    return mapData.polylines.map((p, i) => ({
+      ...p,
+      path: (roadPaths[i] != null && roadPaths[i]!.length >= 2) ? roadPaths[i]! : p.path,
+    }));
+  }, [mapData.polylines, roadPaths]);
 
   const handleMarkerClick = (marker: MarkerData) => {
     setSelectedMarker(marker);
@@ -417,7 +427,7 @@ export default function VehicleView() {
         )}
 
         {/* Routes Map */}
-        {mapData.polylines.length > 0 && (
+        {polylinesToShow.length > 0 && (
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Routes Map</CardTitle>
@@ -425,7 +435,7 @@ export default function VehicleView() {
             <CardContent>
               <MiniMap
                 markers={mapData.markers}
-                polylines={mapData.polylines}
+                polylines={polylinesToShow}
                 height="500px"
                 onMarkerClick={handleMarkerClick}
                 onPolylineClick={handlePolylineClick}

@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { GoogleMap, Marker, Polyline, useJsApiLoader } from '@react-google-maps/api';
+import { useMemo, useState } from 'react';
+import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from '@react-google-maps/api';
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { Card } from '@/components/ui/card';
 
@@ -38,50 +38,25 @@ const defaultCenter = {
   lng: -74.0060,
 };
 
-// Custom pin icons
-const startPinIcon = {
-  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-    <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#00FF00"/>
-      <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-    </svg>
-  `),
-  scaledSize: { width: 32, height: 48 },
-  anchor: { x: 16, y: 48 },
+/** Stable reference so LoadScript is not reloaded. */
+const MAP_LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
+
+const MARKER_ICONS = {
+  start: '/start_point.png',
+  end: '/end_point.png',
+  stop: '/stop_point.png',
+  default: '/navigation.png',
+} as const;
+
+const TYPE_LABELS: Record<'start' | 'end' | 'stop', string> = {
+  start: 'Start',
+  stop: 'Stop',
+  end: 'End',
 };
 
-const endPinIcon = {
-  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-    <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#FF0000"/>
-      <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-    </svg>
-  `),
-  scaledSize: { width: 32, height: 48 },
-  anchor: { x: 16, y: 48 },
-};
-
-const stopPinIcon = {
-  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-    <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#FFA500"/>
-      <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-    </svg>
-  `),
-  scaledSize: { width: 32, height: 48 },
-  anchor: { x: 16, y: 48 },
-};
-
-const defaultPinIcon = {
-  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-    <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#4285F4"/>
-      <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-    </svg>
-  `),
-  scaledSize: { width: 32, height: 48 },
-  anchor: { x: 16, y: 48 },
-};
+function isSameMarker(a: MarkerData, b: MarkerData) {
+  return a.lat === b.lat && a.lng === b.lng && (a.name ?? '') === (b.name ?? '');
+}
 
 export function MiniMap({
   markers = [],
@@ -93,41 +68,12 @@ export function MiniMap({
   onMarkerClick,
   onPolylineClick,
 }: MiniMapProps) {
+  const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
   const { isLoaded } = useJsApiLoader({
     id: 'google-mini-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ['places', 'geometry'],
+    libraries: MAP_LIBRARIES,
   });
-
-  // Create properly typed icons when API is loaded
-  const getPinIcons = useMemo(() => {
-    if (!isLoaded || typeof google === 'undefined' || !google.maps) {
-      return {
-        start: startPinIcon,
-        end: endPinIcon,
-        stop: stopPinIcon,
-        default: defaultPinIcon,
-      };
-    }
-
-    const createIcon = (fillColor: string) => ({
-      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-        <svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 48 16 48S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="${fillColor}"/>
-          <circle cx="16" cy="16" r="8" fill="#FFFFFF"/>
-        </svg>
-      `),
-      scaledSize: new google.maps.Size(32, 48),
-      anchor: new google.maps.Point(16, 48),
-    });
-
-    return {
-      start: createIcon('#00FF00'),
-      end: createIcon('#FF0000'),
-      stop: createIcon('#FFA500'),
-      default: createIcon('#4285F4'),
-    };
-  }, [isLoaded]);
 
   // Calculate center and bounds from markers if not provided
   const mapCenter = useMemo(() => {
@@ -164,6 +110,11 @@ export function MiniMap({
     );
   }
 
+  const handleMarkerClick = (marker: MarkerData) => {
+    setSelectedMarker((prev) => (prev && isSameMarker(prev, marker) ? null : marker));
+    onMarkerClick?.(marker);
+  };
+
   return (
     <Card className="overflow-hidden">
       <GoogleMap
@@ -178,6 +129,7 @@ export function MiniMap({
           mapTypeControl: false,
           fullscreenControl: false,
         }}
+        onClick={() => setSelectedMarker(null)}
       >
         {/* Render polylines */}
         {polylines.map((polyline, index) => {
@@ -209,30 +161,25 @@ export function MiniMap({
 
         {/* Render markers */}
         {markers.map((marker, index) => {
-          let icon: google.maps.Icon | string = getPinIcons.default as google.maps.Icon;
+          let iconUrl: string = MARKER_ICONS.default;
           if (marker.icon) {
-            icon = {
-              url: marker.icon,
-              scaledSize: new google.maps.Size(32, 48),
-              anchor: new google.maps.Point(16, 48),
-            };
+            iconUrl = marker.icon;
           } else if (marker.type === 'start' || marker.label === 'start') {
-            icon = getPinIcons.start as google.maps.Icon;
+            iconUrl = MARKER_ICONS.start;
           } else if (marker.type === 'end' || marker.label === 'end') {
-            icon = getPinIcons.end as google.maps.Icon;
+            iconUrl = MARKER_ICONS.end;
           } else if (marker.type === 'stop' || marker.label === 'stop') {
-            icon = getPinIcons.stop as google.maps.Icon;
+            iconUrl = MARKER_ICONS.stop;
           }
+          const icon = {
+            url: iconUrl,
+            scaledSize: new google.maps.Size(24, 24),
+            anchor: new google.maps.Point(12, 12),
+          };
 
-          // Create unique key for marker
           const markerKey = (marker as MarkerData & { routeId?: string }).routeId 
             ? `marker-${(marker as MarkerData & { routeId?: string }).routeId}-${marker.type || 'default'}-${index}-${marker.lat}-${marker.lng}`
             : `marker-${marker.type || 'default'}-${index}-${marker.lat}-${marker.lng}`;
-
-          // Debug logging for stop points
-          if (marker.type === 'stop' || marker.label === 'stop') {
-            console.log(`[MiniMap] Rendering stop marker: ${marker.name} at (${marker.lat}, ${marker.lng}) with icon:`, icon);
-          }
 
           return (
             <Marker
@@ -240,14 +187,30 @@ export function MiniMap({
               position={{ lat: marker.lat, lng: marker.lng }}
               icon={icon}
               label={marker.label && marker.label !== 'start' && marker.label !== 'end' && marker.label !== 'stop' ? marker.label : undefined}
-              onClick={() => {
-                if (onMarkerClick) {
-                  onMarkerClick(marker);
-                }
-              }}
+              onClick={() => handleMarkerClick(marker)}
             />
           );
         })}
+
+        {selectedMarker && (
+          <InfoWindow
+            position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+            onCloseClick={() => setSelectedMarker(null)}
+          >
+            <div className="p-1 min-w-[120px]">
+              <div className="font-medium text-foreground">{selectedMarker.name ?? selectedMarker.label ?? 'Point'}</div>
+              <div className="text-xs text-muted-foreground">
+                {selectedMarker.type ? TYPE_LABELS[selectedMarker.type] : 'Point'}
+              </div>
+              {selectedMarker.code && (
+                <div className="text-xs text-muted-foreground">Code: {selectedMarker.code}</div>
+              )}
+              {selectedMarker.routeName && (
+                <div className="text-xs text-muted-foreground">{selectedMarker.routeName}</div>
+              )}
+            </div>
+          </InfoWindow>
+        )}
       </GoogleMap>
     </Card>
   );

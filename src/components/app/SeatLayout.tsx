@@ -15,9 +15,15 @@ interface SeatLayoutProps {
   seats: Seat[];
   onSeatSelect: (selectedSeats: Seat[]) => void;
   selectedSeats: Seat[];
+  size?: "default" | "large";
 }
 
-const SeatLayout = ({ seats, onSeatSelect, selectedSeats }: SeatLayoutProps) => {
+const cellSize = (size: "default" | "large") => (size === "large" ? "w-16 h-16" : "w-14 h-14");
+const iconSize = (size: "default" | "large") => (size === "large" ? 18 : 14);
+const labelClass = (size: "default" | "large") => (size === "large" ? "text-xs" : "text-[9px]");
+const rowGap = (size: "default" | "large") => (size === "large" ? "gap-3" : "gap-2");
+
+const SeatLayout = ({ seats, onSeatSelect, selectedSeats, size = "default" }: SeatLayoutProps) => {
   const toggleSeat = (seat: Seat) => {
     if (seat.status === "empty" || seat.status === "driver") return;
 
@@ -73,25 +79,26 @@ const SeatLayout = ({ seats, onSeatSelect, selectedSeats }: SeatLayoutProps) => 
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2">
+      <div className={`flex flex-col items-center ${rowGap(size)}`}>
         {grid.map((row, rowIdx) => (
-          <div key={rowIdx} className="flex gap-2 items-center">
+          <div key={rowIdx} className={`flex ${rowGap(size)} items-center`}>
             {row.map((seat, colIdx) => {
+              const cell = cellSize(size);
               if (!seat) {
-                return <div key={colIdx} className="w-14 h-14" />;
+                return <div key={colIdx} className={cell} />;
               }
               if (seat.status === "empty") {
-                return <div key={colIdx} className="w-14 h-14" />;
+                return <div key={colIdx} className={cell} />;
               }
               return (
                 <button
                   key={seat.id}
                   onClick={() => toggleSeat(seat)}
                   disabled={seat.status === "driver"}
-                  className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center transition-all active:scale-95 ${getSeatClass(seat)}`}
+                  className={`${cell} rounded-xl flex flex-col items-center justify-center transition-all active:scale-95 ${getSeatClass(seat)}`}
                 >
-                  <User size={14} />
-                  <span className="text-[9px] font-bold mt-0.5">{seat.label}</span>
+                  <User size={iconSize(size)} />
+                  <span className={`${labelClass(size)} font-bold mt-0.5`}>{seat.label}</span>
                 </button>
               );
             })}
