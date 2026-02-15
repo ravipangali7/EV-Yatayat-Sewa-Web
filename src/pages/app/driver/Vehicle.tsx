@@ -342,19 +342,7 @@ export default function Vehicle() {
       return;
     }
     setIsEndingTrip(true);
-    const getLocation = (): Promise<{ lat: number; lng: number }> =>
-      new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error("Geolocation not supported"));
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(
-          (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-          reject,
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-      });
-    getLocation()
+    getCurrentLocation()
       .then((loc) => {
         setPendingEndTripLocation(loc);
         return tripApi.endTrip(activeTrip.id, { latitude: loc.lat, longitude: loc.lng });
