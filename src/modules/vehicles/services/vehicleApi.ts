@@ -34,6 +34,11 @@ export const vehicleApi = {
     return api.post<Vehicle>('vehicles/connect/', { vehicle_id: vehicleId });
   },
 
+  // Set active route for the vehicle (caller must be active driver)
+  setActiveRoute: async (vehicleId: string, routeId: string): Promise<Vehicle> => {
+    return api.post<Vehicle>(`vehicles/${vehicleId}/set-active-route/`, { route_id: routeId });
+  },
+
   // Create vehicle
   create: async (data: Partial<Vehicle> & { 
     seats?: Array<{ side: string; number: number; status: string }>;

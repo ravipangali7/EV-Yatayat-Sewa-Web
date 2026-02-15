@@ -14,7 +14,7 @@ import DriverNavigationMap from "@/components/app/DriverNavigationMap";
 import TransactionCard from "@/components/app/TransactionCard";
 import type { AppTransaction } from "@/components/app/TransactionCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
@@ -181,6 +181,12 @@ export default function Vehicle() {
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isEndingTrip, setIsEndingTrip] = useState(false);
+  const [showRouteConfirmModal, setShowRouteConfirmModal] = useState(false);
+  const [routeToConfirm, setRouteToConfirm] = useState<RouteInfo | null>(null);
+  const [showScanConfirmModal, setShowScanConfirmModal] = useState(false);
+  const [vehicleToConnect, setVehicleToConnect] = useState<ApiVehicle | null>(null);
+  const [pendingVehicleId, setPendingVehicleId] = useState<string | null>(null);
+  const [isSettingRoute, setIsSettingRoute] = useState(false);
   const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number } | null>(null);
@@ -309,11 +315,15 @@ export default function Vehicle() {
       try {
         const result = await requestNativeScan();
         if (result.success && result.vehicleId) {
-          const vehicle = await vehicleApi.connectVehicle(result.vehicleId);
-          setSelectedVehicle(vehicle);
-          setSeats(buildSeatsFromVehicle(vehicle, superSettingSeatLayout ?? undefined));
-          setDriverState("no_route");
-          toast.success("Vehicle connected!");
+          const vehicleId = result.vehicleId.trim();
+          try {
+            const vehicleDetails = await vehicleApi.get(vehicleId);
+            setVehicleToConnect(vehicleDetails);
+            setPendingVehicleId(vehicleId);
+            setShowScanConfirmModal(true);
+          } catch {
+            toast.error("Vehicle not found or you don't have access.");
+          }
         } else if (!result.success && result.error) {
           toast.error(result.error);
         }
@@ -333,10 +343,48 @@ export default function Vehicle() {
     }
   };
 
+  const handleConfirmScanConnect = async () => {
+    if (!pendingVehicleId) return;
+    setIsScanning(true);
+    try {
+      const vehicle = await vehicleApi.connectVehicle(pendingVehicleId);
+      setSelectedVehicle(vehicle);
+      setSeats(buildSeatsFromVehicle(vehicle, superSettingSeatLayout ?? undefined));
+      setDriverState("no_route");
+      setShowScanConfirmModal(false);
+      setVehicleToConnect(null);
+      setPendingVehicleId(null);
+      toast.success("Vehicle connected!");
+    } catch (e) {
+      toast.error("Failed to connect vehicle");
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const handleSelectRoute = (route: RouteInfo) => {
-    setSelectedRoute(route);
-    setDriverState("route_selected");
-    setShowRouteModal(false);
+    setRouteToConfirm(route);
+    setShowRouteConfirmModal(true);
+  };
+
+  const handleConfirmRouteSelect = async () => {
+    if (!selectedVehicle?.id || !routeToConfirm) return;
+    setIsSettingRoute(true);
+    try {
+      const updatedVehicle = await vehicleApi.setActiveRoute(selectedVehicle.id, routeToConfirm.id);
+      setSelectedVehicle(updatedVehicle);
+      setSelectedRoute(routeToConfirm);
+      setDriverState("route_selected");
+      setShowRouteModal(false);
+      setShowRouteConfirmModal(false);
+      setRouteToConfirm(null);
+      toast.success("Active route set successfully");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } }; message?: string };
+      toast.error(err?.response?.data?.error ?? err?.message ?? "Failed to set active route");
+    } finally {
+      setIsSettingRoute(false);
+    }
   };
 
   const getCurrentLocation = (): Promise<{ lat: number; lng: number }> => {
@@ -528,12 +576,36 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
             <QrCode size={18} className="mr-2" /> {isScanning ? "Opening scanner…" : isFlutterBridgeAvailable() ? "Scan & Connect" : vehicles.length > 0 ? "Use My Vehicle" : "Scan & Connect"}
           </Button>
         </motion.div>
+        <Dialog open={showScanConfirmModal} onOpenChange={(open) => { if (!open) { setShowScanConfirmModal(false); setVehicleToConnect(null); setPendingVehicleId(null); } }}>
+          <DialogContent className="max-w-md rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>Confirm vehicle</DialogTitle>
+              <DialogDescription>Connect as active driver to this vehicle?</DialogDescription>
+            </DialogHeader>
+            {vehicleToConnect && (
+              <div className="space-y-3 py-2">
+                <div className="app-glass-card rounded-xl p-4 border border-border/50">
+                  <p className="font-semibold">{vehicleToConnect.name}</p>
+                  <p className="text-sm text-muted-foreground">{vehicleToConnect.vehicle_no}</p>
+                  <p className="text-xs text-muted-foreground">Type: {vehicleToConnect.vehicle_type}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => { setShowScanConfirmModal(false); setVehicleToConnect(null); setPendingVehicleId(null); }}>Cancel</Button>
+                  <Button className="flex-1" onClick={handleConfirmScanConnect} disabled={isScanning}>Connect</Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
 
   if (driverState === "no_route" && vehicleInfo && selectedVehicle) {
     const activeRouteDetails = selectedVehicle.active_route_details as ApiRoute | undefined;
+    const vehicleRoutes = selectedVehicle.routes?.length
+      ? routes.filter((r) => selectedVehicle!.routes!.includes(r.id))
+      : routes;
     return (
       <div className="min-h-screen">
         <AppBar title="Vehicle" />
@@ -545,10 +617,10 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
 
         <h3 className="text-sm font-bold mt-6 mb-3">Select Route</h3>
         <div className="space-y-3">
-          {routes.map((route) => (
+          {vehicleRoutes.map((route) => (
             <RouteCard key={route.id} route={route} onSelect={() => handleSelectRoute(route)} showMap />
           ))}
-          {routes.length === 0 && <p className="text-sm text-muted-foreground">No routes available</p>}
+          {vehicleRoutes.length === 0 && <p className="text-sm text-muted-foreground">No routes available for this vehicle</p>}
         </div>
         </div>
         <Dialog open={showVehicleDetailModal} onOpenChange={setShowVehicleDetailModal}>
@@ -568,6 +640,23 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
               )}
               <p className="text-xs text-muted-foreground">Type: {selectedVehicle.vehicle_type}</p>
             </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showRouteConfirmModal} onOpenChange={(open) => { if (!open) { setShowRouteConfirmModal(false); setRouteToConfirm(null); } }}>
+          <DialogContent className="max-w-[380px] rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>Set active route?</DialogTitle>
+              <DialogDescription>This route will be set as the active route for your vehicle.</DialogDescription>
+            </DialogHeader>
+            {routeToConfirm && (
+              <div className="space-y-3 py-2">
+                <RouteCard route={routeToConfirm} showMap />
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => { setShowRouteConfirmModal(false); setRouteToConfirm(null); }}>Cancel</Button>
+                  <Button className="flex-1" onClick={handleConfirmRouteSelect} disabled={isSettingRoute}>{isSettingRoute ? "Setting…" : "Confirm"}</Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -635,10 +724,27 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
               <DialogTitle className="text-base">Change Route</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-              {routes.map((route) => (
+              {(selectedVehicle?.routes?.length ? routes.filter((r) => selectedVehicle!.routes!.includes(r.id)) : routes).map((route) => (
                 <RouteCard key={route.id} route={route} onSelect={() => handleSelectRoute(route)} active={selectedRoute?.id === route.id} showMap />
               ))}
             </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showRouteConfirmModal} onOpenChange={(open) => { if (!open) { setShowRouteConfirmModal(false); setRouteToConfirm(null); } }}>
+          <DialogContent className="max-w-[380px] rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>Set active route?</DialogTitle>
+              <DialogDescription>This route will be set as the active route for your vehicle.</DialogDescription>
+            </DialogHeader>
+            {routeToConfirm && (
+              <div className="space-y-3 py-2">
+                <RouteCard route={routeToConfirm} showMap />
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => { setShowRouteConfirmModal(false); setRouteToConfirm(null); }}>Cancel</Button>
+                  <Button className="flex-1" onClick={handleConfirmRouteSelect} disabled={isSettingRoute}>{isSettingRoute ? "Setting…" : "Confirm"}</Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
