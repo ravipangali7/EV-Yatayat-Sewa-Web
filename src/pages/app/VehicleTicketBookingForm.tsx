@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { SeatLayoutVisualizer, type SeatPosition } from '@/components/vehicles/SeatLayoutVisualizer';
 import { vehicleTicketBookingApi, type SeatEntry } from '@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi';
 import { vehicleScheduleApi } from '@/modules/vehicle-schedules/services/vehicleScheduleApi';
@@ -17,7 +18,7 @@ export default function VehicleTicketBookingForm() {
   const isEdit = !!id;
   const [loading, setLoading] = useState(false);
   const [schedules, setSchedules] = useState<Array<{ id: string; date: string; time: string; price: string }>>([]);
-  const [users, setUsers] = useState<Array<{ id: string; name: string }>>([]);
+  const [users, setUsers] = useState<Array<{ id: string; name: string; phone?: string }>>([]);
   const [selectedSeats, setSelectedSeats] = useState<SeatPosition[]>([]);
   const [schedulePrice, setSchedulePrice] = useState<number>(0);
   const [vehicleSeatLayout, setVehicleSeatLayout] = useState<string[]>([]);
@@ -39,7 +40,7 @@ export default function VehicleTicketBookingForm() {
       setSchedules(r.results.map((s) => ({ id: s.id, date: s.date, time: s.time, price: s.price })))
     ).catch(() => {});
     userApi.list({ per_page: 500 }).then((r) =>
-      setUsers(r.results.map((u) => ({ id: u.id, name: u.name || u.username })))
+      setUsers(r.results.map((u) => ({ id: u.id, name: u.name || u.username, phone: u.phone })))
     ).catch(() => {});
   }, []);
 
@@ -172,18 +173,13 @@ export default function VehicleTicketBookingForm() {
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Select Schedule</h3>
             <div className="space-y-2">
               <Label>Vehicle Schedule</Label>
-              <select
-                className="w-full border border-input rounded-md px-3 py-2 bg-background"
+              <SearchableSelect
+                options={schedules.map((s) => ({ value: s.id, label: `${s.date} ${s.time} — Rs. ${s.price}` }))}
                 value={formData.vehicle_schedule}
-                onChange={(e) => setFormData({ ...formData, vehicle_schedule: e.target.value })}
-                required
+                onChange={(value) => setFormData({ ...formData, vehicle_schedule: value })}
+                placeholder="Select schedule"
                 disabled={isEdit}
-              >
-                <option value="">Select schedule</option>
-                {schedules.map((s) => (
-                  <option key={s.id} value={s.id}>{s.date} {s.time} (Rs. {s.price})</option>
-                ))}
-              </select>
+              />
             </div>
           </section>
 
@@ -219,16 +215,12 @@ export default function VehicleTicketBookingForm() {
             {!formData.is_guest && (
               <div className="space-y-2">
                 <Label>User</Label>
-                <select
-                  className="w-full border border-input rounded-md px-3 py-2 bg-background"
+                <SearchableSelect
+                  options={users.map((u) => ({ value: u.id, label: u.phone ? `${u.name} (${u.phone})` : u.name }))}
                   value={formData.user}
-                  onChange={(e) => setFormData({ ...formData, user: e.target.value })}
-                >
-                  <option value="">Select user</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, user: value })}
+                  placeholder="Select user"
+                />
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

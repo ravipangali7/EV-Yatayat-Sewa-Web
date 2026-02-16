@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { seatBookingApi } from '@/modules/seat-bookings/services/seatBookingApi';
 import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
 import { userApi } from '@/modules/users/services/userApi';
+import { placeApi } from '@/modules/places/services/placeApi';
 import { superSettingApi } from '@/modules/settings/services/superSettingApi';
 import { SeatBooking, Vehicle, VehicleSeat } from '@/types';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ export default function SeatBookingForm() {
 
   const [vehicles, setVehicles] = useState<Array<{ id: string; name: string }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; name: string; phone: string }>>([]);
+  const [places, setPlaces] = useState<Array<{ id: string; name: string; code: string }>>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [perKmCharge, setPerKmCharge] = useState<number>(0);
   const [loading, setLoading] = useState(false);
@@ -46,19 +48,22 @@ export default function SeatBookingForm() {
     trip_duration: '',
     trip_amount: '',
     is_paid: false,
+    destination_place: '',
   });
 
   // Load initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [vehiclesResponse, usersResponse, settingsResponse] = await Promise.all([
+        const [vehiclesResponse, usersResponse, placesResponse, settingsResponse] = await Promise.all([
           vehicleApi.list({ per_page: 1000 }),
           userApi.list({ per_page: 1000 }),
+          placeApi.list({ per_page: 1000 }),
           superSettingApi.list({ per_page: 1 }),
         ]);
 
         setVehicles(vehiclesResponse.results.map(v => ({ id: v.id, name: v.name })));
+        setPlaces(placesResponse.results.map(p => ({ id: p.id, name: p.name, code: p.code })));
 
         setUsers(usersResponse.results.map(u => ({ 
           id: u.id, 
@@ -105,6 +110,7 @@ export default function SeatBookingForm() {
             trip_duration: booking.trip_duration?.toString() || '',
             trip_amount: booking.trip_amount?.toString() || '',
             is_paid: booking.is_paid || false,
+            destination_place: booking.destination_place || '',
           });
 
           if (booking.vehicle) {
@@ -248,6 +254,9 @@ export default function SeatBookingForm() {
         is_guest: formData.is_guest,
         is_paid: formData.is_paid,
       };
+      if (formData.destination_place) {
+        submitData.destination_place = formData.destination_place;
+      }
 
       if (!formData.is_guest) {
         submitData.user = formData.user;
@@ -473,6 +482,17 @@ export default function SeatBookingForm() {
                   />
                 </div>
               )}
+
+              {/* Destination Place (optional) */}
+              <div className="space-y-2">
+                <Label>Destination Place</Label>
+                <SearchableSelect
+                  options={[{ value: '', label: '— None —' }, ...places.map(p => ({ value: p.id, label: `${p.name} (${p.code})` }))]}
+                  value={formData.destination_place}
+                  onChange={(value) => setFormData({ ...formData, destination_place: value })}
+                  placeholder="Select destination place"
+                />
+              </div>
 
               {/* Payment Status */}
               <div className="flex items-center space-x-2">

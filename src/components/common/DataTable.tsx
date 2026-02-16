@@ -37,6 +37,13 @@ interface DataTableProps<T extends { id: string }> {
   onBulkDelete?: (ids: string[]) => void;
   filterComponent?: ReactNode;
   perPage?: number;
+  /** When true, search and pagination are controlled by parent (server-side). */
+  serverSide?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  totalCount?: number;
+  page?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function DataTable<T extends { id: string }>({
@@ -49,27 +56,39 @@ export function DataTable<T extends { id: string }>({
   onBulkDelete,
   filterComponent,
   perPage = 25,
+  serverSide = false,
+  searchValue,
+  onSearchChange,
+  totalCount,
+  page: controlledPage,
+  onPageChange,
 }: DataTableProps<T>) {
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [internalSearch, setInternalSearch] = useState('');
+  const [internalPage, setInternalPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
-  // Filter data based on search
-  const filteredData = data.filter((item) => {
-    const searchLower = search.toLowerCase();
-    return columns.some((col) => {
-      const value = (item as Record<string, unknown>)[col.key];
-      return String(value).toLowerCase().includes(searchLower);
-    });
-  });
+  const search = serverSide ? (searchValue ?? '') : internalSearch;
+  const setSearch = serverSide ? (onSearchChange ?? (() => {})) : setInternalSearch;
+  const page = serverSide ? (controlledPage ?? 1) : internalPage;
+  const setPage = serverSide ? (onPageChange ?? (() => {})) : setInternalPage;
 
-  // Pagination
-  const totalPages = Math.ceil(filteredData.length / perPage);
+  const filteredData = serverSide
+    ? data
+    : data.filter((item) => {
+        const searchLower = internalSearch.toLowerCase();
+        return columns.some((col) => {
+          const value = (item as Record<string, unknown>)[col.key];
+          return String(value).toLowerCase().includes(searchLower);
+        });
+      });
+
+  const total = serverSide ? (totalCount ?? data.length) : filteredData.length;
+  const totalPages = Math.ceil(total / perPage);
   const startIndex = (page - 1) * perPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + perPage);
+  const paginatedData = serverSide ? data : filteredData.slice(startIndex, startIndex + perPage);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -118,8 +137,10 @@ export function DataTable<T extends { id: string }>({
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
+              const v = e.target.value;
+              setSearch(v);
+              if (!serverSide) setPage(1);
+              if (serverSide && onPageChange) onPageChange(1);
             }}
             className="pl-10"
           />
@@ -236,8 +257,7 @@ export function DataTable<T extends { id: string }>({
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {startIndex + 1} to {Math.min(startIndex + perPage, filteredData.length)} of{' '}
-          {filteredData.length} entries
+          Showing {startIndex + 1} to {Math.min(startIndex + perPage, total)} of {total} entries
         </p>
         <div className="flex gap-2">
           <Button
@@ -277,7 +297,7 @@ export function DataTable<T extends { id: string }>({
             variant="outline"
             size="sm"
             onClick={() => setPage(page + 1)}
-            disabled={page === totalPages || totalPages === 0}
+            disabled={page >= totalPages || totalPages === 0}
           >
             <ChevronRight className="w-4 h-4" />
           </Button>

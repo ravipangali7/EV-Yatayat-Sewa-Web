@@ -13,7 +13,9 @@ export const transactionApi = {
     if (params?.wallet) queryParams.append('wallet', params.wallet);
     if (params?.user) queryParams.append('user', params.user);
     if (params?.card) queryParams.append('card', params.card);
-    
+    if (params?.date_from) queryParams.append('date_from', params.date_from);
+    if (params?.date_to) queryParams.append('date_to', params.date_to);
+
     const queryString = queryParams.toString();
     const url = `transactions/${queryString ? `?${queryString}` : ''}`;
     return api.get<PaginatedResponse<Transaction>>(url);

@@ -43,6 +43,9 @@ import VehicleScheduleView from "./pages/app/VehicleScheduleView";
 import VehicleTicketBookings from "./pages/app/VehicleTicketBookings";
 import VehicleTicketBookingForm from "./pages/app/VehicleTicketBookingForm";
 import VehicleTicketBookingView from "./pages/app/VehicleTicketBookingView";
+import Cards from "./pages/app/Cards";
+import CardForm from "./pages/app/CardForm";
+import CardView from "./pages/app/CardView";
 
 // App (driver/user) pages
 import AppLogin from "./pages/app/AppLogin";
@@ -127,6 +130,12 @@ function AppRoutes() {
       <Route path="/admin/wallets/add" element={<ProtectedRoute><WalletForm /></ProtectedRoute>} />
       <Route path="/admin/wallets/:id" element={<ProtectedRoute><WalletView /></ProtectedRoute>} />
       <Route path="/admin/wallets/:id/edit" element={<ProtectedRoute><WalletForm /></ProtectedRoute>} />
+
+      {/* Cards */}
+      <Route path="/admin/cards" element={<ProtectedRoute><Cards /></ProtectedRoute>} />
+      <Route path="/admin/cards/add" element={<ProtectedRoute><CardForm /></ProtectedRoute>} />
+      <Route path="/admin/cards/:id" element={<ProtectedRoute><CardView /></ProtectedRoute>} />
+      <Route path="/admin/cards/:id/edit" element={<ProtectedRoute><CardForm /></ProtectedRoute>} />
       
       {/* Transactions */}
       <Route path="/admin/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />

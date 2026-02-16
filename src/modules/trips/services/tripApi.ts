@@ -49,15 +49,29 @@ export const tripApi = {
     return api.post<TripEndResponse>(`trips/${tripId}/end/`, data);
   },
 
-  list: async (params?: { vehicle?: string; driver?: string; active_only?: boolean; page?: number; per_page?: number }) => {
+  list: async (params?: {
+    vehicle?: string;
+    driver?: string;
+    route?: string;
+    active_only?: boolean;
+    search?: string;
+    date_from?: string;
+    date_to?: string;
+    page?: number;
+    per_page?: number;
+  }) => {
     const queryParams = new URLSearchParams();
     if (params?.vehicle) queryParams.append('vehicle', params.vehicle);
     if (params?.driver) queryParams.append('driver', params.driver);
+    if (params?.route) queryParams.append('route', params.route);
     if (params?.active_only !== undefined) queryParams.append('active_only', params.active_only.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.date_from) queryParams.append('date_from', params.date_from);
+    if (params?.date_to) queryParams.append('date_to', params.date_to);
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
     const q = queryParams.toString();
-    return api.get<{ results: unknown[]; count: number; page: number; per_page: number }>(`trips/${q ? `?${q}` : ''}`);
+    return api.get<{ results: unknown[]; count: number; page: number; per_page: number; stats?: { total_count?: number } }>(`trips/${q ? `?${q}` : ''}`);
   },
 
   get: async (id: string) => api.get<ActiveTrip>(`trips/${id}/`),

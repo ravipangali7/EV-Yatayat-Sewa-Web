@@ -188,6 +188,21 @@ export default function TransactionView() {
                 </div>
               </div>
             </div>
+            {(transaction as Transaction & { card_details?: { card_number: string; balance: string; is_active: boolean } }).card_details && (
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Card</h4>
+                <div className="space-y-2 pl-4">
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-muted-foreground">Card Number</span>
+                    <span className="font-mono font-medium">{(transaction as Transaction & { card_details?: { card_number: string } }).card_details?.card_number || '—'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-muted-foreground">Balance</span>
+                    <span className="font-medium">Rs. {toNumber((transaction as Transaction & { card_details?: { balance: string } }).card_details?.balance ?? 0, 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

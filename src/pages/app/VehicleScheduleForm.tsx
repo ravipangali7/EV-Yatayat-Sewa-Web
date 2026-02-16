@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { vehicleScheduleApi } from '@/modules/vehicle-schedules/services/vehicleScheduleApi';
 import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
 import { routeApi } from '@/modules/routes/services/routeApi';
@@ -14,7 +15,7 @@ export default function VehicleScheduleForm() {
   const navigate = useNavigate();
   const isEdit = !!id;
   const [loading, setLoading] = useState(false);
-  const [vehicles, setVehicles] = useState<Array<{ id: string; name: string }>>([]);
+  const [vehicles, setVehicles] = useState<Array<{ id: string; name: string; vehicle_no?: string }>>([]);
   const [routes, setRoutes] = useState<Array<{ id: string; name: string }>>([]);
   const [formData, setFormData] = useState({
     vehicle: '',
@@ -26,7 +27,7 @@ export default function VehicleScheduleForm() {
 
   useEffect(() => {
     Promise.all([
-      vehicleApi.list({ per_page: 500 }).then((r) => r.results.map((v) => ({ id: v.id, name: v.name }))),
+      vehicleApi.list({ per_page: 500 }).then((r) => r.results.map((v) => ({ id: v.id, name: v.name, vehicle_no: v.vehicle_no }))),
       routeApi.list({ per_page: 500 }).then((r) => r.results.map((rte) => ({ id: rte.id, name: rte.name }))),
     ]).then(([v, r]) => {
       setVehicles(v);
@@ -88,31 +89,21 @@ export default function VehicleScheduleForm() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Vehicle</Label>
-                <select
-                  className="w-full border border-input rounded-md px-3 py-2 bg-background"
+                <SearchableSelect
+                  options={vehicles.map((v) => ({ value: v.id, label: v.vehicle_no ? `${v.name} (${v.vehicle_no})` : v.name }))}
                   value={formData.vehicle}
-                  onChange={(e) => setFormData({ ...formData, vehicle: e.target.value })}
-                  required
-                >
-                  <option value="">Select vehicle</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>{v.name}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, vehicle: value })}
+                  placeholder="Select vehicle"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Route</Label>
-                <select
-                  className="w-full border border-input rounded-md px-3 py-2 bg-background"
+                <SearchableSelect
+                  options={routes.map((r) => ({ value: r.id, label: r.name }))}
                   value={formData.route}
-                  onChange={(e) => setFormData({ ...formData, route: e.target.value })}
-                  required
-                >
-                  <option value="">Select route</option>
-                  {routes.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, route: value })}
+                  placeholder="Select route"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Date</Label>

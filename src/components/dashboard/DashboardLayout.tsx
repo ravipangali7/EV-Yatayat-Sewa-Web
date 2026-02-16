@@ -13,7 +13,8 @@ import {
   Wallet,
   Receipt,
   ChevronDown,
-  Ticket
+  Ticket,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +43,7 @@ const navSections: NavSection[] = [
       { label: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
       { label: 'Users', path: '/admin/users', icon: <Users className="w-5 h-5" /> },
       { label: 'Wallets', path: '/admin/wallets', icon: <Wallet className="w-5 h-5" /> },
+      { label: 'Cards', path: '/admin/cards', icon: <CreditCard className="w-5 h-5" /> },
       { label: 'Transactions', path: '/admin/transactions', icon: <Receipt className="w-5 h-5" /> },
       { label: 'Settings', path: '/admin/settings', icon: <Settings className="w-5 h-5" /> },
     ],
@@ -53,7 +55,6 @@ const navSections: NavSection[] = [
       { label: 'Routes', path: '/admin/routes', icon: <RouteIcon className="w-5 h-5" /> },
       { label: 'Vehicles', path: '/admin/vehicles', icon: <Bus className="w-5 h-5" /> },
       { label: 'Trips', path: '/admin/trips', icon: <RouteIcon className="w-5 h-5" /> },
-      { label: 'Locations', path: '/admin/locations', icon: <MapPin className="w-5 h-5" /> },
       { label: 'Vehicle Schedules', path: '/admin/vehicle-schedules', icon: <Ticket className="w-5 h-5" /> },
       { label: 'Vehicle Ticket Bookings', path: '/admin/vehicle-ticket-bookings', icon: <Ticket className="w-5 h-5" /> },
       { label: 'Seat Bookings', path: '/admin/seat-bookings', icon: <Ticket className="w-5 h-5" /> },

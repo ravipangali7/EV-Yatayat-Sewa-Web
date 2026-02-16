@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Check, X, Users as UsersIcon } from 'lucide-react';
+import { Plus, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card as UICard, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
 import { StatusBadge } from '@/components/common/StatusBadge';
-import { userApi } from '@/modules/users/services/userApi';
-import { User } from '@/types';
+import { cardApi, CardWithUserDetails } from '@/modules/cards/services/cardApi';
 import { toast } from 'sonner';
+import { toNumber } from '@/lib/utils';
 
-export default function Users() {
+export default function Cards() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<User[]>([]);
+  const [cards, setCards] = useState<CardWithUserDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -30,98 +30,91 @@ export default function Users() {
     };
   }, [searchInput]);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchCards = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await userApi.list({ search, page, per_page: perPage });
-      setUsers(response.results);
+      const response = await cardApi.list({ search: search || undefined, page, per_page: perPage });
+      setCards(response.results);
       setTotalCount(response.count);
       setStats((response as { stats?: { total_count?: number } }).stats ?? null);
     } catch (error) {
-      console.error('Failed to load users:', error);
-      setUsers([]);
+      console.error('Failed to load cards:', error);
+      setCards([]);
     } finally {
       setLoading(false);
     }
   }, [search, page]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    fetchCards();
+  }, [fetchCards]);
 
-  const columns: Column<User>[] = [
-    { key: 'name', header: 'Name' },
-    { key: 'phone', header: 'Phone' },
-    { key: 'email', header: 'Email' },
+  const columns: Column<CardWithUserDetails>[] = [
+    { key: 'card_number', header: 'Card Number', render: (c) => <span className="font-mono">{c.card_number}</span> },
     {
-      key: 'is_driver',
-      header: 'Driver',
-      render: (user) => user.is_driver ? <Check className="w-4 h-4 text-success" /> : <X className="w-4 h-4 text-muted-foreground" />,
+      key: 'user',
+      header: 'User',
+      render: (c) => c.user_details?.name || c.user_details?.phone || c.user || '-',
+    },
+    {
+      key: 'balance',
+      header: 'Balance',
+      render: (c) => `Rs. ${toNumber(c.balance, 0).toLocaleString()}`,
     },
     {
       key: 'is_active',
       header: 'Status',
-      render: (user) => <StatusBadge status={user.is_active ? 'active' : 'inactive'} />,
+      render: (c) => <StatusBadge status={c.is_active ? 'active' : 'inactive'} />,
+    },
   ];
 
   const handleDelete = async (id: string) => {
     try {
-      await userApi.delete(id);
-      toast.success('User deleted successfully');
-      fetchUsers();
+      await cardApi.delete(id);
+      toast.success('Card deleted');
+      fetchCards();
     } catch (error) {
-      console.error('Failed to delete user:', error);
-    }
-  };
-
-  const handleBulkDelete = async (ids: string[]) => {
-    try {
-      await Promise.all(ids.map(id => userApi.delete(id)));
-      toast.success(`${ids.length} users deleted successfully`);
-      fetchUsers();
-    } catch (error) {
-      console.error('Failed to delete users:', error);
+      console.error('Failed to delete card:', error);
     }
   };
 
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Users"
-        subtitle="Manage all system users"
+        title="Cards"
+        subtitle="Manage user cards"
         actions={
-          <Button onClick={() => navigate('/admin/users/add')}>
+          <Button onClick={() => navigate('/admin/cards/add')}>
             <Plus className="w-4 h-4 mr-2" />
-            Add User
+            Add Card
           </Button>
         }
       />
 
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card>
+          <UICard>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
-              <UsersIcon className="w-5 h-5 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Cards</CardTitle>
+              <CreditCard className="w-5 h-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total_count ?? totalCount}</div>
             </CardContent>
-          </Card>
+          </UICard>
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading users...</div>
+        <div className="text-center py-12 text-muted-foreground">Loading cards...</div>
       ) : (
         <DataTable
-          data={users}
+          data={cards}
           columns={columns}
-          searchPlaceholder="Search users (name, phone, email)..."
-          onView={(user) => navigate(`/admin/users/${user.id}`)}
-          onEdit={(user) => navigate(`/admin/users/${user.id}/edit`)}
+          searchPlaceholder="Search by card number or user..."
+          onView={(c) => navigate(`/admin/cards/${c.id}`)}
+          onEdit={(c) => navigate(`/admin/cards/${c.id}/edit`)}
           onDelete={handleDelete}
-          onBulkDelete={handleBulkDelete}
           serverSide
           searchValue={searchInput}
           onSearchChange={(v) => { setSearchInput(v); setPage(1); }}

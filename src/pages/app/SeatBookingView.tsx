@@ -202,6 +202,12 @@ export default function SeatBookingView() {
                   <span className="font-medium text-lg">Rs. {Number(booking.trip_amount).toFixed(2)}</span>
                 </div>
               )}
+              {(booking as { destination_place_details?: { name?: string; code?: string } }).destination_place_details && (
+                <div className="flex justify-between items-center py-2 border-b border-border">
+                  <span className="text-muted-foreground">Destination Place</span>
+                  <span className="font-medium">{(booking as { destination_place_details?: { name?: string; code?: string } }).destination_place_details?.name || (booking as { destination_place_details?: { name?: string; code?: string } }).destination_place_details?.code || '—'}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

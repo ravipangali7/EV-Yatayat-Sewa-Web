@@ -21,7 +21,9 @@ export const seatBookingApi = {
     if (params?.is_guest !== undefined) queryParams.append('is_guest', params.is_guest.toString());
     if (params?.is_paid !== undefined) queryParams.append('is_paid', params.is_paid.toString());
     if (params?.vehicle_seat) queryParams.append('vehicle_seat', params.vehicle_seat);
-    
+    if (params?.date_from) queryParams.append('date_from', params.date_from);
+    if (params?.date_to) queryParams.append('date_to', params.date_to);
+
     const queryString = queryParams.toString();
     const url = `seat-bookings/${queryString ? `?${queryString}` : ''}`;
     return api.get<PaginatedResponse<SeatBooking>>(url);

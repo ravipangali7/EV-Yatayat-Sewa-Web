@@ -139,6 +139,40 @@ export default function UserView() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>License & Dealer</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">License No</span>
+              <span className="font-medium">{user.license_no || '—'}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">License Type</span>
+              <span className="font-medium">{user.license_type || '—'}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">License Expiry</span>
+              <span className="font-medium">{user.license_expiry_date ? new Date(user.license_expiry_date).toLocaleDateString() : '—'}</span>
+            </div>
+            {user.license_image && (
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-muted-foreground">License Image</span>
+                <img src={user.license_image.startsWith('http') ? user.license_image : `http://127.0.0.1:8000${user.license_image}`} alt="License" className="h-12 object-contain" />
+              </div>
+            )}
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Ticket Dealer</span>
+              {user.is_ticket_dealer ? <Check className="w-5 h-5 text-success" /> : <X className="w-5 h-5 text-muted-foreground" />}
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Ticket Commission</span>
+              <span className="font-medium">{user.ticket_commission != null ? String(user.ticket_commission) : '—'}</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
