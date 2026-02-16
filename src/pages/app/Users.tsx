@@ -62,6 +62,7 @@ export default function Users() {
       key: 'is_active',
       header: 'Status',
       render: (user) => <StatusBadge status={user.is_active ? 'active' : 'inactive'} />,
+    },
   ];
 
   const handleDelete = async (id: string) => {
