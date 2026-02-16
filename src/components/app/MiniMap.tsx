@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
-import { GOOGLE_MAPS_API_KEY } from "@/config/maps";
+import { GoogleMap, InfoWindow, Marker, Polyline } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
 import {
   FIT_BOUNDS_PADDING,
   MARKER_ICONS,
@@ -13,9 +13,6 @@ import {
   ROUTE_MARKER_SIZE,
 } from "@/config/mapConstants";
 import { getDirectionsPath } from "@/lib/directions";
-
-/** Stable reference so LoadScript is not reloaded. */
-const MAP_LIBRARIES: ("geometry")[] = ["geometry"];
 
 export interface MapPoint {
   name: string;
@@ -41,11 +38,7 @@ interface MiniMapProps {
 const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) => {
   const [selectedPoint, setSelectedPoint] = useState<MapPoint | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const { isLoaded } = useJsApiLoader({
-    id: "google-app-minimap",
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: MAP_LIBRARIES,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const routeWaypoints = useMemo(
     () => points.filter((p) => p.type !== "current").map((p) => ({ lat: p.lat, lng: p.lng })),

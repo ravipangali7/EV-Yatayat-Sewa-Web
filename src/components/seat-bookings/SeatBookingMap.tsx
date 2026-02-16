@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
+import { GoogleMap, Marker } from '@react-google-maps/api';
+import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -36,9 +36,6 @@ const defaultCenter = {
   lng: 85.3240,
 };
 
-// Google Maps libraries - defined as constant to prevent LoadScript reloads
-const GOOGLE_MAPS_LIBRARIES = ['places', 'geometry'] as const;
-
 const checkInPinIcon = {
   url: '/start_point.png',
   scaledSize: { width: 32, height: 32 },
@@ -71,11 +68,7 @@ export function SeatBookingMap({
   const mapRef = useRef<google.maps.Map | null>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'seat-booking-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: GOOGLE_MAPS_LIBRARIES,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   // Helper function: Calculate Haversine distance
   const calculateHaversineDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {

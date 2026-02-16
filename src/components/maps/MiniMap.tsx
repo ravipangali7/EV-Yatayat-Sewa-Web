@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { GoogleMap, InfoWindow, Marker, Polyline, useJsApiLoader } from '@react-google-maps/api';
-import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
+import { GoogleMap, InfoWindow, Marker, Polyline } from '@react-google-maps/api';
+import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
 import { MARKER_ICONS, ROUTE_MARKER_ANCHOR, ROUTE_MARKER_SIZE } from '@/config/mapConstants';
 import { Card } from '@/components/ui/card';
 
@@ -39,9 +39,6 @@ const defaultCenter = {
   lng: -74.0060,
 };
 
-/** Stable reference so LoadScript is not reloaded. */
-const MAP_LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
-
 const TYPE_LABELS: Record<'start' | 'end' | 'stop', string> = {
   start: 'Start',
   stop: 'Stop',
@@ -63,11 +60,7 @@ export function MiniMap({
   onPolylineClick,
 }: MiniMapProps) {
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-mini-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: MAP_LIBRARIES,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   // Calculate center and bounds from markers if not provided
   const mapCenter = useMemo(() => {

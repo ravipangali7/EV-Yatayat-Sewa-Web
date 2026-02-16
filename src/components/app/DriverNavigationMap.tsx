@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, Marker, Polyline, useJsApiLoader } from "@react-google-maps/api";
-import { GOOGLE_MAPS_API_KEY } from "@/config/maps";
+import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
 import {
   MARKER_ICONS,
   NAVIGATION_MARKER_SIZE,
@@ -12,8 +12,6 @@ import {
   ROUTE_MARKER_SIZE,
 } from "@/config/mapConstants";
 import { getDirectionsPath } from "@/lib/directions";
-
-const MAP_LIBRARIES: ("geometry")[] = ["geometry"];
 
 export type RouteMarkerType = "start" | "stop" | "end";
 
@@ -60,11 +58,7 @@ export default function DriverNavigationMap({
     previousCenter && (previousCenter.lat !== center.lat || previousCenter.lng !== center.lng)
       ? computeHeading(previousCenter, center)
       : 0;
-  const { isLoaded } = useJsApiLoader({
-    id: "google-driver-nav-map",
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: MAP_LIBRARIES,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const routeWaypointsKey = useMemo(
     () => routeWaypoints.map((w) => `${w.lat},${w.lng}`).join("|"),

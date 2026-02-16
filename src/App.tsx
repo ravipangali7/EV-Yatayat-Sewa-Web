@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { GoogleMapsProvider } from "@/contexts/GoogleMapsContext";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 
 // Pages
@@ -215,7 +216,9 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="*" element={
       <AuthProvider>
-        <AppRoutes />
+        <GoogleMapsProvider>
+          <AppRoutes />
+        </GoogleMapsProvider>
       </AuthProvider>
     } />
   ),

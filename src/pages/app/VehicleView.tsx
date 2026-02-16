@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Edit, QrCode } from 'lucide-react';
-import { useJsApiLoader } from '@react-google-maps/api';
+import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,6 @@ import { Vehicle, User, Route, VehicleSeat, VehicleImage } from '@/types';
 import { toast } from 'sonner';
 import { toNumber } from '@/lib/utils';
 import { getDirectionsPath } from '@/lib/directions';
-import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 
 interface MarkerData {
   lat: number;
@@ -77,11 +76,7 @@ export default function VehicleView() {
     fetchData();
   }, [id]);
 
-  const { isLoaded: isMapsLoaded } = useJsApiLoader({
-    id: 'google-mini-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ['places', 'geometry'],
-  });
+  const { isLoaded: isMapsLoaded } = useGoogleMaps();
 
   // Prepare map data for all routes (markers with icons, straight paths, waypoints per route)
   const mapData = useMemo(() => {

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
+import { GoogleMap, Marker } from '@react-google-maps/api';
+import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
 import { Card } from '@/components/ui/card';
 
 interface GoogleMapComponentProps {
@@ -42,11 +42,7 @@ export function GoogleMapComponent({
   const [currentPosition, setCurrentPosition] = useState({ lat: latitude, lng: longitude });
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ['places', 'geometry'],
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const center = {
     lat: latitude || defaultCenter.lat,
