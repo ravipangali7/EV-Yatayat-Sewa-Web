@@ -183,7 +183,7 @@ export default function SeatBookingView() {
               {booking.trip_distance && (
                 <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="text-muted-foreground">Distance</span>
-                  <span className="font-medium">{booking.trip_distance.toFixed(2)} km</span>
+                  <span className="font-medium">{Number(booking.trip_distance).toFixed(2)} km</span>
                 </div>
               )}
 
@@ -199,7 +199,7 @@ export default function SeatBookingView() {
               {booking.trip_amount && (
                 <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium text-lg">Rs. {booking.trip_amount.toFixed(2)}</span>
+                  <span className="font-medium text-lg">Rs. {Number(booking.trip_amount).toFixed(2)}</span>
                 </div>
               )}
             </CardContent>
