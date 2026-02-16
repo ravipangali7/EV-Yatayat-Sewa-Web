@@ -60,6 +60,22 @@ export const authApi = {
     return api.post<RegisterResponse>('auth/register/', data);
   },
 
+  // Request OTP for registration (do not create user)
+  requestRegisterOtp: async (phone: string): Promise<{ message: string; phone: string }> => {
+    return api.post<{ message: string; phone: string }>('auth/register-request-otp/', { phone });
+  },
+
+  // Verify OTP and create account
+  registerVerifyOtp: async (data: {
+    phone: string;
+    otp_code: string;
+    name: string;
+    email?: string;
+    password: string;
+  }): Promise<RegisterResponse> => {
+    return api.post<RegisterResponse>('auth/register-verify/', data);
+  },
+
   // Forgot password - send OTP to phone
   forgotPassword: async (phone: string): Promise<{ message: string; phone: string }> => {
     return api.post<{ message: string; phone: string }>('auth/forgot-password/', { phone });

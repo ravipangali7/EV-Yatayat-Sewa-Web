@@ -6,6 +6,7 @@ export const seatBookingApi = {
   list: async (params?: ListParams & {
     vehicle?: string;
     user?: string;
+    driver?: string;
     is_guest?: boolean;
     is_paid?: boolean;
     vehicle_seat?: string;
@@ -16,6 +17,7 @@ export const seatBookingApi = {
     if (params?.search) queryParams.append('search', params.search);
     if (params?.vehicle) queryParams.append('vehicle', params.vehicle);
     if (params?.user) queryParams.append('user', params.user);
+    if (params?.driver) queryParams.append('driver', params.driver);
     if (params?.is_guest !== undefined) queryParams.append('is_guest', params.is_guest.toString());
     if (params?.is_paid !== undefined) queryParams.append('is_paid', params.is_paid.toString());
     if (params?.vehicle_seat) queryParams.append('vehicle_seat', params.vehicle_seat);
@@ -67,7 +69,8 @@ export const seatBookingApi = {
     return api.post<SeatBooking>('seat-bookings/switch/', data);
   },
 
-  // Checkout (optional place_id for at-stop validation)
+  // Checkout (optional place_id, confirm_out_of_range for outside-destination confirm)
+  // May return SeatBooking or preview when outside 500m of destination
   checkout: async (data: {
     vehicle_seat_id: string;
     check_out_lat: number;
@@ -75,7 +78,17 @@ export const seatBookingApi = {
     check_out_address: string;
     is_paid: boolean;
     place_id?: string;
-  }): Promise<SeatBooking> => {
-    return api.post<SeatBooking>('seat-bookings/checkout/', data);
+    confirm_out_of_range?: boolean;
+  }): Promise<SeatBooking | CheckoutPreviewResponse> => {
+    return api.post<SeatBooking | CheckoutPreviewResponse>('seat-bookings/checkout/', data);
   },
 };
+
+export interface CheckoutPreviewResponse {
+  within_destination: false;
+  distance_meters: number;
+  current_trip_amount: string;
+  destination_trip_amount: string;
+  new_trip_amount: string;
+  amount_difference: string;
+}

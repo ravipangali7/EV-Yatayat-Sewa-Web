@@ -52,9 +52,9 @@ export default function DriverHome() {
           setBalance(toNumber(wallet.balance, 0));
           setToReceive(toNumber(wallet.to_receive, 0));
           setToPay(toNumber(wallet.to_pay, 0));
-          const [txRes, sbRes] = await Promise.all([
+            const [txRes, sbRes] = await Promise.all([
             transactionApi.list({ wallet: wallet.id, per_page: 20 }),
-            seatBookingApi.list({ user: user.id, per_page: 20 }).catch(() => ({ results: [] })),
+            seatBookingApi.list({ driver: user.id, per_page: 20 }).catch(() => ({ results: [] })),
           ]);
           setTransactions(txRes.results.map(transactionToAppTransaction));
           setSeatBookings((sbRes as { results: unknown[] }).results ?? []);

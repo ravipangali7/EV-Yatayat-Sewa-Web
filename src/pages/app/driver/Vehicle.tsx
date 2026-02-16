@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { QrCode, MapPin, Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,9 +27,11 @@ import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicle
 import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
 import { locationApi } from "@/modules/locations/services/locationApi";
 import { superSettingApi } from "@/modules/settings/services/superSettingApi";
-import { seatBookingApi } from "@/modules/seat-bookings/services/seatBookingApi";
+import { seatBookingApi, type CheckoutPreviewResponse } from "@/modules/seat-bookings/services/seatBookingApi";
 import AppBar from "@/components/app/AppBar";
 import { toast } from "sonner";
+
+const CHECKOUT_ALL_FIRST_MSG = "Check out all passengers first.";
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -215,6 +218,7 @@ function buildSeatsFromVehicle(vehicle: ApiVehicle | null, fallbackLayout?: stri
 
 export default function Vehicle() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [driverState, setDriverState] = useState<DriverState>("no_vehicle");
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [routes, setRoutes] = useState<RouteInfo[]>([]);
@@ -250,6 +254,14 @@ export default function Vehicle() {
   const [showDropoffModal, setShowDropoffModal] = useState(false);
   const [dropoffData, setDropoffData] = useState<{ placeId: string; placeName: string; dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string }> } | null>(null);
   const lastDropoffPlaceIdRef = useRef<string | null>(null);
+  const [outOfRangeCheckout, setOutOfRangeCheckout] = useState<{
+    vehicle_seat_id: string;
+    check_out_lat: number;
+    check_out_lng: number;
+    check_out_address: string;
+    place_id: string;
+    preview: CheckoutPreviewResponse;
+  } | null>(null);
   const [destinationSearch, setDestinationSearch] = useState("");
   const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
@@ -366,11 +378,13 @@ export default function Vehicle() {
       const at = res.at_stop;
       if (at?.dropoffs?.length && at.place_id !== lastDropoffPlaceIdRef.current) {
         lastDropoffPlaceIdRef.current = at.place_id;
+        const labels = new Set(at.dropoffs.map((d: { seat_label: string }) => d.seat_label));
         setDropoffData({ placeId: at.place_id, placeName: at.name, dropoffs: at.dropoffs });
         setShowDropoffModal(true);
+        setSelectedSeats(seats.filter((s) => labels.has(s.id)));
       }
     }).catch(() => {});
-  }, [activeTrip?.id, driverState, lastLocation?.lat, lastLocation?.lng]);
+  }, [activeTrip?.id, driverState, lastLocation?.lat, lastLocation?.lng, seats]);
 
   useEffect(() => {
     if (driverState !== "trip_started" || tripTab !== "map") return;
@@ -649,7 +663,7 @@ export default function Vehicle() {
       const loc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
       try {
         for (const d of dropoffData.dropoffs) {
-          await seatBookingApi.checkout({
+          const res = await seatBookingApi.checkout({
             vehicle_seat_id: d.vehicle_seat_id,
             check_out_lat: loc.lat,
             check_out_lng: loc.lng,
@@ -657,10 +671,30 @@ export default function Vehicle() {
             is_paid: true,
             place_id: dropoffData.placeId,
           });
+          if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
+            setOutOfRangeCheckout({
+              vehicle_seat_id: d.vehicle_seat_id,
+              check_out_lat: loc.lat,
+              check_out_lng: loc.lng,
+              check_out_address: dropoffData.placeName,
+              place_id: dropoffData.placeId,
+              preview: res as CheckoutPreviewResponse,
+            });
+            return;
+          }
         }
+        const updatedSeatsAfterDropoff = seats.map((s) => {
+          if (dropoffData.dropoffs.some((d) => d.seat_label === s.id)) {
+            return { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined };
+          }
+          return s;
+        });
+        setSeats(updatedSeatsAfterDropoff);
+        setSelectedSeats([]);
         setShowDropoffModal(false);
         setDropoffData(null);
         lastDropoffPlaceIdRef.current = null;
+        toast.success("Check-out successful!");
       } catch (e: unknown) {
         const err = e as { response?: { data?: { error?: string } }; message?: string };
         toast.error(err?.response?.data?.error ?? err?.message ?? "Check-out failed");
@@ -696,6 +730,46 @@ export default function Vehicle() {
     setSelectedSeats([]);
     setShowCheckoutModal(false);
     toast.success("Check-out successful!");
+  };
+
+  const confirmCheckOutOutOfRange = async () => {
+    if (!outOfRangeCheckout) return;
+    try {
+      await seatBookingApi.checkout({
+        vehicle_seat_id: outOfRangeCheckout.vehicle_seat_id,
+        check_out_lat: outOfRangeCheckout.check_out_lat,
+        check_out_lng: outOfRangeCheckout.check_out_lng,
+        check_out_address: outOfRangeCheckout.check_out_address,
+        is_paid: true,
+        place_id: outOfRangeCheckout.place_id,
+        confirm_out_of_range: true,
+      });
+      const currentDropoffData = dropoffData;
+      setOutOfRangeCheckout(null);
+      if (currentDropoffData) {
+        const remaining = currentDropoffData.dropoffs.filter((d) => d.vehicle_seat_id !== outOfRangeCheckout.vehicle_seat_id);
+        if (remaining.length === 0) {
+          const updatedSeatsAfterDropoff = seats.map((s) => {
+            if (currentDropoffData.dropoffs.some((d) => d.seat_label === s.id)) {
+              return { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined };
+            }
+            return s;
+          });
+          setSeats(updatedSeatsAfterDropoff);
+          setSelectedSeats([]);
+          setShowDropoffModal(false);
+          setDropoffData(null);
+          lastDropoffPlaceIdRef.current = null;
+        } else {
+          setDropoffData((prev) => (prev ? { ...prev, dropoffs: remaining } : null));
+          setSelectedSeats(seats.filter((s) => remaining.some((d) => d.seat_label === s.id)));
+        }
+      }
+      toast.success("Check-out confirmed.");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } }; message?: string };
+      toast.error(err?.response?.data?.error ?? err?.message ?? "Check-out failed");
+    }
   };
 
   const confirmSwitch = () => {
@@ -740,9 +814,15 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
         setShowEndTripOutOfRangeModal(false);
         toast.success("Trip ended!");
+        navigate("/app/driver");
       })
-      .catch((e) => {
-        toast.error(e?.message ?? "Failed to get location or end trip");
+      .catch((e: { response?: { status?: number; data?: { error?: string } }; message?: string }) => {
+        if (e?.response?.status === 400 && e?.response?.data?.error?.includes("Check out all passengers first")) {
+          toast.error(CHECKOUT_ALL_FIRST_MSG);
+          setShowEndTripModal(true);
+        } else {
+          toast.error(e?.message ?? "Failed to get location or end trip");
+        }
       })
       .finally(() => setIsEndingTrip(false));
   };
@@ -763,8 +843,14 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
       setShowEndTripOutOfRangeModal(false);
       toast.success("Trip ended.");
-    } catch {
-      toast.error("Failed to end trip");
+      navigate("/app/driver");
+    } catch (e: unknown) {
+      const err = e as { response?: { status?: number; data?: { error?: string } } };
+      if (err?.response?.status === 400 && err?.response?.data?.error?.includes("Check out all passengers first")) {
+        toast.error(CHECKOUT_ALL_FIRST_MSG);
+      } else {
+        toast.error("Failed to end trip");
+      }
     } finally {
       setIsEndingTrip(false);
     }
@@ -1133,12 +1219,17 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>Check out at {dropoffData?.placeName ?? "stop"}</DialogTitle>
-            <DialogDescription>These passengers should get off here. Select these seats and tap Check Out.</DialogDescription>
+            <DialogDescription>
+              {dropoffData && dropoffData.dropoffs.length > 1
+                ? `Seats ${dropoffData.dropoffs.map((d) => d.seat_label).join(", ")} – these passengers should check out here.`
+                : dropoffData?.dropoffs.length === 1
+                  ? `Seat ${dropoffData.dropoffs[0].seat_label} – this passenger should check out here.`
+                  : "This passenger should check out here."}
+            </DialogDescription>
           </DialogHeader>
           {dropoffData && (
             <div className="py-2">
-              <p className="text-sm font-medium">Seats: {dropoffData.dropoffs.map((d) => d.seat_label).join(", ")}</p>
-              <Button className="w-full mt-3" onClick={() => { setShowDropoffModal(false); setDropoffData(null); }}>OK</Button>
+              <SwipeButton label="Swipe OKAY" onSwipe={() => confirmCheckOut()} />
             </div>
           )}
         </DialogContent>
@@ -1176,6 +1267,18 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         </DialogContent>
       </Dialog>
 
+      <ConfirmModal
+        open={!!outOfRangeCheckout}
+        onClose={() => setOutOfRangeCheckout(null)}
+        onConfirm={confirmCheckOutOutOfRange}
+        title="Not at destination"
+        description={
+          outOfRangeCheckout
+            ? `You are not at the destination (${outOfRangeCheckout.preview.distance_meters} m away). If you confirm, the amount will be Rs ${outOfRangeCheckout.preview.new_trip_amount} and change by ${Number(outOfRangeCheckout.preview.amount_difference) >= 0 ? "+" : ""}${outOfRangeCheckout.preview.amount_difference}.`
+            : ""
+        }
+        confirmLabel="Confirm"
+      />
       <ConfirmModal open={showEndTripModal} onClose={() => setShowEndTripModal(false)} onConfirm={confirmEndTrip} title="End Trip?" description="Are you sure you want to end this trip?" confirmLabel="End Trip" variant="destructive" />
       <ConfirmModal open={showEndTripOutOfRangeModal} onClose={() => { setShowEndTripOutOfRangeModal(false); setPendingEndTripLocation(null); setIsEndingTrip(false); }} onConfirm={confirmEndTripOutOfRange} title="Not at destination" description="You are not at the proper destination. Are you sure you want to end the trip?" confirmLabel="Yes, end trip" variant="destructive" />
       </div>
