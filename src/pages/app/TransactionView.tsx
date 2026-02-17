@@ -91,7 +91,7 @@ export default function TransactionView() {
                   transaction.type === 'add' ? 'text-success' : 'text-destructive'
                 }`}
               >
-                {transaction.type === 'add' ? '+' : '-'}$
+                {transaction.type === 'add' ? '+' : '-'} Rs.{' '}
                 {toNumber(transaction.amount, 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -101,7 +101,7 @@ export default function TransactionView() {
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Balance Before</span>
               <span className="font-medium">
-                ${toNumber(transaction.balance_before, 0).toLocaleString(undefined, {
+                Rs. {toNumber(transaction.balance_before, 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -110,7 +110,7 @@ export default function TransactionView() {
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Balance After</span>
               <span className="font-medium">
-                ${toNumber(transaction.balance_after, 0).toLocaleString(undefined, {
+                Rs. {toNumber(transaction.balance_after, 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -162,7 +162,7 @@ export default function TransactionView() {
                 <div className="flex justify-between items-center py-1">
                   <span className="text-muted-foreground">Balance</span>
                   <span className="font-medium">
-                    ${toNumber(transaction.wallet_details?.balance || 0, 0).toLocaleString(undefined, {
+                    Rs. {toNumber(transaction.wallet_details?.balance || 0, 0).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -171,7 +171,7 @@ export default function TransactionView() {
                 <div className="flex justify-between items-center py-1">
                   <span className="text-muted-foreground">To Pay</span>
                   <span className="font-medium">
-                    ${toNumber(transaction.wallet_details?.to_pay || 0, 0).toLocaleString(undefined, {
+                    Rs. {toNumber(transaction.wallet_details?.to_pay || 0, 0).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -180,7 +180,7 @@ export default function TransactionView() {
                 <div className="flex justify-between items-center py-1">
                   <span className="text-muted-foreground">To Receive</span>
                   <span className="font-medium">
-                    ${toNumber(transaction.wallet_details?.to_receive || 0, 0).toLocaleString(undefined, {
+                    Rs. {toNumber(transaction.wallet_details?.to_receive || 0, 0).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}

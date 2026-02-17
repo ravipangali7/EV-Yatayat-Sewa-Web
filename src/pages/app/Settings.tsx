@@ -115,7 +115,7 @@ export default function Settings() {
         <form onSubmit={handleSubmit} className="form-section max-w-xl">
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="per_km_charge">Per KM Charge ($)</Label>
+              <Label htmlFor="per_km_charge">Per KM Charge (Rs.)</Label>
               <Input
                 id="per_km_charge"
                 type="number"
@@ -144,7 +144,7 @@ export default function Settings() {
                 type="text"
                 value={formData.stop_point_announcement_header}
                 onChange={(e) => setFormData({ ...formData, stop_point_announcement_header: e.target.value })}
-                placeholder="e.g. पुग्यौं"
+                placeholder="e.g. अब हामी $x पुग्दैछौं। ($x = place name)"
                 disabled={loading}
               />
             </div>
@@ -198,7 +198,7 @@ export default function Settings() {
           <div className="space-y-4">
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Per KM Charge</span>
-              <span className="font-semibold">${toNumber(settings?.per_km_charge, 0).toFixed(2)}</span>
+              <span className="font-semibold">Rs. {toNumber(settings?.per_km_charge, 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">GPS Threshold (seconds)</span>
