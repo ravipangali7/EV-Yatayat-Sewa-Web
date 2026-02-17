@@ -9,7 +9,16 @@ import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { RouteStopPointsForm } from '@/components/routes/RouteStopPointsForm';
 import { routeApi } from '@/modules/routes/services/routeApi';
 import { placeApi } from '@/modules/places/services/placeApi';
+import { superSettingApi } from '@/modules/settings/services/superSettingApi';
 import { toast } from 'sonner';
+
+/** Default announcement: header template with $x/$X replaced by place name. */
+function defaultAnnouncementText(header: string, placeName: string): string {
+  const name = (placeName || '').trim();
+  if (!header) return name;
+  const out = header.replace(/\$x/g, name).replace(/\$X/g, name).trim();
+  return out || name;
+}
 
 interface StopPoint {
   id: string;
@@ -85,13 +94,29 @@ export default function RouteForm() {
     setLoading(true);
 
     try {
+      let announcementHeader = '';
+      try {
+        const settingsRes = await superSettingApi.list({ per_page: 1 });
+        announcementHeader = (settingsRes.results?.[0]?.stop_point_announcement_header ?? '').trim();
+      } catch {
+        // use empty header if settings fetch fails
+      }
+
       const routeData = {
         ...formData,
-        stop_points: stopPoints.map(sp => ({
-          place: sp.place,
-          order: sp.order,
-          announcement_text: (sp.announcement_text ?? '').trim(),
-        })),
+        stop_points: stopPoints.map(sp => {
+          const custom = (sp.announcement_text ?? '').trim();
+          const placeName = places.find(p => p.id === sp.place)?.name ?? '';
+          const announcement_text =
+            custom !== ''
+              ? custom
+              : defaultAnnouncementText(announcementHeader, placeName);
+          return {
+            place: sp.place,
+            order: sp.order,
+            announcement_text,
+          };
+        }),
       };
 
       if (isEdit && id) {
