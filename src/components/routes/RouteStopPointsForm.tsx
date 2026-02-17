@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { Place } from '@/types';
 
@@ -8,6 +9,7 @@ interface StopPoint {
   id: string;
   place: string;
   order: number;
+  announcement_text?: string;
 }
 
 interface RouteStopPointsFormProps {
@@ -25,6 +27,7 @@ export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopP
       id: String(Date.now()),
       place: '',
       order: value.length + 1,
+      announcement_text: '',
     };
     onChange([...value, newStopPoint]);
   };
@@ -40,6 +43,12 @@ export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopP
   const updateStopPoint = (index: number, placeId: string) => {
     const updated = [...value];
     updated[index] = { ...updated[index], place: placeId };
+    onChange(updated);
+  };
+
+  const updateStopPointAnnouncement = (index: number, announcementText: string) => {
+    const updated = [...value];
+    updated[index] = { ...updated[index], announcement_text: announcementText };
     onChange(updated);
   };
 
@@ -100,12 +109,18 @@ export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopP
                 <span className="font-semibold text-primary">{stopPoint.order}</span>
               </div>
 
-              <div className="flex-1">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <SearchableSelect
                   options={placeOptions}
                   value={stopPoint.place}
                   onChange={(value) => updateStopPoint(index, value)}
                   placeholder="Select place..."
+                />
+                <Input
+                  value={stopPoint.announcement_text ?? ''}
+                  onChange={(e) => updateStopPointAnnouncement(index, e.target.value)}
+                  placeholder="Announcement text (optional)"
+                  className="text-sm"
                 />
               </div>
 

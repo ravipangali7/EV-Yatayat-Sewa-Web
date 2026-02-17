@@ -56,8 +56,10 @@ export interface Transaction {
 export interface SuperSetting {
   id: string;
   per_km_charge: number;
-  gps_threshold: number;
+  gps_threshold?: number;
+  gps_threshold_second?: number;
   seat_layout?: string[];
+  stop_point_announcement_header?: string;
   created_at: string;
   updated_at: string;
 }
@@ -89,6 +91,7 @@ export interface RouteStopPoint {
   place: string;
   place_details?: Place;
   order: number;
+  announcement_text?: string;
   created_at: string;
   updated_at: string;
 }

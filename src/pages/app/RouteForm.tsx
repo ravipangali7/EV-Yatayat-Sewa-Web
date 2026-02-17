@@ -15,6 +15,7 @@ interface StopPoint {
   id: string;
   place: string;
   order: number;
+  announcement_text?: string;
 }
 
 export default function RouteForm() {
@@ -64,6 +65,7 @@ export default function RouteForm() {
                 id: sp.id,
                 place: sp.place,
                 order: sp.order,
+                announcement_text: sp.announcement_text ?? '',
               }))
             );
           }
@@ -85,7 +87,11 @@ export default function RouteForm() {
     try {
       const routeData = {
         ...formData,
-        stop_points: stopPoints.map(sp => ({ place: sp.place, order: sp.order })),
+        stop_points: stopPoints.map(sp => ({
+          place: sp.place,
+          order: sp.order,
+          announcement_text: (sp.announcement_text ?? '').trim(),
+        })),
       };
 
       if (isEdit && id) {

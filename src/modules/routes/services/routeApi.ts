@@ -23,12 +23,12 @@ export const routeApi = {
   },
 
   // Create route
-  create: async (data: Partial<Route> & { stop_points?: Array<{ place: string; order: number }> }): Promise<Route> => {
+  create: async (data: Partial<Route> & { stop_points?: Array<{ place: string; order: number; announcement_text?: string }> }): Promise<Route> => {
     return api.post<Route>('routes/create/', data);
   },
 
   // Edit route (using POST)
-  edit: async (id: string, data: Partial<Route> & { stop_points?: Array<{ place: string; order: number }> }): Promise<Route> => {
+  edit: async (id: string, data: Partial<Route> & { stop_points?: Array<{ place: string; order: number; announcement_text?: string }> }): Promise<Route> => {
     return api.post<Route>(`routes/${id}/edit/`, data);
   },
 

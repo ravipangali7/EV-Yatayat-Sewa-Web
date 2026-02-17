@@ -18,6 +18,7 @@ export default function Settings() {
     per_km_charge: 0,
     gps_threshold: 5,
     seat_layout: [] as string[],
+    stop_point_announcement_header: '',
   });
   const [seatLayoutRaw, setSeatLayoutRaw] = useState('[]');
 
@@ -30,10 +31,12 @@ export default function Settings() {
           const setting = response.results[0];
           setSettings(setting);
           const layout = Array.isArray(setting.seat_layout) ? setting.seat_layout : [];
+          const gps = toNumber(setting.gps_threshold_second ?? setting.gps_threshold, 5);
           setFormData({
             per_km_charge: toNumber(setting.per_km_charge, 0),
-            gps_threshold: toNumber(setting.gps_threshold, 5),
+            gps_threshold: gps,
             seat_layout: layout,
+            stop_point_announcement_header: setting.stop_point_announcement_header ?? '',
           });
           setSeatLayoutRaw(JSON.stringify(layout));
         } else {
@@ -60,14 +63,22 @@ export default function Settings() {
       seatLayout = formData.seat_layout;
     }
     try {
+      const payload = {
+        per_km_charge: formData.per_km_charge,
+        gps_threshold_second: formData.gps_threshold,
+        seat_layout: seatLayout,
+        stop_point_announcement_header: formData.stop_point_announcement_header ?? '',
+      };
       if (settings) {
-        const updated = await superSettingApi.edit(settings.id, { ...formData, seat_layout: seatLayout });
+        const updated = await superSettingApi.edit(settings.id, payload);
         setSettings(updated);
+        setFormData((prev) => ({ ...prev, stop_point_announcement_header: updated.stop_point_announcement_header ?? '' }));
         setSeatLayoutRaw(JSON.stringify(updated.seat_layout ?? []));
         toast.success('Settings updated successfully');
       } else {
-        const created = await superSettingApi.create({ ...formData, seat_layout: seatLayout });
+        const created = await superSettingApi.create(payload);
         setSettings(created);
+        setFormData((prev) => ({ ...prev, stop_point_announcement_header: created.stop_point_announcement_header ?? '' }));
         setSeatLayoutRaw(JSON.stringify(created.seat_layout ?? []));
         toast.success('Settings created successfully');
       }
@@ -116,13 +127,24 @@ export default function Settings() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="gps_threshold">GPS Threshold (km)</Label>
+              <Label htmlFor="gps_threshold">GPS Threshold (seconds)</Label>
               <Input
                 id="gps_threshold"
                 type="number"
                 step="0.01"
                 value={formData.gps_threshold}
                 onChange={(e) => setFormData({ ...formData, gps_threshold: parseFloat(e.target.value) || 5 })}
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stop_point_announcement_header">Stop point announcement header</Label>
+              <Input
+                id="stop_point_announcement_header"
+                type="text"
+                value={formData.stop_point_announcement_header}
+                onChange={(e) => setFormData({ ...formData, stop_point_announcement_header: e.target.value })}
+                placeholder="e.g. पुग्यौं"
                 disabled={loading}
               />
             </div>
@@ -179,8 +201,12 @@ export default function Settings() {
               <span className="font-semibold">${toNumber(settings?.per_km_charge, 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
-              <span className="text-muted-foreground">GPS Threshold (km)</span>
-              <span className="font-semibold">{toNumber(settings?.gps_threshold, 5).toFixed(2)}</span>
+              <span className="text-muted-foreground">GPS Threshold (seconds)</span>
+              <span className="font-semibold">{toNumber(settings?.gps_threshold_second ?? settings?.gps_threshold, 5).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Stop point announcement header</span>
+              <span className="font-semibold">{settings?.stop_point_announcement_header || '—'}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Seat Layout</span>
