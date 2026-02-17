@@ -33,6 +33,21 @@ import { toast } from "sonner";
 
 const CHECKOUT_ALL_FIRST_MSG = "Check out all passengers first.";
 
+function getLocationErrorToast(
+  message: string | undefined,
+  context: "end_trip" | "checkout" | "start_trip"
+): string {
+  const m = (message ?? "").toLowerCase();
+  if (m.includes("denied") || m.includes("permission")) {
+    if (context === "end_trip")
+      return "Location access was denied. Enable location in device settings to end the trip.";
+    if (context === "checkout")
+      return "Location access was denied. Enable location in device settings to complete checkout.";
+    return "Location access was denied. Enable location in device settings to start the trip.";
+  }
+  return message ?? "Failed to get location";
+}
+
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -517,7 +532,12 @@ export default function Vehicle() {
       toast.success("Trip started!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
-      toast.error(err?.response?.data?.error ?? err?.message ?? "Failed to start trip");
+      const msg = err?.response?.data?.error ?? err?.message;
+      if (msg && (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission"))) {
+        toast.error(getLocationErrorToast(msg, "start_trip"));
+      } else {
+        toast.error(msg ?? "Failed to start trip");
+      }
     }
   };
 
@@ -595,8 +615,13 @@ export default function Vehicle() {
       const totalAmount = Math.round(distanceKm * perKmCharge * availableSelected.length * 100) / 100;
       setCheckinAmount({ distanceKm, totalAmount, perKmCharge });
       setCheckinStep("amount");
-    } catch (e) {
-      toast.error("Could not get location or settings");
+    } catch (e: unknown) {
+      const msg = (e as { message?: string })?.message;
+      if (msg && (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission"))) {
+        toast.error(getLocationErrorToast(msg, "checkout"));
+      } else {
+        toast.error("Could not get location or settings");
+      }
     }
   };
 
@@ -821,7 +846,13 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
           toast.error(CHECKOUT_ALL_FIRST_MSG);
           setShowEndTripModal(true);
         } else {
-          toast.error(e?.message ?? "Failed to get location or end trip");
+          const msg = e?.message ?? "";
+          toast.error(
+            msg && (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission"))
+              ? getLocationErrorToast(msg, "end_trip")
+              : (e?.message ?? "Failed to get location or end trip")
+          );
+          setShowEndTripModal(true);
         }
       })
       .finally(() => setIsEndingTrip(false));
