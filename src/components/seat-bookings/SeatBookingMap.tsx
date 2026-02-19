@@ -159,7 +159,7 @@ export function SeatBookingMap({
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        `https://geo.mylunago.com/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
         { headers: { 'Accept-Language': 'en', 'User-Agent': 'EVYatayatSewa/1.0' } }
       );
       const data = await response.json();
