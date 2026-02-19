@@ -274,7 +274,7 @@ export default function Vehicle() {
     check_out_lat: number;
     check_out_lng: number;
     check_out_address: string;
-    place_id: string;
+    place_id?: string;
     preview: CheckoutPreviewResponse;
   } | null>(null);
   const [destinationSearch, setDestinationSearch] = useState("");
@@ -727,52 +727,66 @@ export default function Vehicle() {
       }
     } else {
       const loc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
-      for (const seat of bookedSelected) {
-        const vehicleSeatId = getVehicleSeatId(seat.id);
-        if (vehicleSeatId) {
-          try {
-            await seatBookingApi.checkout({
-              vehicle_seat_id: vehicleSeatId,
+      const seatIds = bookedSelected.map((s) => ({ seat: s, vehicleSeatId: getVehicleSeatId(s.id) }));
+      const missing = seatIds.filter((p) => !p.vehicleSeatId);
+      if (missing.length > 0) {
+        toast.error(`Seat ${missing[0].seat.id} not found`);
+        return;
+      }
+      try {
+        for (const { seat, vehicleSeatId } of seatIds) {
+          const res = await seatBookingApi.checkout({
+            vehicle_seat_id: vehicleSeatId!,
+            check_out_lat: loc.lat,
+            check_out_lng: loc.lng,
+            check_out_address: "Current location",
+            is_paid: false,
+          });
+          if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
+            setOutOfRangeCheckout({
+              vehicle_seat_id: vehicleSeatId!,
               check_out_lat: loc.lat,
               check_out_lng: loc.lng,
               check_out_address: "Current location",
-              is_paid: false,
+              preview: res as CheckoutPreviewResponse,
             });
-          } catch {
-            toast.error("Check-out failed");
             return;
           }
         }
+        const updatedSeats = seats.map((s) => {
+          if (bookedSelected.some((sel) => sel.id === s.id)) {
+            return { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined };
+          }
+          return s;
+        });
+        setSeats(updatedSeats);
+        setSelectedSeats([]);
+        setShowCheckoutModal(false);
+        toast.success("Check-out successful!");
+      } catch {
+        toast.error("Check-out failed");
+        return;
       }
     }
-    const updatedSeats = seats.map((s) => {
-      if (bookedSelected.some((sel) => sel.id === s.id)) {
-        return { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined };
-      }
-      return s;
-    });
-    setSeats(updatedSeats);
-    setSelectedSeats([]);
-    setShowCheckoutModal(false);
-    toast.success("Check-out successful!");
   };
 
   const confirmCheckOutOutOfRange = async () => {
     if (!outOfRangeCheckout) return;
     try {
+      const vehicleSeatIdCheckedOut = outOfRangeCheckout.vehicle_seat_id;
       await seatBookingApi.checkout({
-        vehicle_seat_id: outOfRangeCheckout.vehicle_seat_id,
+        vehicle_seat_id: vehicleSeatIdCheckedOut,
         check_out_lat: outOfRangeCheckout.check_out_lat,
         check_out_lng: outOfRangeCheckout.check_out_lng,
         check_out_address: outOfRangeCheckout.check_out_address,
         is_paid: true,
-        place_id: outOfRangeCheckout.place_id,
+        ...(outOfRangeCheckout.place_id != null && { place_id: outOfRangeCheckout.place_id }),
         confirm_out_of_range: true,
       });
       const currentDropoffData = dropoffData;
       setOutOfRangeCheckout(null);
       if (currentDropoffData) {
-        const remaining = currentDropoffData.dropoffs.filter((d) => d.vehicle_seat_id !== outOfRangeCheckout.vehicle_seat_id);
+        const remaining = currentDropoffData.dropoffs.filter((d) => d.vehicle_seat_id !== vehicleSeatIdCheckedOut);
         if (remaining.length === 0) {
           const updatedSeatsAfterDropoff = seats.map((s) => {
             if (currentDropoffData.dropoffs.some((d) => d.seat_label === s.id)) {
@@ -789,6 +803,13 @@ export default function Vehicle() {
           setDropoffData((prev) => (prev ? { ...prev, dropoffs: remaining } : null));
           setSelectedSeats(seats.filter((s) => remaining.some((d) => d.seat_label === s.id)));
         }
+      } else {
+        const seatToFree = seats.find((s) => getVehicleSeatId(s.id) === vehicleSeatIdCheckedOut);
+        if (seatToFree) {
+          setSeats(seats.map((s) => (s.id === seatToFree.id ? { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined } : s)));
+        }
+        setSelectedSeats([]);
+        setShowCheckoutModal(false);
       }
       toast.success("Check-out confirmed.");
     } catch (e: unknown) {
