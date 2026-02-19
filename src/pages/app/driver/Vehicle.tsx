@@ -505,16 +505,28 @@ export default function Vehicle() {
     checkout: "Please open this page in the EV Yatayat Sewa app to get location for checkout.",
   };
 
+  const BRIDGE_RECHECK_DELAY_MS = 200;
+
   const getCurrentLocation = (options?: { requiredBridge?: boolean; context?: "end_trip" | "start_trip" | "checkout" }): Promise<{ lat: number; lng: number }> => {
     const requiredBridge = options?.requiredBridge ?? false;
     const context = options?.context ?? "end_trip";
-    if (isFlutterBridgeAvailable()) {
-      return requestLocation().then((r) =>
+    const tryRequestLocation = () =>
+      requestLocation().then((r) =>
         r.success && r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng } : Promise.reject(new Error(r.error || "No location"))
       );
+    if (isFlutterBridgeAvailable()) {
+      return tryRequestLocation();
     }
     if (requiredBridge) {
-      return Promise.reject(new Error(CRITICAL_LOCATION_APP_MSG[context]));
+      return new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+        setTimeout(() => {
+          if (isFlutterBridgeAvailable()) {
+            tryRequestLocation().then(resolve, reject);
+          } else {
+            reject(new Error(CRITICAL_LOCATION_APP_MSG[context]));
+          }
+        }, BRIDGE_RECHECK_DELAY_MS);
+      });
     }
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
