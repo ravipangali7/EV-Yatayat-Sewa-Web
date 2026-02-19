@@ -53,6 +53,7 @@ import AppRegister from "./pages/app/AppRegister";
 import AppForgotPassword from "./pages/app/AppForgotPassword";
 import AppResetPassword from "./pages/app/AppResetPassword";
 import AppRoleLayout from "./pages/app/AppRoleLayout";
+import PaymentCallbackPage from "./pages/app/PaymentCallbackPage";
 import { getAppRoles, getAppRoleConfig, getHomePathForUser } from "@/config/appRoles";
 
 const queryClient = new QueryClient();
@@ -194,6 +195,7 @@ function AppRoutes() {
       <Route path="/app/register" element={<AppRegister />} />
       <Route path="/app/forgot-password" element={<AppForgotPassword />} />
       <Route path="/app/reset-password" element={<AppResetPassword />} />
+      <Route path="/app/payment/callback" element={<AppProtectedRoute><PaymentCallbackPage /></AppProtectedRoute>} />
 
       {/* App (driver/user) portals - generated from config */}
       {getAppRoles().map((role) => {

@@ -15,6 +15,7 @@ import { vehicleScheduleApi, type SchedulePlace, type VehicleScheduleExpandedRec
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { vehicleTicketBookingApi, type SeatEntry, type VehicleTicketBookingRecord } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
 import { walletApi } from "@/modules/wallets/services/walletApi";
+import { paymentApi } from "@/modules/payments/services/paymentApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -66,6 +67,7 @@ export default function UserBooking() {
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<"form" | "confirm">("form");
   const [showPayConfirm, setShowPayConfirm] = useState(false);
+  const [checkoutWalletBalance, setCheckoutWalletBalance] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -180,27 +182,76 @@ export default function UserBooking() {
       toast.error("Enter name and phone");
       return;
     }
+    setCheckoutWalletBalance(null);
     setCheckoutStep("confirm");
   };
 
-  const handlePay = async () => {
+  useEffect(() => {
+    if (checkoutStep !== "confirm" || !user?.id) return;
+    walletApi.list({ user: user.id, per_page: 1 })
+      .then((res) => {
+        const w = res.results[0];
+        setCheckoutWalletBalance(w ? Number(w.balance) || 0 : 0);
+      })
+      .catch(() => setCheckoutWalletBalance(0));
+  }, [checkoutStep, user?.id]);
+
+  const handlePayFromWallet = () => {
+    const balance = checkoutWalletBalance ?? 0;
+    if (balance < totalAmount) {
+      toast.error("Insufficient balance. Please recharge wallet or use Direct Pay.");
+      return;
+    }
+    setShowPayConfirm(true);
+  };
+
+  const MIN_NCHL = 200;
+  const handlePayWithConnectIPS = async () => {
     if (!checkoutSchedule || !user) return;
+    if (totalAmount < MIN_NCHL) {
+      toast.error(`Minimum amount for ConnectIPS is Rs. ${MIN_NCHL}.`);
+      return;
+    }
     setCheckoutSubmitting(true);
     try {
-      const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
-      const wallet = walletsRes.results[0];
-      const balance = wallet ? Number(wallet.balance) || 0 : 0;
-      if (balance < totalAmount) {
-        toast.error("Insufficient balance. Please recharge wallet.");
-        navigate("/app/user/deposit");
-        setCheckoutSchedule(null);
-        setCheckoutStep("form");
-        setCheckoutSubmitting(false);
-        return;
+      const seatsPayload: SeatEntry[] = checkoutSelectedSeats.map((s) => ({ side: s.side, number: s.number }));
+      const created = await vehicleTicketBookingApi.create({
+        is_guest: false,
+        name: checkoutName.trim(),
+        phone: checkoutPhone.trim(),
+        vehicle_schedule: checkoutSchedule.id,
+        pickup_point: fromPlaceId || undefined,
+        destination_point: toPlaceId || undefined,
+        seats: seatsPayload,
+        price: totalAmount,
+        is_paid: false,
+      });
+      const formData = await paymentApi.initiatePayment({
+        amount: totalAmount,
+        purpose: "vehicle_ticket_booking",
+        vehicle_ticket_booking_id: created.id,
+      });
+      const gatewayUrl = formData.gateway_url;
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = gatewayUrl;
+      form.style.display = "none";
+      const keys = ["MERCHANTID", "APPID", "APPNAME", "TXNID", "TXNDATE", "TXNCRNCY", "TXNAMT", "REFERENCEID", "REMARKS", "PARTICULARS", "TOKEN"];
+      for (const key of keys) {
+        const value = (formData as Record<string, string>)[key];
+        if (value != null) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        }
       }
-      setShowPayConfirm(true);
-    } catch {
-      toast.error("Could not load wallet");
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { error?: string } } };
+      toast.error(ax?.response?.data?.error || "Failed to start payment");
     } finally {
       setCheckoutSubmitting(false);
     }
@@ -596,45 +647,70 @@ export default function UserBooking() {
                     <p className="text-sm">Seats: {checkoutSelectedSeats.map((s) => `${s.side}${s.number}`).join(", ")}</p>
                     <p className="text-sm">Passenger: {checkoutName} · {checkoutPhone}</p>
                     <p className="font-bold text-lg pt-2">Total: Rs. {totalAmount.toLocaleString()}</p>
+                    {user && checkoutWalletBalance != null && (
+                      <p className="text-xs text-muted-foreground pt-1">Wallet: Rs. {checkoutWalletBalance.toLocaleString()}</p>
+                    )}
                   </div>
                 )}
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1" onClick={handleCheckoutCancel}>Cancel</Button>
-                  {user ? (
-                    <Button className="flex-1" onClick={handlePay} disabled={checkoutSubmitting}>
-                      {checkoutSubmitting ? "Checking..." : "Pay"}
-                    </Button>
-                  ) : (
-                    <Button
-                      className="flex-1"
-                      disabled={checkoutSubmitting}
-                      onClick={async () => {
-                        setCheckoutSubmitting(true);
-                        try {
-                          const seatsPayload: SeatEntry[] = checkoutSelectedSeats.map((s) => ({ side: s.side, number: s.number }));
-                          await vehicleTicketBookingApi.create({
-                            is_guest: true,
-                            name: checkoutName.trim(),
-                            phone: checkoutPhone.trim(),
-                            vehicle_schedule: checkoutSchedule.id,
-                            pickup_point: fromPlaceId || undefined,
-                            destination_point: toPlaceId || undefined,
-                            seats: seatsPayload,
-                            price: totalAmount,
-                            is_paid: false,
-                          });
-                          toast.success("Booking created. Pay at counter.");
-                          handleCheckoutCancel();
-                          setTab("my-booking");
-                        } catch {
-                          toast.error("Booking failed");
-                        } finally {
-                          setCheckoutSubmitting(false);
-                        }
-                      }}
-                    >
-                      {checkoutSubmitting ? "Booking..." : "Book as guest"}
-                    </Button>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <Button variant="outline" className="flex-1" onClick={handleCheckoutCancel}>Cancel</Button>
+                    {user ? (
+                      <>
+                        {(checkoutWalletBalance ?? 0) >= totalAmount && (
+                          <Button className="flex-1" onClick={handlePayFromWallet} disabled={checkoutSubmitting}>
+                            Pay from wallet
+                          </Button>
+                        )}
+                        {totalAmount >= 200 && (
+                          <Button
+                            variant={(checkoutWalletBalance ?? 0) >= totalAmount ? "outline" : "default"}
+                            className="flex-1"
+                            onClick={handlePayWithConnectIPS}
+                            disabled={checkoutSubmitting}
+                          >
+                            {checkoutSubmitting ? "Redirecting..." : "Pay with ConnectIPS (Direct Pay)"}
+                          </Button>
+                        )}
+                        {totalAmount < 200 && (checkoutWalletBalance ?? 0) < totalAmount && (
+                          <p className="text-xs text-muted-foreground flex-1 self-center">Min Rs. 200 for ConnectIPS. Recharge wallet to pay.</p>
+                        )}
+                      </>
+                    ) : (
+                      <Button
+                        className="flex-1"
+                        disabled={checkoutSubmitting}
+                        onClick={async () => {
+                          setCheckoutSubmitting(true);
+                          try {
+                            const seatsPayload: SeatEntry[] = checkoutSelectedSeats.map((s) => ({ side: s.side, number: s.number }));
+                            await vehicleTicketBookingApi.create({
+                              is_guest: true,
+                              name: checkoutName.trim(),
+                              phone: checkoutPhone.trim(),
+                              vehicle_schedule: checkoutSchedule.id,
+                              pickup_point: fromPlaceId || undefined,
+                              destination_point: toPlaceId || undefined,
+                              seats: seatsPayload,
+                              price: totalAmount,
+                              is_paid: false,
+                            });
+                            toast.success("Booking created. Pay at counter.");
+                            handleCheckoutCancel();
+                            setTab("my-booking");
+                          } catch {
+                            toast.error("Booking failed");
+                          } finally {
+                            setCheckoutSubmitting(false);
+                          }
+                        }}
+                      >
+                        {checkoutSubmitting ? "Booking..." : "Book as guest"}
+                      </Button>
+                    )}
+                  </div>
+                  {user && (checkoutWalletBalance ?? 0) < totalAmount && totalAmount >= 200 && (
+                    <p className="text-xs text-muted-foreground text-center">Insufficient wallet? Recharge or use Direct Pay (ConnectIPS).</p>
                   )}
                 </div>
               </div>

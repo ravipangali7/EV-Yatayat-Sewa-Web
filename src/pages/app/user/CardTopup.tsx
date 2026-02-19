@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { cardApi } from "@/modules/cards/services/cardApi";
 import { walletApi } from "@/modules/wallets/services/walletApi";
+import { paymentApi } from "@/modules/payments/services/paymentApi";
 import { toNumber } from "@/lib/utils";
 import { toast } from "sonner";
 import { Card as CardType } from "@/types";
@@ -98,7 +99,48 @@ export default function CardTopup() {
 
   const numAmount = parseFloat(amount || "0");
   const validAmount = Number.isFinite(numAmount) && numAmount > 0;
-  const canPay = validAmount && walletBalance >= numAmount;
+  const canPayFromWallet = validAmount && walletBalance >= numAmount;
+  const MIN_NCHL = 200;
+  const canDirectPay = validAmount && numAmount >= MIN_NCHL;
+
+  const handlePayWithConnectIPS = async () => {
+    if (!card || !validAmount) return;
+    if (numAmount < MIN_NCHL) {
+      toast.error(`Minimum amount for ConnectIPS is Rs. ${MIN_NCHL}`);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const formData = await paymentApi.initiatePayment({
+        amount: numAmount,
+        purpose: "card_topup",
+        card_id: card.id,
+      });
+      const gatewayUrl = formData.gateway_url;
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = gatewayUrl;
+      form.style.display = "none";
+      const keys = ["MERCHANTID", "APPID", "APPNAME", "TXNID", "TXNDATE", "TXNCRNCY", "TXNAMT", "REFERENCEID", "REMARKS", "PARTICULARS", "TOKEN"];
+      for (const key of keys) {
+        const value = (formData as Record<string, string>)[key];
+        if (value != null) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        }
+      }
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { error?: string } } };
+      toast.error(ax?.response?.data?.error || "Failed to start payment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleConfirmTopup = async () => {
     if (!card || !validAmount) return;
@@ -180,16 +222,34 @@ export default function CardTopup() {
                 className="h-12 rounded-xl"
               />
               {validAmount && walletBalance < numAmount && (
-                <p className="text-xs text-destructive mt-1">Insufficient wallet balance. Recharge wallet first.</p>
+                <p className="text-xs text-muted-foreground mt-1">Insufficient wallet balance. Use Direct Pay (ConnectIPS) or recharge wallet first.</p>
+              )}
+              {validAmount && numAmount > 0 && numAmount < MIN_NCHL && (
+                <p className="text-xs text-muted-foreground mt-1">ConnectIPS requires minimum Rs. {MIN_NCHL}.</p>
               )}
             </div>
-            <Button
-              className="w-full h-12 rounded-xl"
-              disabled={!validAmount || walletBalance < numAmount || submitting}
-              onClick={() => setConfirmOpen(true)}
-            >
-              Pay from wallet
-            </Button>
+            {canPayFromWallet && (
+              <Button
+                className="w-full h-12 rounded-xl"
+                disabled={submitting}
+                onClick={() => setConfirmOpen(true)}
+              >
+                Pay from wallet
+              </Button>
+            )}
+            {canDirectPay && (
+              <Button
+                variant={canPayFromWallet ? "outline" : "default"}
+                className="w-full h-12 rounded-xl"
+                disabled={submitting}
+                onClick={handlePayWithConnectIPS}
+              >
+                {submitting ? "Redirecting..." : "Pay with ConnectIPS (Direct Pay)"}
+              </Button>
+            )}
+            {validAmount && !canPayFromWallet && !canDirectPay && (
+              <p className="text-xs text-muted-foreground">Enter at least Rs. {MIN_NCHL} for Direct Pay, or recharge wallet to pay from wallet.</p>
+            )}
           </div>
         </>
       )}
