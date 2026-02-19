@@ -62,7 +62,7 @@ export function GoogleMapComponent({
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
     try {
       const response = await fetch(
-        `https://geo.mylunago.com/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        `http://geo.mylunago.com/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
         { headers: { 'Accept-Language': 'en' } }
       );
       const data = await response.json();
