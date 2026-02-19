@@ -76,11 +76,16 @@ export function PlaceMap({ latitude, longitude, onLocationChange }: PlaceMapProp
               placeholder="Search for a location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
               className="pl-10"
             />
           </div>
-          <Button onClick={handleSearch} disabled={isSearching}>
+          <Button type="button" onClick={handleSearch} disabled={isSearching}>
             {isSearching ? 'Searching...' : 'Search'}
           </Button>
         </div>

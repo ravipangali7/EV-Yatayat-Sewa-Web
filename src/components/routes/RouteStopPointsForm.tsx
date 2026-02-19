@@ -3,7 +3,31 @@ import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
+import { PlaceFormModal } from '@/components/places/PlaceFormModal';
+import type { PlaceFormData } from '@/components/places/PlaceFormFields';
 import { Place } from '@/types';
+import { toast } from 'sonner';
+
+const LEADING_ADD_NEW = '__add_new_place__';
+const LEADING_CURRENT_LOCATION = '__current_location__';
+
+const leadingOptions = [
+  { value: LEADING_ADD_NEW, label: 'Add New place' },
+  { value: LEADING_CURRENT_LOCATION, label: 'Current location' },
+];
+
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      { headers: { Accept-Language: 'en' } }
+    );
+    const data = await response.json();
+    return data.display_name || '';
+  } catch {
+    return '';
+  }
+}
 
 interface StopPoint {
   id: string;
@@ -16,11 +40,25 @@ interface RouteStopPointsFormProps {
   value: StopPoint[];
   onChange: (stopPoints: StopPoint[]) => void;
   places?: Place[];
+  onPlaceCreated?: (place: { id: string; name: string }) => void;
+  onPlaceUpdated?: (place: { id: string; name: string }) => void;
 }
 
-export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopPointsFormProps) {
+export function RouteStopPointsForm({
+  value,
+  onChange,
+  places = [],
+  onPlaceCreated,
+  onPlaceUpdated,
+}: RouteStopPointsFormProps) {
   const placeOptions = places.map((p) => ({ value: p.id, label: p.name }));
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const [placeModalOpen, setPlaceModalOpen] = useState(false);
+  const [placeModalMode, setPlaceModalMode] = useState<'add' | 'edit'>('add');
+  const [placeModalPlaceId, setPlaceModalPlaceId] = useState<string | undefined>(undefined);
+  const [placeModalInitialData, setPlaceModalInitialData] = useState<Partial<PlaceFormData> | null>(null);
+  const [placeModalStopIndex, setPlaceModalStopIndex] = useState<number>(0);
 
   const addStopPoint = () => {
     const newStopPoint: StopPoint = {
@@ -52,6 +90,54 @@ export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopP
     onChange(updated);
   };
 
+  const openAddPlaceModal = (stopIndex: number, initialData?: Partial<PlaceFormData> | null) => {
+    setPlaceModalStopIndex(stopIndex);
+    setPlaceModalMode('add');
+    setPlaceModalPlaceId(undefined);
+    setPlaceModalInitialData(initialData ?? null);
+    setPlaceModalOpen(true);
+  };
+
+  const handlePlaceModalSuccess = (place: Place) => {
+    if (placeModalMode === 'edit') {
+      onPlaceUpdated?.({ id: place.id, name: place.name });
+    } else {
+      onPlaceCreated?.({ id: place.id, name: place.name });
+      updateStopPoint(placeModalStopIndex, place.id);
+    }
+    setPlaceModalOpen(false);
+  };
+
+  const handleLeadingSelect = (stopIndex: number, leadingValue: string) => {
+    if (leadingValue === LEADING_ADD_NEW) {
+      openAddPlaceModal(stopIndex);
+      return;
+    }
+    if (leadingValue === LEADING_CURRENT_LOCATION) {
+      if (!navigator.geolocation) {
+        toast.error('Geolocation is not supported by your browser');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const address = await reverseGeocode(lat, lng);
+          openAddPlaceModal(stopIndex, {
+            name: 'Current location',
+            code: 'CURR',
+            latitude: lat,
+            longitude: lng,
+            address: address || '',
+          });
+        },
+        () => {
+          toast.error('Could not get your location. Check permissions or try again.');
+        }
+      );
+    }
+  };
+
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
   };
@@ -64,7 +150,6 @@ export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopP
     const [draggedItem] = updated.splice(draggedIndex, 1);
     updated.splice(index, 0, draggedItem);
 
-    // Update order values
     const reordered = updated.map((sp, i) => ({ ...sp, order: i + 1 }));
     onChange(reordered);
     setDraggedIndex(index);
@@ -113,8 +198,10 @@ export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopP
                 <SearchableSelect
                   options={placeOptions}
                   value={stopPoint.place}
-                  onChange={(value) => updateStopPoint(index, value)}
+                  onChange={(val) => updateStopPoint(index, val)}
                   placeholder="Select place..."
+                  leadingOptions={leadingOptions}
+                  onLeadingSelect={(val) => handleLeadingSelect(index, val)}
                 />
                 <Input
                   value={stopPoint.announcement_text ?? ''}
@@ -137,6 +224,15 @@ export function RouteStopPointsForm({ value, onChange, places = [] }: RouteStopP
           ))}
         </div>
       )}
+
+      <PlaceFormModal
+        open={placeModalOpen}
+        onOpenChange={setPlaceModalOpen}
+        mode={placeModalMode}
+        placeId={placeModalPlaceId}
+        initialData={placeModalInitialData}
+        onSuccess={handlePlaceModalSuccess}
+      />
     </div>
   );
 }

@@ -192,7 +192,17 @@ export default function RouteForm() {
         </div>
 
         <div className="form-section">
-          <RouteStopPointsForm value={stopPoints} onChange={setStopPoints} places={places} />
+          <RouteStopPointsForm
+          value={stopPoints}
+          onChange={setStopPoints}
+          places={places}
+          onPlaceCreated={(place) => setPlaces((prev) => [...prev, place])}
+          onPlaceUpdated={(place) =>
+            setPlaces((prev) =>
+              prev.map((p) => (p.id === place.id ? { ...p, name: place.name } : p))
+            )
+          }
+        />
         </div>
 
         <div className="flex gap-4">

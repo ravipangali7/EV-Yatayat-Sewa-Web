@@ -31,6 +31,9 @@ interface SearchableSelectProps<T = SelectOption> {
   className?: string;
   getOptionLabel?: (option: T) => string;
   getOptionValue?: (option: T) => string;
+  /** Options shown above the search input; selecting one calls onLeadingSelect instead of onChange */
+  leadingOptions?: { value: string; label: string }[];
+  onLeadingSelect?: (value: string) => void;
 }
 
 export function SearchableSelect<T = SelectOption>({
@@ -42,6 +45,8 @@ export function SearchableSelect<T = SelectOption>({
   className,
   getOptionLabel,
   getOptionValue,
+  leadingOptions,
+  onLeadingSelect,
 }: SearchableSelectProps<T>) {
   const [open, setOpen] = useState(false);
   
@@ -78,6 +83,22 @@ export function SearchableSelect<T = SelectOption>({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
+          {leadingOptions && leadingOptions.length > 0 && (
+            <CommandGroup>
+              {leadingOptions.map((opt) => (
+                <CommandItem
+                  key={opt.value}
+                  value={opt.label}
+                  onSelect={() => {
+                    onLeadingSelect?.(opt.value);
+                    setOpen(false);
+                  }}
+                >
+                  {opt.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
           <CommandInput placeholder="Search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
