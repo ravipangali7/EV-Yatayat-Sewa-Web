@@ -195,7 +195,8 @@ function AppRoutes() {
       <Route path="/app/register" element={<AppRegister />} />
       <Route path="/app/forgot-password" element={<AppForgotPassword />} />
       <Route path="/app/reset-password" element={<AppResetPassword />} />
-      <Route path="/app/payment/callback" element={<AppProtectedRoute><PaymentCallbackPage /></AppProtectedRoute>} />
+      <Route path="/payment/callback/success" element={<AppProtectedRoute><PaymentCallbackPage /></AppProtectedRoute>} />
+      <Route path="/payment/callback/failure" element={<AppProtectedRoute><PaymentCallbackPage /></AppProtectedRoute>} />
 
       {/* App (driver/user) portals - generated from config */}
       {getAppRoles().map((role) => {
