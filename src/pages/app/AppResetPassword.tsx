@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Lock, Eye, EyeOff, ArrowLeft, ShieldCheck } from "lucide-react";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Lock, ArrowLeft, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import AppLayout from "@/components/app/AppLayout";
 import { authApi } from "@/modules/auth/services/authApi";
@@ -13,7 +13,6 @@ const RESET_TOKEN_KEY = "app_reset_token";
 export default function AppResetPassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -73,23 +72,20 @@ export default function AppResetPassword() {
         </div>
 
         <form onSubmit={handleReset} className="space-y-4">
-          <div className="relative">
-            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="New Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 pr-10 h-12 rounded-xl"
-            />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          <div className="relative">
-            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10 h-12 rounded-xl" />
-          </div>
+          <PasswordInput
+            leftIcon={<Lock size={16} />}
+            placeholder="New Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-12 rounded-xl"
+          />
+          <PasswordInput
+            leftIcon={<Lock size={16} />}
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="h-12 rounded-xl"
+          />
           <Button type="submit" className="w-full h-12 rounded-xl font-semibold" disabled={isLoading}>
             {isLoading ? "Resetting..." : "Reset Password"}
           </Button>

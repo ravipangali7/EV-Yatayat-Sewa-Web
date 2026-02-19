@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { User, Phone, Mail, Lock, Wallet, Car, MapPin, LogOut, ChevronRight, Camera, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
 import AppBar from "@/components/app/AppBar";
@@ -93,9 +94,9 @@ export default function DriverProfile() {
         <DialogContent className="max-w-[380px] rounded-2xl">
           <DialogHeader><DialogTitle className="text-base">Change Password</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input type="password" placeholder="Current Password" className="h-11 rounded-xl" />
-            <Input type="password" placeholder="New Password" className="h-11 rounded-xl" />
-            <Input type="password" placeholder="Confirm Password" className="h-11 rounded-xl" />
+            <PasswordInput placeholder="Current Password" className="h-11 rounded-xl" />
+            <PasswordInput placeholder="New Password" className="h-11 rounded-xl" />
+            <PasswordInput placeholder="Confirm Password" className="h-11 rounded-xl" />
             <Button className="w-full h-11 rounded-xl" onClick={() => { setShowPasswordModal(false); toast.success("Password changed!"); }}>
               Update Password
             </Button>

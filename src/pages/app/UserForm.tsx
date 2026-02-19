@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { userApi } from '@/modules/users/services/userApi';
@@ -250,9 +251,8 @@ export default function UserForm() {
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="password">Password {isEdit && '(leave blank to keep current)'}</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               value={formData.password}
               onChange={(e) => {
                 handleChange('password', e.target.value);
@@ -264,9 +264,8 @@ export default function UserForm() {
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="confirmPassword">Confirm Password {isEdit && '(leave blank to keep current)'}</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               value={formData.confirmPassword}
               onChange={(e) => {
                 handleChange('confirmPassword', e.target.value);
