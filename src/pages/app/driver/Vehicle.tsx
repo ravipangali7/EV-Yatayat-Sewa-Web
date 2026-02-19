@@ -499,11 +499,22 @@ export default function Vehicle() {
     }
   };
 
-  const getCurrentLocation = (): Promise<{ lat: number; lng: number }> => {
+  const CRITICAL_LOCATION_APP_MSG = {
+    end_trip: "Please open this page in the EV Yatayat Sewa app to end the trip.",
+    start_trip: "Please open this page in the EV Yatayat Sewa app to start the trip.",
+    checkout: "Please open this page in the EV Yatayat Sewa app to get location for checkout.",
+  };
+
+  const getCurrentLocation = (options?: { requiredBridge?: boolean; context?: "end_trip" | "start_trip" | "checkout" }): Promise<{ lat: number; lng: number }> => {
+    const requiredBridge = options?.requiredBridge ?? false;
+    const context = options?.context ?? "end_trip";
     if (isFlutterBridgeAvailable()) {
       return requestLocation().then((r) =>
         r.success && r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng } : Promise.reject(new Error(r.error || "No location"))
       );
+    }
+    if (requiredBridge) {
+      return Promise.reject(new Error(CRITICAL_LOCATION_APP_MSG[context]));
     }
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
@@ -518,7 +529,7 @@ export default function Vehicle() {
   const handleStartTrip = async () => {
     if (!selectedVehicle?.id) return;
     try {
-      const loc = await getCurrentLocation();
+      const loc = await getCurrentLocation({ requiredBridge: true, context: "start_trip" });
       const res = await tripApi.startTrip(selectedVehicle.id, { latitude: loc.lat, longitude: loc.lng });
       if ("need_confirm_scheduled" in res && res.need_confirm_scheduled) {
         setScheduledConfirmData(res);
@@ -608,7 +619,7 @@ export default function Vehicle() {
     try {
       const [settingsRes, loc] = await Promise.all([
         superSettingApi.list({ per_page: 1 }),
-        lastLocation ? Promise.resolve({ lat: lastLocation.lat, lng: lastLocation.lng }) : getCurrentLocation(),
+        lastLocation ? Promise.resolve({ lat: lastLocation.lat, lng: lastLocation.lng }) : getCurrentLocation({ requiredBridge: true, context: "checkout" }),
       ]);
       const perKmCharge = Number(settingsRes.results?.[0]?.per_km_charge ?? 0);
       if (!perKmCharge) {
@@ -847,7 +858,7 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         return;
     }
     setIsEndingTrip(true);
-    getCurrentLocation()
+    getCurrentLocation({ requiredBridge: true, context: "end_trip" })
       .then((loc) => {
         setPendingEndTripLocation(loc);
         return tripApi.endTrip(activeTrip.id, { latitude: loc.lat, longitude: loc.lng });
