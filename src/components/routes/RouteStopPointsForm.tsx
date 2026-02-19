@@ -6,28 +6,10 @@ import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { PlaceFormModal } from '@/components/places/PlaceFormModal';
 import type { PlaceFormData } from '@/components/places/PlaceFormFields';
 import { Place } from '@/types';
-import { toast } from 'sonner';
 
 const LEADING_ADD_NEW = '__add_new_place__';
-const LEADING_CURRENT_LOCATION = '__current_location__';
 
-const leadingOptions = [
-  { value: LEADING_ADD_NEW, label: 'Add New place' },
-  { value: LEADING_CURRENT_LOCATION, label: 'Current location' },
-];
-
-async function reverseGeocode(lat: number, lng: number): Promise<string> {
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      { headers: { 'Accept-Language': 'en' } }
-    );
-    const data = await response.json();
-    return data.display_name || '';
-  } catch {
-    return '';
-  }
-}
+const leadingOptions = [{ value: LEADING_ADD_NEW, label: 'Add New place' }];
 
 interface StopPoint {
   id: string;
@@ -90,11 +72,11 @@ export function RouteStopPointsForm({
     onChange(updated);
   };
 
-  const openAddPlaceModal = (stopIndex: number, initialData?: Partial<PlaceFormData> | null) => {
+  const openAddPlaceModal = (stopIndex: number) => {
     setPlaceModalStopIndex(stopIndex);
     setPlaceModalMode('add');
     setPlaceModalPlaceId(undefined);
-    setPlaceModalInitialData(initialData ?? null);
+    setPlaceModalInitialData(null);
     setPlaceModalOpen(true);
   };
 
@@ -111,30 +93,6 @@ export function RouteStopPointsForm({
   const handleLeadingSelect = (stopIndex: number, leadingValue: string) => {
     if (leadingValue === LEADING_ADD_NEW) {
       openAddPlaceModal(stopIndex);
-      return;
-    }
-    if (leadingValue === LEADING_CURRENT_LOCATION) {
-      if (!navigator.geolocation) {
-        toast.error('Geolocation is not supported by your browser');
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          const address = await reverseGeocode(lat, lng);
-          openAddPlaceModal(stopIndex, {
-            name: 'Current location',
-            code: 'CURR',
-            latitude: lat,
-            longitude: lng,
-            address: address || '',
-          });
-        },
-        () => {
-          toast.error('Could not get your location. Check permissions or try again.');
-        }
-      );
     }
   };
 

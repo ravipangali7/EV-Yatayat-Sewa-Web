@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PlaceMap } from '@/components/places/PlaceMap';
 import { Place } from '@/types';
-import { toNumber } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export interface PlaceFormData {
   name: string;
@@ -22,6 +23,19 @@ const defaultFormData: PlaceFormData = {
   longitude: 0,
   address: '',
 };
+
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    const data = await response.json();
+    return data.display_name || '';
+  } catch {
+    return '';
+  }
+}
 
 interface PlaceFormFieldsProps {
   /** Initial values (for edit or pre-fill e.g. Current location). When placeId changes, form resets from initialData. */
@@ -86,6 +100,28 @@ export function PlaceFormFields({
     }));
   };
 
+  const [currentLocationLoading, setCurrentLocationLoading] = useState(false);
+  const handleCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    setCurrentLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const address = await reverseGeocode(lat, lng);
+        handleLocationChange(lat, lng, address);
+        setCurrentLocationLoading(false);
+      },
+      () => {
+        toast.error('Could not get your location. Check permissions or try again.');
+        setCurrentLocationLoading(false);
+      }
+    );
+  };
+
   const nameId = `${idPrefix}-name`;
   const codeId = `${idPrefix}-code`;
   const latId = `${idPrefix}-latitude`;
@@ -143,7 +179,19 @@ export function PlaceFormFields({
       </div>
 
       <div className="form-section">
-        <Label className="mb-4 block">Location</Label>
+        <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+          <Label>Location</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCurrentLocation}
+            disabled={currentLocationLoading}
+          >
+            <MapPin className="w-4 h-4 mr-2" />
+            {currentLocationLoading ? 'Getting location...' : 'Current location'}
+          </Button>
+        </div>
         <PlaceMap
           latitude={formData.latitude}
           longitude={formData.longitude}
