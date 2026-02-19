@@ -9,7 +9,7 @@ import { paymentApi } from "@/modules/payments/services/paymentApi";
 import { toNumber } from "@/lib/utils";
 import { toast } from "sonner";
 
-const MIN_AMOUNT_NPR = 200;
+const MIN_AMOUNT_NPR = 10;
 
 export default function UserDeposit() {
   const { user } = useAuth();

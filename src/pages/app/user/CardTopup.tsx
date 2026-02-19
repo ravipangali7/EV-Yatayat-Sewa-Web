@@ -100,7 +100,7 @@ export default function CardTopup() {
   const numAmount = parseFloat(amount || "0");
   const validAmount = Number.isFinite(numAmount) && numAmount > 0;
   const canPayFromWallet = validAmount && walletBalance >= numAmount;
-  const MIN_NCHL = 200;
+  const MIN_NCHL = 10;
   const canDirectPay = validAmount && numAmount >= MIN_NCHL;
 
   const handlePayWithConnectIPS = async () => {

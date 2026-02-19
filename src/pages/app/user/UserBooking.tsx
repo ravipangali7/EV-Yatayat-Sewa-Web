@@ -205,7 +205,7 @@ export default function UserBooking() {
     setShowPayConfirm(true);
   };
 
-  const MIN_NCHL = 200;
+  const MIN_NCHL = 10;
   const handlePayWithConnectIPS = async () => {
     if (!checkoutSchedule || !user) return;
     if (totalAmount < MIN_NCHL) {
@@ -662,7 +662,7 @@ export default function UserBooking() {
                             Pay from wallet
                           </Button>
                         )}
-                        {totalAmount >= 200 && (
+                        {totalAmount >= 10 && (
                           <Button
                             variant={(checkoutWalletBalance ?? 0) >= totalAmount ? "outline" : "default"}
                             className="flex-1"
@@ -672,8 +672,8 @@ export default function UserBooking() {
                             {checkoutSubmitting ? "Redirecting..." : "Pay with ConnectIPS (Direct Pay)"}
                           </Button>
                         )}
-                        {totalAmount < 200 && (checkoutWalletBalance ?? 0) < totalAmount && (
-                          <p className="text-xs text-muted-foreground flex-1 self-center">Min Rs. 200 for ConnectIPS. Recharge wallet to pay.</p>
+                        {totalAmount < 10 && (checkoutWalletBalance ?? 0) < totalAmount && (
+                          <p className="text-xs text-muted-foreground flex-1 self-center">Min Rs. 10 for ConnectIPS. Recharge wallet to pay.</p>
                         )}
                       </>
                     ) : (
@@ -709,7 +709,7 @@ export default function UserBooking() {
                       </Button>
                     )}
                   </div>
-                  {user && (checkoutWalletBalance ?? 0) < totalAmount && totalAmount >= 200 && (
+                  {user && (checkoutWalletBalance ?? 0) < totalAmount && totalAmount >= 10 && (
                     <p className="text-xs text-muted-foreground text-center">Insufficient wallet? Recharge or use Direct Pay (ConnectIPS).</p>
                   )}
                 </div>
