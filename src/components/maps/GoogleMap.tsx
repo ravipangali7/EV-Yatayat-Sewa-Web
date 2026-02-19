@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
 import { Card } from '@/components/ui/card';
@@ -43,6 +43,15 @@ export function GoogleMapComponent({
   const mapRef = useRef<google.maps.Map | null>(null);
 
   const { isLoaded } = useGoogleMaps();
+
+  // Sync marker position and pan map when latitude/longitude change from parent (e.g. "Current location" button)
+  useEffect(() => {
+    const pos = { lat: latitude, lng: longitude };
+    setCurrentPosition(pos);
+    if (mapRef.current && (latitude !== 0 || longitude !== 0)) {
+      mapRef.current.panTo(pos);
+    }
+  }, [latitude, longitude]);
 
   const center = {
     lat: latitude || defaultCenter.lat,
