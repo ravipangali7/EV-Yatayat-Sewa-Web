@@ -418,30 +418,34 @@ export default function Vehicle() {
   const singleBookedSelected = bookedSelected.length === 1 && availableSelected.length === 0;
 
   const handleScan = async () => {
-    if (isFlutterBridgeAvailable()) {
-      setIsScanning(true);
-      try {
-        const result = await requestNativeScan();
-        if (result.success && result.vehicleId) {
-          const vehicleId = result.vehicleId.trim();
-          try {
-            const vehicleDetails = await vehicleApi.get(vehicleId);
-            setVehicleToConnect(vehicleDetails);
-            setPendingVehicleId(vehicleId);
-            setShowScanConfirmModal(true);
-          } catch {
-            toast.error("Vehicle not found or you don't have access.");
-          }
-        } else if (!result.success && result.error) {
-          toast.error(result.error);
-        }
-      } catch (e) {
-        toast.error("Failed to connect vehicle");
-      } finally {
-        setIsScanning(false);
-      }
+    if (!isFlutterBridgeAvailable()) {
+      toast.info("Please open in the mobile app to scan the QR code.");
       return;
     }
+    setIsScanning(true);
+    try {
+      const result = await requestNativeScan();
+      if (result.success && result.vehicleId) {
+        const vehicleId = result.vehicleId.trim();
+        try {
+          const vehicleDetails = await vehicleApi.get(vehicleId);
+          setVehicleToConnect(vehicleDetails);
+          setPendingVehicleId(vehicleId);
+          setShowScanConfirmModal(true);
+        } catch {
+          toast.error("Vehicle not found or you don't have access.");
+        }
+      } else if (!result.success && result.error) {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error("Failed to connect vehicle");
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleUseMyVehicle = () => {
     if (vehicles.length > 0) {
       setSelectedVehicle(vehicles[0]);
       setSeats(buildSeatsFromVehicle(vehicles[0], superSettingSeatLayout ?? undefined));
@@ -924,9 +928,16 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
           </div>
           <h2 className="text-lg font-bold mb-2">Connect Your Vehicle</h2>
           <p className="text-sm text-muted-foreground mb-8">Scan QR code on your vehicle or use your assigned vehicle</p>
-          <Button onClick={handleScan} className="h-12 px-8 rounded-xl text-base font-semibold" disabled={isScanning}>
-            <QrCode size={18} className="mr-2" /> {isScanning ? "Opening scanner…" : isFlutterBridgeAvailable() ? "Scan & Connect" : vehicles.length > 0 ? "Use My Vehicle" : "Scan & Connect"}
-          </Button>
+          <div className="flex flex-col gap-3 w-full max-w-xs mx-auto">
+            <Button onClick={handleScan} className="h-12 px-8 rounded-xl text-base font-semibold" disabled={isScanning}>
+              <QrCode size={18} className="mr-2" /> {isScanning ? "Opening scanner…" : "Scan & Connect"}
+            </Button>
+            {!isFlutterBridgeAvailable() && vehicles.length > 0 && (
+              <Button variant="outline" onClick={handleUseMyVehicle} className="h-12 px-8 rounded-xl text-base font-semibold">
+                Use my vehicle
+              </Button>
+            )}
+          </div>
         </motion.div>
         <Dialog open={showScanConfirmModal} onOpenChange={(open) => { if (!open) { setShowScanConfirmModal(false); setVehicleToConnect(null); setPendingVehicleId(null); } }}>
           <DialogContent className="max-w-md rounded-2xl">
