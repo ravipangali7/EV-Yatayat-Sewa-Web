@@ -20,7 +20,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      { headers: { Accept-Language: 'en' } }
+      { headers: { 'Accept-Language': 'en' } }
     );
     const data = await response.json();
     return data.display_name || '';
