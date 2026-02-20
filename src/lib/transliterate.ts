@@ -48,6 +48,7 @@ export function normalizePhonetic(text: string): string {
   s = s.replace(/sh/g, "s").replace(/kh/g, "k").replace(/gh/g, "g").replace(/ch/g, "c");
   s = s.replace(/th/g, "t").replace(/dh/g, "d").replace(/ph/g, "p").replace(/bh/g, "b");
   s = s.replace(/ng/g, "n").replace(/w/g, "v").replace(/v/g, "b").replace(/z/g, "j"); // w→v: koteshwor <-> koteshwar
+  s = s.replace(/au/g, "o").replace(/ow/g, "o").replace(/ou/g, "o"); // chowk <-> chok, chauk <-> chok (चौक/चोक)
   s = s.replace(/(.)\1+/g, "$1"); // collapse repeated chars (voice/typos)
   return s;
 }
