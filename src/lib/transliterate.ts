@@ -41,13 +41,42 @@ export function romanize(text: string): string {
   return out.join("").toLowerCase();
 }
 
-/** True if query matches name (direct or romanized). */
+/** Romanize, lowercase, and treat v/b as same (v -> b) for phonetic matching. */
+export function normalizePhonetic(text: string): string {
+  if (!text || typeof text !== "string") return "";
+  return romanize(text).toLowerCase().replace(/v/g, "b");
+}
+
+/** From normalizePhonetic, remove vowels for fuzzy match (e.g. bsundhra vs basundhara). */
+export function consonantSkeleton(text: string): string {
+  return normalizePhonetic(text).replace(/[aeiou]/g, "");
+}
+
+/** True if query matches name: direct, romanized, phonetic, or consonant skeleton. */
 export function matchesSearch(name: string, query: string): boolean {
   if (!query.trim()) return true;
   const q = query.trim().toLowerCase();
   const n = (name || "").toLowerCase();
-  if (n.includes(q)) return true;
-  const qRoman = romanize(query);
+  if (n.includes(q) || q.includes(n)) return true;
   const nRoman = romanize(name);
-  return qRoman.length > 0 && nRoman.includes(qRoman);
+  const qRoman = romanize(query);
+  if (qRoman.length > 0 && (nRoman.includes(qRoman) || qRoman.includes(nRoman))) return true;
+  const nPh = normalizePhonetic(name);
+  const qPh = normalizePhonetic(query);
+  if (qPh.length > 0 && (nPh.includes(qPh) || qPh.includes(nPh))) return true;
+  const skQ = consonantSkeleton(query);
+  const skN = consonantSkeleton(name);
+  if (skQ.length >= 2 && skN.includes(skQ)) return true;
+  return false;
+}
+
+/** Space-separated variants for filter value so typing vasundhara, bsundhra, etc. matches. */
+export function getSearchableVariants(name: string): string {
+  if (!name || typeof name !== "string") return "";
+  const n = name.trim();
+  const rom = romanize(n);
+  const phonetic = normalizePhonetic(n);
+  const withV = rom.toLowerCase().replace(/b/g, "v");
+  const sk = consonantSkeleton(n);
+  return [n, rom, phonetic, withV, sk].filter(Boolean).join(" ");
 }

@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import AppBar from "@/components/app/AppBar";
-import { romanize, matchesSearch } from "@/lib/transliterate";
+import { getSearchableVariants, matchesSearch } from "@/lib/transliterate";
 import { VoiceSearchButton } from "@/components/app/VoiceSearchButton";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
@@ -406,7 +406,7 @@ export default function UserBooking() {
             placeholder="Select departure place"
             getOptionLabel={(o) => o.name}
             getOptionValue={(o) => o.id}
-            getOptionFilterValue={(o) => (o.name || "") + " " + romanize(o.name || "")}
+            getOptionFilterValue={(o) => getSearchableVariants(o.name || "")}
             className="h-12 rounded-xl"
           />
         </div>
@@ -431,7 +431,7 @@ export default function UserBooking() {
             disabled={!fromPlaceId || loadingEndPlaces}
             getOptionLabel={(o) => o.name}
             getOptionValue={(o) => o.id}
-            getOptionFilterValue={(o) => (o.name || "") + " " + romanize(o.name || "")}
+            getOptionFilterValue={(o) => getSearchableVariants(o.name || "")}
             className="h-12 rounded-xl"
           />
         </div>
