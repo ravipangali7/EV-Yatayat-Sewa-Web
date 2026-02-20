@@ -149,28 +149,27 @@ function parseSeatLayout(seatLayout: string[] | undefined): string[][] {
   return rows;
 }
 
-/** Build Seat[] from seat_layout array (x = seat, y = driver, - = empty, : = new row). */
-function buildSeatsFromLayout(layout: string[]): Seat[] {
+/** Build Seat[] from seat_layout array (x = seat, y = driver, - = empty, : = new row). Uses optional apiSeats to get correct labels from backend (side+number) so driver UI matches admin. */
+function buildSeatsFromLayout(layout: string[], apiSeats?: Array<{ side: string; number: number; status?: string }>): Seat[] {
   const rows = parseSeatLayout(layout);
   if (rows.length === 0) return [];
-  const sides = "ABCDEFGHIJ".split("");
   const result: Seat[] = [];
+  let seatIndex = 0;
   for (let ri = 0; ri < rows.length; ri++) {
-    let numInRow = 0;
     const row = rows[ri];
-    const side = sides[ri] ?? String.fromCharCode(65 + ri);
     for (let ci = 0; ci < row.length; ci++) {
       const cell = row[ci];
       if (cell === "x") {
-        numInRow += 1;
-        const label = `${side}${numInRow}`;
+        const apiSeat = apiSeats?.[seatIndex];
+        const label = apiSeat ? `${apiSeat.side}${apiSeat.number}` : `S${seatIndex + 1}`;
         result.push({
           id: label,
           label,
           row: ri,
           col: ci,
-          status: "available",
+          status: (apiSeat?.status === "booked" ? "booked" : "available") as Seat["status"],
         });
+        seatIndex += 1;
       } else if (cell === "y") {
         result.push({
           id: "DR",
@@ -195,25 +194,12 @@ const DEFAULT_SEATS_WHEN_NO_LAYOUT: Seat[] = [
 
 function buildSeatsFromVehicle(vehicle: ApiVehicle | null, fallbackLayout?: string[]): Seat[] {
   const layout = vehicle?.seat_layout?.length ? vehicle.seat_layout : fallbackLayout;
+  const apiSeatsOrdered = vehicle?.seats?.filter((s) => s.side !== undefined && s.number !== undefined)
+    ?? [];
 
   if (layout?.length) {
-    const seats = buildSeatsFromLayout(layout);
-    if (seats.length > 0 && vehicle?.seats?.length) {
-      const seatById = new Map(
-        vehicle.seats
-          .filter((s) => s.side !== undefined)
-          .map((s) => [`${s.side}${s.number}`, s])
-      );
-      return seats.map((seat) => {
-        if (seat.status === "driver") return seat;
-        const apiSeat = seatById.get(seat.id);
-        return {
-          ...seat,
-          status: (apiSeat?.status === "booked" ? "booked" : "available") as Seat["status"],
-        };
-      });
-    }
-    return seats;
+    const seats = buildSeatsFromLayout(layout, apiSeatsOrdered);
+    return seats.length > 0 ? seats : buildSeatsFromLayout(layout);
   }
 
   if (vehicle?.seats?.length) {
@@ -1375,7 +1361,14 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       <ConfirmModal open={showCheckinModal} onClose={() => setShowCheckinModal(false)} onConfirm={confirmCheckIn} title="Confirm Check-In" description={`Check in ${availableSelected.length} passenger(s)?`} confirmLabel="Check In" />
       <ConfirmModal open={showCheckoutModal} onClose={() => setShowCheckoutModal(false)} onConfirm={confirmCheckOut} title="Confirm Check-Out" confirmLabel="Check Out">
         <div className="space-y-2 mb-3">
-          <p className="text-sm font-medium">Seats: {bookedSelected.map((s) => s.label).join(", ") || "—"}</p>
+          <p className="text-sm font-medium">Check out {bookedSelected.length} seat{bookedSelected.length !== 1 ? "s" : ""} at once:</p>
+          <div className="text-sm">
+            {bookedSelected.map((s) => (
+              <div key={s.id} className="flex justify-between py-0.5">
+                <span>Seat {s.label}{s.passengerName ? ` – ${s.passengerName}` : ""}</span>
+              </div>
+            ))}
+          </div>
           <p className="text-xs text-muted-foreground">Amount will be confirmed at checkout.</p>
           <MiniMap points={[currentLocation]} className="mt-2" />
         </div>
