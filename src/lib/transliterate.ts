@@ -41,10 +41,21 @@ export function romanize(text: string): string {
   return out.join("").toLowerCase();
 }
 
-/** Romanize, lowercase, and treat v/b as same (v -> b) for phonetic matching. */
+/** Romanize, lowercase, remove spaces, apply phonetic equivalences, then collapse repeated chars for flexible/voice matching. */
 export function normalizePhonetic(text: string): string {
   if (!text || typeof text !== "string") return "";
-  return romanize(text).toLowerCase().replace(/v/g, "b");
+  let s = romanize(text).toLowerCase().replace(/\s+/g, "");
+  s = s.replace(/sh/g, "s").replace(/kh/g, "k").replace(/gh/g, "g").replace(/ch/g, "c");
+  s = s.replace(/th/g, "t").replace(/dh/g, "d").replace(/ph/g, "p").replace(/bh/g, "b");
+  s = s.replace(/ng/g, "n").replace(/v/g, "b").replace(/z/g, "j");
+  s = s.replace(/(.)\1+/g, "$1"); // collapse repeated chars (voice/typos)
+  return s;
+}
+
+/** Trim and collapse multiple spaces; use for voice transcript before matching. */
+export function normalizeSearchInput(text: string): string {
+  if (!text || typeof text !== "string") return "";
+  return text.trim().replace(/\s+/g, " ");
 }
 
 /** From normalizePhonetic, remove vowels for fuzzy match (e.g. bsundhra vs basundhara). */
@@ -52,15 +63,21 @@ export function consonantSkeleton(text: string): string {
   return normalizePhonetic(text).replace(/[aeiou]/g, "");
 }
 
-/** True if query matches name: direct, romanized, phonetic, or consonant skeleton. */
+/** True if query matches name: direct, romanized, phonetic, or consonant skeleton. Space-insensitive; sh/kh variants. */
 export function matchesSearch(name: string, query: string): boolean {
   if (!query.trim()) return true;
   const q = query.trim().toLowerCase();
   const n = (name || "").toLowerCase();
   if (n.includes(q) || q.includes(n)) return true;
+  const nNoSpace = n.replace(/\s+/g, "");
+  const qNoSpace = q.replace(/\s+/g, "");
+  if (nNoSpace.includes(qNoSpace) || qNoSpace.includes(nNoSpace)) return true;
   const nRoman = romanize(name);
   const qRoman = romanize(query);
   if (qRoman.length > 0 && (nRoman.includes(qRoman) || qRoman.includes(nRoman))) return true;
+  const nRomanNoSpace = nRoman.replace(/\s+/g, "");
+  const qRomanNoSpace = qRoman.replace(/\s+/g, "");
+  if (qRomanNoSpace.length > 0 && (nRomanNoSpace.includes(qRomanNoSpace) || qRomanNoSpace.includes(nRomanNoSpace))) return true;
   const nPh = normalizePhonetic(name);
   const qPh = normalizePhonetic(query);
   if (qPh.length > 0 && (nPh.includes(qPh) || qPh.includes(nPh))) return true;
@@ -70,13 +87,14 @@ export function matchesSearch(name: string, query: string): boolean {
   return false;
 }
 
-/** Space-separated variants for filter value so typing vasundhara, bsundhra, etc. matches. */
+/** Space-separated variants for filter value so typing vasundhara, sama kusi, samakhushi, etc. matches. */
 export function getSearchableVariants(name: string): string {
   if (!name || typeof name !== "string") return "";
   const n = name.trim();
   const rom = romanize(n);
+  const romNoSpace = rom.replace(/\s+/g, "");
   const phonetic = normalizePhonetic(n);
   const withV = rom.toLowerCase().replace(/b/g, "v");
   const sk = consonantSkeleton(n);
-  return [n, rom, phonetic, withV, sk].filter(Boolean).join(" ");
+  return [n, rom, romNoSpace, phonetic, withV, sk].filter(Boolean).join(" ");
 }
