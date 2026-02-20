@@ -11,7 +11,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import AppBar from "@/components/app/AppBar";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
 import TransferModal from "@/components/app/TransferModal";
@@ -89,7 +88,6 @@ export default function UserHome() {
 
   return (
     <div className="min-h-screen">
-      <AppBar title="EV Yatayat Sewa" />
       <div className="gradient-primary pt-6 pb-8 px-5 rounded-b-[2rem]">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="flex items-center justify-between mb-6">
