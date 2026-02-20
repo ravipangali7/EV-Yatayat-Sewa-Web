@@ -257,14 +257,16 @@ export default function Vehicle() {
   const [showDropoffModal, setShowDropoffModal] = useState(false);
   const [dropoffData, setDropoffData] = useState<{ placeId: string; placeName: string; dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string; trip_amount?: string }> } | null>(null);
   const lastDropoffPlaceIdRef = useRef<string | null>(null);
-  const [outOfRangeCheckout, setOutOfRangeCheckout] = useState<{
+  type OutOfRangeItem = {
     vehicle_seat_id: string;
+    seat_label: string;
     check_out_lat: number;
     check_out_lng: number;
     check_out_address: string;
     place_id?: string;
     preview: CheckoutPreviewResponse;
-  } | null>(null);
+  };
+  const [outOfRangeCheckouts, setOutOfRangeCheckouts] = useState<OutOfRangeItem[] | null>(null);
   const [destinationSearch, setDestinationSearch] = useState("");
   const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
@@ -727,6 +729,7 @@ export default function Vehicle() {
       }
       const loc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
       try {
+        const outOfRange: OutOfRangeItem[] = [];
         for (const d of dropoffData.dropoffs) {
           const res = await seatBookingApi.checkout({
             vehicle_seat_id: d.vehicle_seat_id,
@@ -737,16 +740,20 @@ export default function Vehicle() {
             place_id: dropoffData.placeId,
           });
           if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
-            setOutOfRangeCheckout({
+            outOfRange.push({
               vehicle_seat_id: d.vehicle_seat_id,
+              seat_label: d.seat_label,
               check_out_lat: loc.lat,
               check_out_lng: loc.lng,
               check_out_address: dropoffData.placeName,
               place_id: dropoffData.placeId,
               preview: res as CheckoutPreviewResponse,
             });
-            return;
           }
+        }
+        if (outOfRange.length > 0) {
+          setOutOfRangeCheckouts(outOfRange);
+          return;
         }
         const updatedSeatsAfterDropoff = seats.map((s) => {
           if (dropoffData.dropoffs.some((d) => d.seat_label === s.id)) {
@@ -776,6 +783,7 @@ export default function Vehicle() {
         return;
       }
       try {
+        const outOfRange: OutOfRangeItem[] = [];
         for (const { seat, vehicleSeatId } of seatIds) {
           const res = await seatBookingApi.checkout({
             vehicle_seat_id: vehicleSeatId!,
@@ -785,15 +793,19 @@ export default function Vehicle() {
             is_paid: false,
           });
           if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
-            setOutOfRangeCheckout({
+            outOfRange.push({
               vehicle_seat_id: vehicleSeatId!,
+              seat_label: seat.id,
               check_out_lat: loc.lat,
               check_out_lng: loc.lng,
               check_out_address: "Current location",
               preview: res as CheckoutPreviewResponse,
             });
-            return;
           }
+        }
+        if (outOfRange.length > 0) {
+          setOutOfRangeCheckouts(outOfRange);
+          return;
         }
         const updatedSeats = seats.map((s) => {
           if (bookedSelected.some((sel) => sel.id === s.id)) {
@@ -815,22 +827,24 @@ export default function Vehicle() {
   };
 
   const confirmCheckOutOutOfRange = async () => {
-    if (!outOfRangeCheckout) return;
+    if (!outOfRangeCheckouts?.length) return;
     try {
-      const vehicleSeatIdCheckedOut = outOfRangeCheckout.vehicle_seat_id;
-      await seatBookingApi.checkout({
-        vehicle_seat_id: vehicleSeatIdCheckedOut,
-        check_out_lat: outOfRangeCheckout.check_out_lat,
-        check_out_lng: outOfRangeCheckout.check_out_lng,
-        check_out_address: outOfRangeCheckout.check_out_address,
-        is_paid: true,
-        ...(outOfRangeCheckout.place_id != null && { place_id: outOfRangeCheckout.place_id }),
-        confirm_out_of_range: true,
-      });
+      const checkedOutIds = new Set(outOfRangeCheckouts.map((o) => o.vehicle_seat_id));
+      for (const item of outOfRangeCheckouts) {
+        await seatBookingApi.checkout({
+          vehicle_seat_id: item.vehicle_seat_id,
+          check_out_lat: item.check_out_lat,
+          check_out_lng: item.check_out_lng,
+          check_out_address: item.check_out_address,
+          is_paid: true,
+          ...(item.place_id != null && { place_id: item.place_id }),
+          confirm_out_of_range: true,
+        });
+      }
       const currentDropoffData = dropoffData;
-      setOutOfRangeCheckout(null);
+      setOutOfRangeCheckouts(null);
       if (currentDropoffData) {
-        const remaining = currentDropoffData.dropoffs.filter((d) => d.vehicle_seat_id !== vehicleSeatIdCheckedOut);
+        const remaining = currentDropoffData.dropoffs.filter((d) => !checkedOutIds.has(d.vehicle_seat_id));
         if (remaining.length === 0) {
           const updatedSeatsAfterDropoff = seats.map((s) => {
             if (currentDropoffData.dropoffs.some((d) => d.seat_label === s.id)) {
@@ -848,13 +862,18 @@ export default function Vehicle() {
           setSelectedSeats(seats.filter((s) => remaining.some((d) => d.seat_label === s.id)));
         }
       } else {
-        const seatToFree = seats.find((s) => getVehicleSeatId(s.id) === vehicleSeatIdCheckedOut);
-        if (seatToFree) {
-          setSeats(seats.map((s) => (s.id === seatToFree.id ? { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined } : s)));
-        }
+        const updatedSeats = seats.map((s) => {
+          const vehicleSeatId = getVehicleSeatId(s.id);
+          return vehicleSeatId && checkedOutIds.has(vehicleSeatId)
+            ? { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined }
+            : s;
+        });
+        setSeats(updatedSeats);
         setSelectedSeats([]);
         setShowCheckoutModal(false);
       }
+      await refetchVehicleAndSeats();
+      refreshVehicle();
       toast.success("Check-out confirmed.");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -1359,7 +1378,13 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         </DialogContent>
       </Dialog>
       <ConfirmModal open={showCheckinModal} onClose={() => setShowCheckinModal(false)} onConfirm={confirmCheckIn} title="Confirm Check-In" description={`Check in ${availableSelected.length} passenger(s)?`} confirmLabel="Check In" />
-      <ConfirmModal open={showCheckoutModal} onClose={() => setShowCheckoutModal(false)} onConfirm={confirmCheckOut} title="Confirm Check-Out" confirmLabel="Check Out">
+      <ConfirmModal
+        open={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        onConfirm={confirmCheckOut}
+        title={`Confirm Check-Out – Seats ${bookedSelected.map((s) => s.label).join(", ") || "—"}`}
+        confirmLabel="Check Out"
+      >
         <div className="space-y-2 mb-3">
           <p className="text-sm font-medium">Check out {bookedSelected.length} seat{bookedSelected.length !== 1 ? "s" : ""} at once:</p>
           <div className="text-sm">
@@ -1403,17 +1428,24 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       </Dialog>
 
       <ConfirmModal
-        open={!!outOfRangeCheckout}
-        onClose={() => setOutOfRangeCheckout(null)}
+        open={!!outOfRangeCheckouts?.length}
+        onClose={() => setOutOfRangeCheckouts(null)}
         onConfirm={confirmCheckOutOutOfRange}
         title="Not at destination"
-        description={
-          outOfRangeCheckout
-            ? `You are not at the destination (${outOfRangeCheckout.preview.distance_meters} m away). If you confirm, the amount will be Rs ${outOfRangeCheckout.preview.new_trip_amount} and change by ${Number(outOfRangeCheckout.preview.amount_difference) >= 0 ? "+" : ""}${outOfRangeCheckout.preview.amount_difference}.`
-            : ""
-        }
         confirmLabel="Confirm"
-      />
+      >
+        <p className="text-sm text-muted-foreground mb-3">You are not at the destination. If you confirm, check-out will apply with adjusted amount for each seat below.</p>
+        <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+          {outOfRangeCheckouts?.map((item) => (
+            <div key={item.vehicle_seat_id} className="rounded-xl border border-border bg-muted/30 p-3 text-sm">
+              <p className="font-medium">Seat {item.seat_label}</p>
+              <p className="text-muted-foreground mt-0.5">
+                {item.preview.distance_meters} m away · Rs {item.preview.new_trip_amount} (change {Number(item.preview.amount_difference) >= 0 ? "+" : ""}{item.preview.amount_difference})
+              </p>
+            </div>
+          ))}
+        </div>
+      </ConfirmModal>
       <ConfirmModal open={showEndTripModal} onClose={() => setShowEndTripModal(false)} onConfirm={confirmEndTrip} title="End Trip?" description="Are you sure you want to end this trip?" confirmLabel="End Trip" variant="destructive" />
       <ConfirmModal open={showEndTripOutOfRangeModal} onClose={() => { setShowEndTripOutOfRangeModal(false); setPendingEndTripLocation(null); setIsEndingTrip(false); }} onConfirm={confirmEndTripOutOfRange} title="Not at destination" description="You are not at the proper destination. Are you sure you want to end the trip?" confirmLabel="Yes, end trip" variant="destructive" />
       </div>
