@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { VoiceSearchButton } from "@/components/app/VoiceSearchButton";
 import { userApi } from "@/modules/users/services/userApi";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import type { User } from "@/types";
@@ -106,12 +107,15 @@ export default function TransferModal({
         <div className="space-y-4 pt-2">
           {!selectedUser ? (
             <>
-              <Input
-                placeholder="Search by phone or name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="rounded-xl"
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search by phone or name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="rounded-xl flex-1"
+                />
+                <VoiceSearchButton onResult={setSearchQuery} size="default" variant="outline" />
+              </div>
               {searching && <p className="text-sm text-muted-foreground">Searching…</p>}
               <div className="max-h-48 overflow-y-auto space-y-1">
                 {results.map((u) => (

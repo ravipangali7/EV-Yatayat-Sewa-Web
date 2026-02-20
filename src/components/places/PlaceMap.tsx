@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { MapPin, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { VoiceSearchButton } from '@/components/app/VoiceSearchButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { GoogleMapComponent } from '@/components/maps/GoogleMap';
@@ -85,6 +86,7 @@ export function PlaceMap({ latitude, longitude, onLocationChange }: PlaceMapProp
               className="pl-10"
             />
           </div>
+          <VoiceSearchButton onResult={setSearchQuery} size="default" variant="outline" />
           <Button type="button" onClick={handleSearch} disabled={isSearching}>
             {isSearching ? 'Searching...' : 'Search'}
           </Button>

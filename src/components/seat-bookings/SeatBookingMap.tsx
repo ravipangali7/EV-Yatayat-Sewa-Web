@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { VoiceSearchButton } from '@/components/app/VoiceSearchButton';
 
 interface SeatBookingMapProps {
   checkInLat?: number;
@@ -288,6 +289,7 @@ export function SeatBookingMap({
               className="pl-10"
             />
           </div>
+          <VoiceSearchButton onResult={setSearchQuery} size="default" variant="outline" />
           <Button onClick={handleSearch} disabled={isSearching} type="button">
             {isSearching ? 'Searching...' : 'Search'}
           </Button>

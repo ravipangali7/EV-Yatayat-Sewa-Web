@@ -20,6 +20,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import AppBar from "@/components/app/AppBar";
+import { romanize, matchesSearch } from "@/lib/transliterate";
+import { VoiceSearchButton } from "@/components/app/VoiceSearchButton";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 function imageUrl(path: string | null | undefined): string {
@@ -386,7 +388,17 @@ export default function UserBooking() {
       <p className="text-sm text-muted-foreground mb-3">From & to</p>
       <form onSubmit={handleSearch} className="space-y-3 mb-6">
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">From</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-muted-foreground">From</label>
+            <VoiceSearchButton
+              onResult={(t) => {
+                const match = fromOptions.find((o) => matchesSearch(o.name, t));
+                if (match) setFromPlaceId(match.id);
+              }}
+              size="sm"
+              variant="ghost"
+            />
+          </div>
           <SearchableSelect
             options={fromOptions}
             value={fromPlaceId}
@@ -394,11 +406,23 @@ export default function UserBooking() {
             placeholder="Select departure place"
             getOptionLabel={(o) => o.name}
             getOptionValue={(o) => o.id}
+            getOptionFilterValue={(o) => (o.name || "") + " " + romanize(o.name || "")}
             className="h-12 rounded-xl"
           />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">To</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-muted-foreground">To</label>
+            <VoiceSearchButton
+              onResult={(t) => {
+                const match = toOptions.find((o) => matchesSearch(o.name, t));
+                if (match) setToPlaceId(match.id);
+              }}
+              disabled={!fromPlaceId || loadingEndPlaces}
+              size="sm"
+              variant="ghost"
+            />
+          </div>
           <SearchableSelect
             options={toOptions}
             value={toPlaceId}
@@ -407,6 +431,7 @@ export default function UserBooking() {
             disabled={!fromPlaceId || loadingEndPlaces}
             getOptionLabel={(o) => o.name}
             getOptionValue={(o) => o.id}
+            getOptionFilterValue={(o) => (o.name || "") + " " + romanize(o.name || "")}
             className="h-12 rounded-xl"
           />
         </div>

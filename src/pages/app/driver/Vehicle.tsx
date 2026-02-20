@@ -21,7 +21,8 @@ import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
 import { tripApi, type ActiveTrip, type CurrentStopResponse, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
-import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync, playBeep } from "@/lib/flutterBridge";
+import { matchesSearch } from "@/lib/transliterate";
+import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync, playBeep, refreshVehicle } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
 import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicleScheduleApi";
 import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
@@ -29,6 +30,7 @@ import { locationApi } from "@/modules/locations/services/locationApi";
 import { superSettingApi } from "@/modules/settings/services/superSettingApi";
 import { seatBookingApi, type CheckoutPreviewResponse } from "@/modules/seat-bookings/services/seatBookingApi";
 import AppBar from "@/components/app/AppBar";
+import { VoiceSearchButton } from "@/components/app/VoiceSearchButton";
 import { toast } from "sonner";
 
 const CHECKOUT_ALL_FIRST_MSG = "Check out all passengers first.";
@@ -416,6 +418,24 @@ export default function Vehicle() {
       .catch(() => setMapInitialCenter(NEPAL_CENTER));
   }, [driverState, tripTab, lastLocation]);
 
+  const refetchVehicleAndSeats = async () => {
+    try {
+      const res = await vehicleApi.getMyActiveVehicle();
+      if (!res) return;
+      let fallback: string[] | undefined = superSettingSeatLayout ?? undefined;
+      if (!res.seats?.length && !res.seat_layout?.length && !fallback?.length) {
+        try {
+          const settingsRes = await superSettingApi.list({ per_page: 1 });
+          fallback = Array.isArray(settingsRes.results?.[0]?.seat_layout) ? settingsRes.results[0].seat_layout : undefined;
+        } catch {
+          fallback = undefined;
+        }
+      }
+      setSelectedVehicle(res);
+      setSeats(buildSeatsFromVehicle(res, fallback));
+    } catch (_) {}
+  };
+
   const vehicleInfo = selectedVehicle ? vehicleToVehicleInfo(selectedVehicle) : null;
   const bookedSelected = selectedSeats.filter((s) => s.status === "booked");
   const availableSelected = selectedSeats.filter((s) => s.status === "available");
@@ -560,6 +580,7 @@ export default function Vehicle() {
         const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
         startLocationStream(trip.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
       }
+      await refetchVehicleAndSeats();
       toast.success("Trip started!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -586,6 +607,7 @@ export default function Vehicle() {
         const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
         startLocationStream(trip.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
       }
+      await refetchVehicleAndSeats();
       toast.success("Scheduled trip started!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } };
@@ -607,6 +629,7 @@ export default function Vehicle() {
         const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
         startLocationStream(t.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
       }
+      await refetchVehicleAndSeats();
       toast.success("Trip started!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } };
@@ -750,6 +773,8 @@ export default function Vehicle() {
         setShowDropoffModal(false);
         setDropoffData(null);
         lastDropoffPlaceIdRef.current = null;
+        await refetchVehicleAndSeats();
+        refreshVehicle();
         toast.success("Check-out successful!");
       } catch (e: unknown) {
         const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -793,6 +818,8 @@ export default function Vehicle() {
         setSeats(updatedSeats);
         setSelectedSeats([]);
         setShowCheckoutModal(false);
+        await refetchVehicleAndSeats();
+        refreshVehicle();
         toast.success("Check-out successful!");
       } catch {
         toast.error("Check-out failed");
@@ -1260,16 +1287,19 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
             <DialogTitle>Select destination</DialogTitle>
             <DialogDescription>Where are these passengers getting off?</DialogDescription>
           </DialogHeader>
-          <input
-            type="text"
-            placeholder="Search stops..."
-            className="border rounded-lg px-3 py-2 text-sm mb-2"
-            value={destinationSearch}
-            onChange={(e) => setDestinationSearch(e.target.value)}
-          />
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              placeholder="Search stops..."
+              className="flex-1 border rounded-lg px-3 py-2 text-sm"
+              value={destinationSearch}
+              onChange={(e) => setDestinationSearch(e.target.value)}
+            />
+            <VoiceSearchButton onResult={setDestinationSearch} size="default" variant="outline" />
+          </div>
           <div className="overflow-y-auto flex-1 space-y-1">
             {getDestinationOptions(selectedVehicle)
-              .filter((o) => !destinationSearch.trim() || o.name.toLowerCase().includes(destinationSearch.toLowerCase()))
+              .filter((o) => !destinationSearch.trim() || matchesSearch(o.name, destinationSearch))
               .map((opt) => (
                 <button
                   key={opt.id}

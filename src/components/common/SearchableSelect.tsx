@@ -31,6 +31,8 @@ interface SearchableSelectProps<T = SelectOption> {
   className?: string;
   getOptionLabel?: (option: T) => string;
   getOptionValue?: (option: T) => string;
+  /** String used for search/filter (e.g. label + romanized form for Nepali/English match) */
+  getOptionFilterValue?: (option: T) => string;
   /** Options shown above the search input; selecting one calls onLeadingSelect instead of onChange */
   leadingOptions?: { value: string; label: string }[];
   onLeadingSelect?: (value: string) => void;
@@ -45,6 +47,7 @@ export function SearchableSelect<T = SelectOption>({
   className,
   getOptionLabel,
   getOptionValue,
+  getOptionFilterValue,
   leadingOptions,
   onLeadingSelect,
 }: SearchableSelectProps<T>) {
@@ -63,6 +66,11 @@ export function SearchableSelect<T = SelectOption>({
       return getOptionValue(option);
     }
     return (option as any).value || (option as any).id || String(option);
+  };
+
+  const getFilterValue = (option: T): string => {
+    if (getOptionFilterValue) return getOptionFilterValue(option);
+    return getLabel(option);
   };
   
   const selectedOption = options.find((o) => getValue(o) === value);
@@ -106,10 +114,11 @@ export function SearchableSelect<T = SelectOption>({
               {options.map((option) => {
                 const optionValue = getValue(option);
                 const optionLabel = getLabel(option);
+                const filterValue = getFilterValue(option);
                 return (
                   <CommandItem
                     key={optionValue}
-                    value={optionLabel}
+                    value={filterValue}
                     onSelect={() => {
                       onChange(optionValue);
                       setOpen(false);
