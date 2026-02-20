@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Send } from "lucide-react";
+import { Send, Receipt } from "lucide-react";
+import { Link } from "react-router-dom";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
 import TransferModal from "@/components/app/TransferModal";
@@ -45,19 +46,29 @@ export default function DriverWallet() {
   return (
     <div className="min-h-screen">
       <AppBar title="Wallet" />
-      <div className="px-5 pt-4">
+      <div className="px-5 pt-4 pb-24">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6">
         <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="mt-4 w-full"
-          onClick={() => setShowTransferModal(true)}
-        >
-          <Send size={16} className="mr-2" />
-          Transfer
-        </Button>
+        <div className="mt-4 flex gap-2">
+          {toPay > 0 && (
+            <Button asChild variant="default" size="sm" className="flex-1 rounded-xl">
+              <Link to="/app/driver/pay-due">
+                <Receipt size={16} className="mr-2" />
+                Pay Due
+              </Link>
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className={toPay > 0 ? "flex-1 rounded-xl" : "w-full rounded-xl"}
+            onClick={() => setShowTransferModal(true)}
+          >
+            <Send size={16} className="mr-2" />
+            Transfer
+          </Button>
+        </div>
       </motion.div>
 
       <TransferModal

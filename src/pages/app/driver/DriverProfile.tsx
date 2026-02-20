@@ -45,7 +45,7 @@ export default function DriverProfile() {
     { icon: Send, label: "Transfer", to: "/app/driver/wallet" },
     { icon: Clock, label: "Trip History", to: "/app/driver/trip-history" },
     { icon: FileText, label: "Seat Booking", to: "/app/driver/seat-booking" },
-    { icon: Receipt, label: "Transactions", to: "/app/driver/wallet" },
+    { icon: Receipt, label: "Transactions", to: "/app/driver/transactions" },
   ];
 
   const handleLogout = () => {

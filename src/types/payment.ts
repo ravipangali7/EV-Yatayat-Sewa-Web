@@ -1,6 +1,6 @@
 /** NCHL ConnectIPS payment types */
 
-export type PaymentPurpose = 'wallet_deposit' | 'card_topup' | 'vehicle_ticket_booking';
+export type PaymentPurpose = 'wallet_deposit' | 'card_topup' | 'vehicle_ticket_booking' | 'pay_due';
 
 export interface PaymentFormData {
   MERCHANTID: string;
@@ -26,6 +26,7 @@ export interface PaymentInitiateRequest {
   purpose?: PaymentPurpose;
   card_id?: string;
   vehicle_ticket_booking_id?: string;
+  return_to?: string;
 }
 
 export interface PaymentTransaction {

@@ -8,6 +8,7 @@ import DriverVehicle from "@/pages/app/driver/Vehicle";
 import DriverWallet from "@/pages/app/driver/DriverWallet";
 import DriverProfile from "@/pages/app/driver/DriverProfile";
 import DriverTripHistory from "@/pages/app/driver/DriverTripHistory";
+import DriverTripHistoryDetail from "@/pages/app/driver/DriverTripHistoryDetail";
 import DriverSeatBooking from "@/pages/app/driver/DriverSeatBooking";
 import DriverSeatBookingDetail from "@/pages/app/driver/DriverSeatBookingDetail";
 import DriverPayDue from "@/pages/app/driver/DriverPayDue";
@@ -21,6 +22,8 @@ import UserDeposit from "@/pages/app/user/UserDeposit";
 import CardTopup from "@/pages/app/user/CardTopup";
 import DealerRevenue from "@/pages/app/user/DealerRevenue";
 import DealerProfile from "@/pages/app/user/DealerProfile";
+import AppTransactions from "@/pages/app/AppTransactions";
+import AppTransactionDetail from "@/pages/app/AppTransactionDetail";
 
 export type AppRoleId = "driver" | "user" | "ticket_dealer";
 
@@ -67,9 +70,12 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
       wallet: DriverWallet,
       profile: DriverProfile,
       "trip-history": DriverTripHistory,
+      "trip-history/:id": DriverTripHistoryDetail,
       "seat-booking": DriverSeatBooking,
       "seat-booking/:id": DriverSeatBookingDetail,
       "pay-due": DriverPayDue,
+      transactions: AppTransactions,
+      "transactions/:id": AppTransactionDetail,
     },
   },
   user: {
@@ -90,6 +96,8 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
       profile: UserProfile,
       deposit: UserDeposit,
       "card/topup": CardTopup,
+      transactions: AppTransactions,
+      "transactions/:id": AppTransactionDetail,
     },
   },
   ticket_dealer: {
@@ -110,6 +118,8 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
       revenue: DealerRevenue,
       deposit: UserDeposit,
       "card/topup": CardTopup,
+      transactions: AppTransactions,
+      "transactions/:id": AppTransactionDetail,
     },
   },
 };

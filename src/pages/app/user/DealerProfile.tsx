@@ -30,7 +30,7 @@ export default function DealerProfile() {
     { icon: CreditCard, label: "Card", to: "/app/ticket-dealer/card" },
     { icon: CalendarDays, label: "My Bookings", to: "/app/ticket-dealer/booking" },
     { icon: TrendingUp, label: "Revenue", to: "/app/ticket-dealer/revenue" },
-    { icon: Receipt, label: "Transactions", to: "/app/ticket-dealer/wallet" },
+    { icon: Receipt, label: "Transactions", to: "/app/ticket-dealer/transactions" },
   ];
 
   const handleLogout = () => {

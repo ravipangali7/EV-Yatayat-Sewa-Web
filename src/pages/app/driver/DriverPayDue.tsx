@@ -1,17 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Receipt, Wallet } from "lucide-react";
+import { Receipt, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppBar from "@/components/app/AppBar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
+import { paymentApi } from "@/modules/payments/services/paymentApi";
 import { toNumber } from "@/lib/utils";
+import { toast } from "sonner";
+
+const MIN_AMOUNT_NPR = 10;
 
 export default function DriverPayDue() {
   const { user } = useAuth();
   const [toPay, setToPay] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!user?.id) return;
@@ -29,6 +34,45 @@ export default function DriverPayDue() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  const handlePay = async () => {
+    if (toPay < MIN_AMOUNT_NPR) {
+      toast.error(`Minimum payment is Rs. ${MIN_AMOUNT_NPR}`);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const formData = await paymentApi.initiatePayment({
+        amount: toPay,
+        purpose: "pay_due",
+        remarks: "Pay due",
+        return_to: "pay_due",
+      });
+      const gatewayUrl = formData.gateway_url;
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = gatewayUrl;
+      form.style.display = "none";
+      const keys = ["MERCHANTID", "APPID", "APPNAME", "TXNID", "TXNDATE", "TXNCRNCY", "TXNAMT", "REFERENCEID", "REMARKS", "PARTICULARS", "TOKEN"];
+      for (const key of keys) {
+        const value = (formData as Record<string, string>)[key];
+        if (value != null) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        }
+      }
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { error?: string } } };
+      toast.error(ax?.response?.data?.error || "Failed to start payment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -53,14 +97,24 @@ export default function DriverPayDue() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Settle your dues from the wallet. You can transfer or pay from the Wallet page.
+            Pay your dues via NCHL ConnectIPS. On success, the amount will be deducted from your due balance.
           </p>
-          <Button asChild className="w-full rounded-xl" size="lg">
-            <Link to="/app/driver/wallet">
-              <Wallet size={18} className="mr-2" />
-              Go to Wallet
-            </Link>
-          </Button>
+          {toPay >= MIN_AMOUNT_NPR ? (
+            <Button
+              type="button"
+              className="w-full rounded-xl"
+              size="lg"
+              disabled={submitting || loading}
+              onClick={handlePay}
+            >
+              <CreditCard size={18} className="mr-2" />
+              {submitting ? "Redirecting to payment..." : "Pay"}
+            </Button>
+          ) : (
+            <Button asChild variant="outline" className="w-full rounded-xl" size="lg">
+              <Link to="/app/driver/wallet">Go to Wallet</Link>
+            </Button>
+          )}
         </motion.div>
       </div>
     </div>

@@ -88,7 +88,7 @@ export default function DriverHome() {
         </motion.div>
       </div>
 
-      <div className="px-5 pt-5 space-y-5">
+      <div className="px-5 pt-5 pb-24 space-y-5">
         <div className="grid grid-cols-4 gap-3">
           {gridCards.map((item) => {
             const Icon = item.icon;
@@ -170,7 +170,9 @@ export default function DriverHome() {
                 <p className="text-sm text-muted-foreground py-4">No transactions yet</p>
               ) : (
                 transactions.slice(0, 10).map((t) => (
-                  <TransactionCard key={t.id} transaction={t} />
+                  <div key={t.id} className="app-glass-card rounded-xl p-3 border border-border/50">
+                    <TransactionCard transaction={t} />
+                  </div>
                 ))
               )}
             </div>

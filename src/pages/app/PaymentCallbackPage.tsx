@@ -5,6 +5,8 @@ import { paymentApi } from "@/modules/payments/services/paymentApi";
 import type { PaymentTransaction } from "@/types/payment";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { resolveAppRole } from "@/config/appRoles";
 
 export default function PaymentCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -48,11 +50,15 @@ export default function PaymentCallbackPage() {
       .finally(() => setLoading(false));
   }, [txnId]);
 
+  const { user } = useAuth();
   const returnTo = searchParams.get("return_to") || "";
-  const goWallet = () => navigate("/app/user/wallet");
-  const goCard = () => navigate("/app/user/card");
-  const goBooking = () => navigate("/app/user/booking?tab=my-booking");
-  const goDeposit = () => navigate("/app/user/deposit");
+  const role = resolveAppRole(user);
+  const basePath = role === "driver" ? "/app/driver" : role === "ticket_dealer" ? "/app/ticket-dealer" : "/app/user";
+  const goWallet = () => navigate(`${basePath}/wallet`);
+  const goCard = () => navigate(`${basePath}/card`);
+  const goBooking = () => navigate(`${basePath}/booking?tab=my-booking`);
+  const goDeposit = () => navigate(`${basePath}/deposit`);
+  const goPayDue = () => navigate(`${basePath}/pay-due`);
 
   return (
     <div className="min-h-screen">
@@ -76,9 +82,16 @@ export default function PaymentCallbackPage() {
               </p>
             )}
             <div className="flex flex-wrap gap-2 justify-center">
-              <Button variant="outline" onClick={goDeposit}>
-                Try again (Deposit)
-              </Button>
+              {returnTo === "pay_due" && (
+                <Button variant="outline" onClick={goPayDue}>
+                  Try again (Pay Due)
+                </Button>
+              )}
+              {returnTo !== "pay_due" && (
+                <Button variant="outline" onClick={goDeposit}>
+                  Try again (Deposit)
+                </Button>
+              )}
               <Button onClick={goWallet}>My Wallet</Button>
             </div>
           </div>
@@ -96,6 +109,11 @@ export default function PaymentCallbackPage() {
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               <Button onClick={goWallet}>My Wallet</Button>
+              {(returnTo === "pay_due" || payment.purpose === "pay_due") && (
+                <Button variant="outline" onClick={goPayDue}>
+                  Back to Pay Due
+                </Button>
+              )}
               {(returnTo === "card_topup" || payment.purpose === "card_topup") && (
                 <Button variant="outline" onClick={goCard}>
                   My Card

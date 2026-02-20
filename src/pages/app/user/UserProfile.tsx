@@ -29,7 +29,7 @@ export default function UserProfile() {
     { icon: CreditCard, label: "Topup Card", to: "/app/user/card/topup" },
     { icon: CreditCard, label: "Card", to: "/app/user/card" },
     { icon: CalendarDays, label: "My Bookings", to: "/app/user/booking" },
-    { icon: Receipt, label: "Transactions", to: "/app/user/wallet" },
+    { icon: Receipt, label: "Transactions", to: "/app/user/transactions" },
   ];
 
   const handleLogout = () => {

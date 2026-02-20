@@ -45,7 +45,7 @@ export default function UserWallet() {
   return (
     <div className="min-h-screen">
       <AppBar title="My Wallet" />
-      <div className="px-5 pt-4 pb-8">
+      <div className="px-5 pt-4 pb-24">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6">
           <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} />
         </motion.div>

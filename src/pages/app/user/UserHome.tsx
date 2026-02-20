@@ -105,7 +105,7 @@ export default function UserHome() {
         </motion.div>
       </div>
 
-      <div className="px-5 pt-5 space-y-5">
+      <div className="px-5 pt-5 pb-24 space-y-5">
         <div className="grid grid-cols-4 gap-3">
           {gridCards.map((item) => {
             const Icon = item.icon;
@@ -179,7 +179,7 @@ export default function UserHome() {
                   return (
                     <Link
                       key={b.id}
-                      to="/app/user/booking"
+                      to={`${basePath}/booking`}
                       className="block app-glass-card rounded-2xl p-4 border border-border/50"
                     >
                       <p className="font-bold text-sm">PNR: {b.pnr}</p>

@@ -1,67 +1,71 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Clock, ChevronRight, Search } from "lucide-react";
+import { Receipt, ChevronRight, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppBar from "@/components/app/AppBar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { tripApi } from "@/modules/trips/services/tripApi";
+import { resolveAppRole, getAppRoleConfig } from "@/config/appRoles";
+import { walletApi } from "@/modules/wallets/services/walletApi";
+import { transactionApi } from "@/modules/transactions/services/transactionApi";
+import type { Transaction } from "@/types";
 import { format, subDays } from "date-fns";
-
-interface TripRecord {
-  id: string;
-  trip_id?: string;
-  start_time?: string | null;
-  end_time?: string | null;
-  vehicle?: string;
-  vehicle_details?: { name?: string; vehicle_no?: string };
-  route?: string;
-  route_details?: { name?: string };
-  driver?: string;
-}
 
 type DatePreset = "7" | "30" | "custom" | "all";
 
-export default function DriverTripHistory() {
+export default function AppTransactions() {
   const { user } = useAuth();
-  const [trips, setTrips] = useState<TripRecord[]>([]);
+  const role = resolveAppRole(user);
+  const config = role ? getAppRoleConfig(role) : null;
+  const basePath = config?.basePath ?? "/app/user";
+
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [datePreset, setDatePreset] = useState<DatePreset>("30");
   const [dateFrom, setDateFrom] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
   const [dateTo, setDateTo] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  const fetchTrips = useCallback(() => {
+  const fetchTransactions = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
-    const params: Parameters<typeof tripApi.list>[0] = {
-      driver: user.id,
-      per_page: 100,
-    };
-    if (search.trim()) params.search = search.trim();
-    if (datePreset === "7") {
-      params.date_from = format(subDays(new Date(), 7), "yyyy-MM-dd");
-      params.date_to = format(new Date(), "yyyy-MM-dd");
-    } else if (datePreset === "30") {
-      params.date_from = format(subDays(new Date(), 30), "yyyy-MM-dd");
-      params.date_to = format(new Date(), "yyyy-MM-dd");
-    } else if (datePreset === "custom") {
-      params.date_from = dateFrom;
-      params.date_to = dateTo;
+    try {
+      const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
+      const wallet = walletsRes.results[0];
+      if (!wallet) {
+        setTransactions([]);
+        return;
+      }
+      const params: Parameters<typeof transactionApi.list>[0] = {
+        wallet: wallet.id,
+        per_page: 100,
+      };
+      if (search.trim()) params.search = search.trim();
+      if (datePreset === "7") {
+        params.date_from = format(subDays(new Date(), 7), "yyyy-MM-dd");
+        params.date_to = format(new Date(), "yyyy-MM-dd");
+      } else if (datePreset === "30") {
+        params.date_from = format(subDays(new Date(), 30), "yyyy-MM-dd");
+        params.date_to = format(new Date(), "yyyy-MM-dd");
+      } else if (datePreset === "custom") {
+        params.date_from = dateFrom;
+        params.date_to = dateTo;
+      }
+      const res = await transactionApi.list(params);
+      setTransactions(res.results ?? []);
+    } catch {
+      setTransactions([]);
+    } finally {
+      setLoading(false);
     }
-    tripApi
-      .list(params)
-      .then((res) => setTrips((res.results ?? []) as TripRecord[]))
-      .catch(() => setTrips([]))
-      .finally(() => setLoading(false));
   }, [user?.id, search, datePreset, dateFrom, dateTo]);
 
   useEffect(() => {
-    fetchTrips();
-  }, [fetchTrips]);
+    fetchTransactions();
+  }, [fetchTransactions]);
 
-  const formatTime = (s: string | null | undefined) => {
+  const formatDate = (s: string | undefined) => {
     if (!s) return "—";
     try {
       return format(new Date(s), "MMM d, yyyy HH:mm");
@@ -70,22 +74,9 @@ export default function DriverTripHistory() {
     }
   };
 
-  const duration = (start: string | null | undefined, end: string | null | undefined) => {
-    if (!start || !end) return null;
-    try {
-      const a = new Date(start).getTime();
-      const b = new Date(end).getTime();
-      const min = Math.round((b - a) / 60000);
-      if (min < 60) return `${min}m`;
-      return `${Math.floor(min / 60)}h ${min % 60}m`;
-    } catch {
-      return null;
-    }
-  };
-
   return (
     <div className="min-h-screen">
-      <AppBar title="Trip History" showBack />
+      <AppBar title="Transactions" showBack />
       <div className="px-5 pt-4 pb-24">
         <div className="space-y-3 mb-4">
           <div className="relative">
@@ -123,30 +114,27 @@ export default function DriverTripHistory() {
 
         {loading ? (
           <p className="text-sm text-muted-foreground py-8">Loading...</p>
-        ) : trips.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8">No trips found.</p>
+        ) : transactions.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8">No transactions found.</p>
         ) : (
           <div className="space-y-2">
-            {trips.map((trip) => (
-              <Link key={trip.id} to={`/app/driver/trip-history/${trip.id}`} className="block">
+            {transactions.map((t) => (
+              <Link key={t.id} to={`${basePath}/transactions/${t.id}`} className="block">
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="app-glass-card rounded-xl p-4 border border-border/50 flex items-center gap-3"
                 >
                   <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shrink-0">
-                    <Clock size={20} className="text-accent-foreground" />
+                    <Receipt size={20} className="text-accent-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {trip.route_details?.name ?? trip.route ?? "Trip"} · {trip.vehicle_details?.vehicle_no ?? trip.vehicle ?? "—"}
-                    </p>
+                    <p className="font-medium text-sm truncate">{t.remarks ?? (t.type === "add" ? "Credit" : "Debit")}</p>
                     <p className="text-xs text-muted-foreground">
-                      Start: {formatTime(trip.start_time)}
+                      {t.type === "add" ? "+" : "-"} Rs. {Number(t.amount).toLocaleString()} · {formatDate(t.created_at)}
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {trip.end_time ? `End: ${formatTime(trip.end_time)}` : "In progress"}
-                      {duration(trip.start_time, trip.end_time) && ` · ${duration(trip.start_time, trip.end_time)}`}
+                      Status: {t.status} · Balance after: Rs. {Number(t.balance_after).toLocaleString()}
                     </p>
                   </div>
                   <ChevronRight size={18} className="text-muted-foreground shrink-0" />
