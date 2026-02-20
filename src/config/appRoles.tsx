@@ -7,6 +7,10 @@ import DriverHome from "@/pages/app/driver/DriverHome";
 import DriverVehicle from "@/pages/app/driver/Vehicle";
 import DriverWallet from "@/pages/app/driver/DriverWallet";
 import DriverProfile from "@/pages/app/driver/DriverProfile";
+import DriverTripHistory from "@/pages/app/driver/DriverTripHistory";
+import DriverSeatBooking from "@/pages/app/driver/DriverSeatBooking";
+import DriverSeatBookingDetail from "@/pages/app/driver/DriverSeatBookingDetail";
+import DriverPayDue from "@/pages/app/driver/DriverPayDue";
 // User pages
 import UserHome from "@/pages/app/user/UserHome";
 import UserBooking from "@/pages/app/user/UserBooking";
@@ -62,6 +66,10 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
       vehicle: DriverVehicle,
       wallet: DriverWallet,
       profile: DriverProfile,
+      "trip-history": DriverTripHistory,
+      "seat-booking": DriverSeatBooking,
+      "seat-booking/:id": DriverSeatBookingDetail,
+      "pay-due": DriverPayDue,
     },
   },
   user: {

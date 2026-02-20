@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Lock, Wallet, CreditCard, CalendarDays, LogOut, ChevronRight, Camera, Edit, Receipt, PlusCircle } from "lucide-react";
+import { User, Lock, Wallet, CreditCard, CalendarDays, LogOut, ChevronRight, Camera, Edit, Receipt, PlusCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -23,11 +23,13 @@ export default function UserProfile() {
   const menuItems: { icon: typeof Edit; label: string; to?: string; onClick?: () => void }[] = [
     { icon: Edit, label: "Edit Profile", onClick: () => setShowEditModal(true) },
     { icon: Lock, label: "Change Password", onClick: () => setShowPasswordModal(true) },
-    { icon: Wallet, label: "Wallet", to: "/app/user/wallet" },
-    { icon: CreditCard, label: "Card", to: "/app/user/card" },
-    { icon: CalendarDays, label: "My Booking", to: "/app/user/booking" },
     { icon: PlusCircle, label: "Deposit", to: "/app/user/deposit" },
-    { icon: Receipt, label: "Transaction", to: "/app/user/wallet" },
+    { icon: Wallet, label: "Wallet", to: "/app/user/wallet" },
+    { icon: Send, label: "Transfer", to: "/app/user/wallet" },
+    { icon: CreditCard, label: "Topup Card", to: "/app/user/card/topup" },
+    { icon: CreditCard, label: "Card", to: "/app/user/card" },
+    { icon: CalendarDays, label: "My Bookings", to: "/app/user/booking" },
+    { icon: Receipt, label: "Transactions", to: "/app/user/wallet" },
   ];
 
   const handleLogout = () => {
@@ -40,18 +42,20 @@ export default function UserProfile() {
     <div className="min-h-screen">
       <AppBar title="Profile" />
       <div className="px-5 pt-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center mb-8">
-        <div className="relative mb-3">
-          <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center backdrop-blur">
-            <User size={36} className="text-primary-foreground" />
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <div className="profile-blur-card flex flex-col items-center">
+          <div className="relative mb-3">
+            <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center backdrop-blur">
+              <User size={36} className="text-primary-foreground" />
+            </div>
+            <button type="button" className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center border-2 border-background">
+              <Camera size={12} className="text-primary-foreground" />
+            </button>
           </div>
-          <button type="button" className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center border-2 border-background">
-            <Camera size={12} className="text-primary-foreground" />
-          </button>
+          <h2 className="font-bold text-lg">{user?.name ?? (name || "Passenger")}</h2>
+          <p className="text-sm text-muted-foreground">{user?.phone ?? phone}</p>
+          <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-accent text-accent-foreground font-medium">Passenger</span>
         </div>
-        <h2 className="font-bold text-lg">{user?.name ?? (name || "Passenger")}</h2>
-        <p className="text-sm text-muted-foreground">{user?.phone ?? phone}</p>
-        <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-primary/20 text-primary font-medium">Passenger</span>
       </motion.div>
 
       <div className="space-y-2">
@@ -59,7 +63,7 @@ export default function UserProfile() {
           const content = (
             <div className="flex items-center gap-3 p-3.5 app-glass-card rounded-xl border border-border/50">
               <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
-                <item.icon size={16} className="text-primary" />
+                <item.icon size={16} className="text-accent-foreground" />
               </div>
               <span className="flex-1 text-sm font-medium">{item.label}</span>
               <ChevronRight size={16} className="text-muted-foreground" />

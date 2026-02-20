@@ -63,7 +63,7 @@ export default function AppForgotPassword() {
           </Link>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center mb-4">
-              <KeyRound size={24} className="text-primary" />
+              <KeyRound size={24} className="text-accent-foreground" />
             </div>
             <h1 className="text-xl font-bold">
               {step === "phone" ? "Forgot Password?" : "Enter OTP"}

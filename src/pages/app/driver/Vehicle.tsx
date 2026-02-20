@@ -983,7 +983,7 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       <div className="min-h-screen flex flex-col items-center justify-center px-6">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
           <div className="w-24 h-24 rounded-3xl bg-accent flex items-center justify-center mx-auto mb-6">
-            <QrCode size={48} className="text-primary" />
+            <QrCode size={48} className="text-accent-foreground" />
           </div>
           <h2 className="text-lg font-bold mb-2">Connect Your Vehicle</h2>
           <p className="text-sm text-muted-foreground mb-8">Scan QR code on your vehicle or use your assigned vehicle</p>

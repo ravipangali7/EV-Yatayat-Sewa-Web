@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Lock, Wallet, CreditCard, CalendarDays, LogOut, ChevronRight, Camera, Edit, Receipt, TrendingUp } from "lucide-react";
+import { User, Lock, Wallet, CreditCard, CalendarDays, LogOut, ChevronRight, Camera, Edit, Receipt, TrendingUp, PlusCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import AppBar from "@/components/app/AppBar";
 
 export default function DealerProfile() {
   const { user, logout } = useAuth();
@@ -22,11 +23,14 @@ export default function DealerProfile() {
   const menuItems: { icon: typeof Edit; label: string; to?: string; onClick?: () => void }[] = [
     { icon: Edit, label: "Edit Profile", onClick: () => setShowEditModal(true) },
     { icon: Lock, label: "Change Password", onClick: () => setShowPasswordModal(true) },
+    { icon: PlusCircle, label: "Deposit", to: "/app/ticket-dealer/deposit" },
     { icon: Wallet, label: "Wallet", to: "/app/ticket-dealer/wallet" },
+    { icon: Send, label: "Transfer", to: "/app/ticket-dealer/wallet" },
+    { icon: CreditCard, label: "Topup Card", to: "/app/ticket-dealer/card/topup" },
     { icon: CreditCard, label: "Card", to: "/app/ticket-dealer/card" },
-    { icon: CalendarDays, label: "Booking", to: "/app/ticket-dealer/booking" },
+    { icon: CalendarDays, label: "My Bookings", to: "/app/ticket-dealer/booking" },
     { icon: TrendingUp, label: "Revenue", to: "/app/ticket-dealer/revenue" },
-    { icon: Receipt, label: "Transaction", to: "/app/ticket-dealer/wallet" },
+    { icon: Receipt, label: "Transactions", to: "/app/ticket-dealer/wallet" },
   ];
 
   const handleLogout = () => {
@@ -36,27 +40,31 @@ export default function DealerProfile() {
   };
 
   return (
-    <div className="min-h-screen px-5 pt-8">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center mb-8">
-        <div className="relative mb-3">
-          <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center">
-            <User size={36} className="text-primary-foreground" />
+    <div className="min-h-screen">
+      <AppBar title="Profile" />
+      <div className="px-5 pt-4">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <div className="profile-blur-card flex flex-col items-center">
+          <div className="relative mb-3">
+            <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center">
+              <User size={36} className="text-primary-foreground" />
+            </div>
+            <button type="button" className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+              <Camera size={12} className="text-primary-foreground" />
+            </button>
           </div>
-          <button type="button" className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-            <Camera size={12} className="text-primary-foreground" />
-          </button>
+          <h2 className="font-bold text-lg">{user?.name ?? (name || "Dealer")}</h2>
+          <p className="text-sm text-muted-foreground">{user?.phone ?? phone}</p>
+          <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-accent text-accent-foreground font-medium">Ticket Dealer</span>
         </div>
-        <h2 className="font-bold text-lg">{user?.name ?? (name || "Dealer")}</h2>
-        <p className="text-sm text-muted-foreground">{user?.phone ?? phone}</p>
-        <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-accent text-accent-foreground font-medium">Ticket Dealer</span>
       </motion.div>
 
-      <div className="space-y-1">
+      <div className="space-y-2">
         {menuItems.map((item) => {
           const content = (
-            <div className="flex items-center gap-3 p-3.5 app-surface rounded-xl border border-border">
+            <div className="flex items-center gap-3 p-3.5 app-glass-card rounded-xl border border-border/50">
               <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
-                <item.icon size={16} className="text-primary" />
+                <item.icon size={16} className="text-accent-foreground" />
               </div>
               <span className="flex-1 text-sm font-medium">{item.label}</span>
               <ChevronRight size={16} className="text-muted-foreground" />
@@ -111,6 +119,7 @@ export default function DealerProfile() {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

@@ -24,8 +24,9 @@
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 172 66% 50%;
-    --accent-foreground: 222 47% 11%;
+    /* Icon/card accent: light green (replaces teal) */
+    --accent: 142 52% 48%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -66,7 +67,7 @@
 
     /* Chart colors */
     --chart-1: 142 71% 40%;
-    --chart-2: 172 66% 50%;
+    --chart-2: 142 52% 48%;
     --chart-3: 142 71% 45%;
     --chart-4: 38 92% 50%;
     --chart-5: 0 84% 60%;
@@ -91,8 +92,8 @@
     --muted: 222 47% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 172 66% 50%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 142 52% 48%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
@@ -211,6 +212,10 @@
 
   .app-glass-card {
     @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-md;
+  }
+
+  .profile-blur-card {
+    @apply bg-card/70 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg p-6;
   }
 
   .gradient-primary {

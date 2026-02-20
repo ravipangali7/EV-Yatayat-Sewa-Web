@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { vehicleTicketBookingApi, type VehicleTicketBookingRecord } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
 import { toNumber } from "@/lib/utils";
+import AppBar from "@/components/app/AppBar";
 
 export default function DealerRevenue() {
   const { user } = useAuth();
@@ -22,41 +23,44 @@ export default function DealerRevenue() {
   const totalCommission = bookings.reduce((s, b) => s + (toNumber(b.price, 0) * commissionPct) / 100, 0);
 
   return (
-    <div className="min-h-screen px-5 pt-6 pb-24">
-      <h2 className="text-lg font-bold mb-4">Revenue</h2>
-      <div className="app-surface rounded-2xl p-4 border border-border mb-6 grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-xs text-muted-foreground">Total bookings</p>
-          <p className="text-xl font-bold">Rs. {totalAmount.toLocaleString()}</p>
+    <div className="min-h-screen">
+      <AppBar title="Revenue" />
+      <div className="px-5 pt-4 pb-24">
+        <div className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6 grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground">Total bookings</p>
+            <p className="text-xl font-bold">Rs. {totalAmount.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Commission ({commissionPct}%)</p>
+            <p className="text-xl font-bold text-primary">Rs. {totalCommission.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Commission ({commissionPct}%)</p>
-          <p className="text-xl font-bold text-primary">Rs. {totalCommission.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-        </div>
+        <h3 className="font-semibold text-sm mb-3">Booking history</h3>
+        {loading ? (
+          <p className="text-sm text-muted-foreground py-4">Loading...</p>
+        ) : bookings.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">No bookings yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {bookings.map((b) => {
+              const sd = b.schedule_details;
+              const amt = toNumber(b.price, 0);
+              const commission = (amt * commissionPct) / 100;
+              return (
+                <div key={b.id} className="app-glass-card rounded-xl p-4 border border-border/50 space-y-1">
+                  <p className="font-bold text-sm">PNR: {b.pnr}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {sd?.start_point_name ?? ""} → {sd?.end_point_name ?? ""} | {sd?.date ?? ""} {sd?.time ?? ""}
+                  </p>
+                  <p className="text-xs">Passenger: {b.name} · Rs. {amt.toLocaleString()}</p>
+                  <p className="text-xs text-primary font-medium">Commission: Rs. {commission.toFixed(2)}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-      {loading ? (
-        <p className="text-sm text-muted-foreground py-4">Loading...</p>
-      ) : bookings.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4">No bookings yet.</p>
-      ) : (
-        <div className="space-y-3">
-          {bookings.map((b) => {
-            const sd = b.schedule_details;
-            const amt = toNumber(b.price, 0);
-            const commission = (amt * commissionPct) / 100;
-            return (
-              <div key={b.id} className="app-surface border border-border rounded-xl p-4 space-y-1">
-                <p className="font-bold text-sm">PNR: {b.pnr}</p>
-                <p className="text-xs text-muted-foreground">
-                  {sd?.start_point_name ?? ""} → {sd?.end_point_name ?? ""} | {sd?.date ?? ""} {sd?.time ?? ""}
-                </p>
-                <p className="text-xs">Passenger: {b.name} · Rs. {amt.toLocaleString()}</p>
-                <p className="text-xs text-primary font-medium">Commission: Rs. {commission.toFixed(2)}</p>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

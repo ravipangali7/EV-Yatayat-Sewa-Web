@@ -1,11 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { useState, useCallback } from "react";
 import {
   Car,
   Wallet,
   User,
-  MapPin,
   CreditCard,
   Receipt,
   FileText,
@@ -27,13 +25,12 @@ import { toNumber } from "@/lib/utils";
 
 const gridCards = [
   { label: "Vehicle", icon: Car, to: "/app/driver/vehicle" },
-  { label: "Trip History", icon: Clock, to: "/app/driver/wallet" },
-  { label: "Seat Booking", icon: FileText, to: "/app/driver/vehicle" },
-  { label: "Map", icon: MapPin, to: "/app/driver/vehicle" },
+  { label: "Trip History", icon: Clock, to: "/app/driver/trip-history" },
+  { label: "Seat Booking", icon: FileText, to: "/app/driver/seat-booking" },
   { label: "Deposit", icon: CreditCard, to: "/app/driver/wallet" },
-  { label: "Pay Dues", icon: Receipt, to: "/app/driver/wallet" },
-  { label: "Wallet", icon: Wallet, to: "/app/driver/wallet" },
+  { label: "Pay Due", icon: Receipt, to: "/app/driver/pay-due" },
   { label: "Transfer", icon: Send, action: "transfer" as const },
+  { label: "Wallet", icon: Wallet, to: "/app/driver/wallet" },
   { label: "Profile", icon: User, to: "/app/driver/profile" },
 ];
 
@@ -104,8 +101,8 @@ export default function DriverHome() {
                   onClick={() => setShowTransferModal(true)}
                   className="app-glass-card flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md transition-shadow"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center mb-2">
-                    <Icon size={20} />
+                  <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center mb-2">
+                    <Icon size={20} className="text-accent-foreground" />
                   </div>
                   <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
                 </button>
@@ -117,8 +114,8 @@ export default function DriverHome() {
                 to={(item as { to: string }).to}
                 className="app-glass-card flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md transition-shadow"
               >
-                <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center mb-2">
-                  <Icon size={20} />
+                <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center mb-2">
+                  <Icon size={20} className="text-accent-foreground" />
                 </div>
                 <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
               </Link>

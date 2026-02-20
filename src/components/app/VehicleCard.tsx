@@ -18,8 +18,8 @@ const VehicleCard = ({ vehicle, compact = false }: VehicleCardProps) => {
   return (
     <div className="app-surface rounded-2xl p-4 border border-border">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
-          <Car size={24} className="text-primary-foreground" />
+        <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center">
+          <Car size={24} className="text-accent-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-sm">{vehicle.name}</h3>

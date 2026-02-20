@@ -24,7 +24,7 @@ const TransactionCard = ({ transaction }: TransactionCardProps) => {
         }`}
       >
         {isCredit ? (
-          <ArrowDownLeft size={18} className="text-primary" />
+          <ArrowDownLeft size={18} className="text-accent-foreground" />
         ) : (
           <ArrowUpRight size={18} className="text-destructive" />
         )}

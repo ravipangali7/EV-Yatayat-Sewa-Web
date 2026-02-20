@@ -5,10 +5,10 @@ import {
   Wallet,
   CreditCard,
   User,
-  Receipt,
   PlusCircle,
   FileText,
   Send,
+  TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppBar from "@/components/app/AppBar";
@@ -23,21 +23,36 @@ import type { VehicleTicketBookingRecord } from "@/modules/vehicle-ticket-bookin
 import { transactionToAppTransaction } from "@/lib/transactionMap";
 import type { AppTransaction } from "@/components/app/TransactionCard";
 import { toNumber } from "@/lib/utils";
+import { resolveAppRole, getAppRoleConfig } from "@/config/appRoles";
 
-const gridCards = [
-  { label: "Book Trip", icon: CalendarDays, to: "/app/user/booking", color: "gradient-primary" },
-  { label: "My Booking", icon: FileText, to: "/app/user/booking?tab=my-booking", color: "bg-primary/20 text-primary" },
-  { label: "Wallet", icon: Wallet, to: "/app/user/wallet", color: "bg-primary/20 text-primary" },
-  { label: "Transfer", icon: Send, action: "transfer" as const, color: "bg-primary/20 text-primary" },
-  { label: "Deposit", icon: PlusCircle, to: "/app/user/deposit", color: "bg-primary/20 text-primary" },
-  { label: "Card", icon: CreditCard, to: "/app/user/card", color: "bg-primary/20 text-primary" },
-  { label: "Topup Card", icon: CreditCard, to: "/app/user/card/topup", color: "bg-primary/20 text-primary" },
-  { label: "Transaction", icon: Receipt, to: "/app/user/wallet", color: "bg-primary/20 text-primary" },
-  { label: "Profile", icon: User, to: "/app/user/profile", color: "bg-primary/20 text-primary" },
+const userGridCards = [
+  { label: "Book Trip", icon: CalendarDays, to: "booking", gradient: true },
+  { label: "My Booking", icon: FileText, to: "booking?tab=my-booking" },
+  { label: "Deposit", icon: PlusCircle, to: "deposit" },
+  { label: "Transfer", icon: Send, action: "transfer" as const },
+  { label: "Topup Card", icon: CreditCard, to: "card/topup" },
+  { label: "Card", icon: CreditCard, to: "card" },
+  { label: "Wallet", icon: Wallet, to: "wallet" },
+  { label: "Profile", icon: User, to: "profile" },
+];
+
+const dealerGridCards = [
+  { label: "Book Trip", icon: CalendarDays, to: "booking", gradient: true },
+  { label: "Booking", icon: FileText, to: "booking" },
+  { label: "Deposit", icon: PlusCircle, to: "deposit" },
+  { label: "Transfer", icon: Send, action: "transfer" as const },
+  { label: "Revenue", icon: TrendingUp, to: "revenue" },
+  { label: "Card", icon: CreditCard, to: "card" },
+  { label: "Wallet", icon: Wallet, to: "wallet" },
+  { label: "Profile", icon: User, to: "profile" },
 ];
 
 export default function UserHome() {
   const { user } = useAuth();
+  const role = resolveAppRole(user);
+  const config = role ? getAppRoleConfig(role) : null;
+  const basePath = config?.basePath ?? "/app/user";
+  const gridCards = role === "ticket_dealer" ? dealerGridCards : userGridCards;
   const [balance, setBalance] = useState(0);
   const [toReceive, setToReceive] = useState(0);
   const [toPay, setToPay] = useState(0);
@@ -95,6 +110,7 @@ export default function UserHome() {
           {gridCards.map((item) => {
             const Icon = item.icon;
             const key = "to" in item ? item.to + item.label : item.label;
+            const iconClass = "gradient" in item && item.gradient ? "gradient-primary text-primary-foreground" : "bg-accent text-accent-foreground";
             if ("action" in item && item.action === "transfer") {
               return (
                 <button
@@ -103,21 +119,22 @@ export default function UserHome() {
                   onClick={() => setShowTransferModal(true)}
                   className="app-glass-card flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md transition-shadow"
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${item.color}`}>
-                    <Icon size={20} className={item.color.startsWith("gradient") ? "text-primary-foreground" : "text-primary"} />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
+                    <Icon size={20} />
                   </div>
                   <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
                 </button>
               );
             }
+            const to = `${basePath}/${(item as { to: string }).to}`.replace(/\/+/g, "/");
             return (
               <Link
                 key={key}
-                to={(item as { to: string }).to}
+                to={to}
                 className="app-glass-card flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md transition-shadow"
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${item.color}`}>
-                  <Icon size={20} className={item.color.startsWith("gradient") ? "text-primary-foreground" : "text-primary"} />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
+                  <Icon size={20} />
                 </div>
                 <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
               </Link>
