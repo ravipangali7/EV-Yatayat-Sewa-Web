@@ -85,7 +85,7 @@ export default function TransferModal({
     }
     setSubmitting(true);
     try {
-      await walletApi.transfer(num, selectedUser.phone);
+      await walletApi.transfer(num, selectedUser.id);
       toast.success(`Transferred Rs. ${num.toFixed(2)} to ${selectedUser.name || selectedUser.phone}`);
       onSuccess?.();
       handleClose();
