@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
+import TransferModal from "@/components/app/TransferModal";
 import AppBar from "@/components/app/AppBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
@@ -18,26 +19,28 @@ export default function UserWallet() {
   const [toReceive, setToReceive] = useState(0);
   const [toPay, setToPay] = useState(0);
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+
+  const refreshWallet = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
+      const wallet = walletsRes.results[0];
+      if (wallet) {
+        setBalance(toNumber(wallet.balance, 0));
+        setToReceive(toNumber(wallet.to_receive, 0));
+        setToPay(toNumber(wallet.to_pay, 0));
+        const txRes = await transactionApi.list({ wallet: wallet.id, per_page: 20 });
+        setTransactions(txRes.results.map(transactionToAppTransaction));
+      }
+    } catch {
+      setTransactions([]);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const run = async () => {
-      try {
-        const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
-        const wallet = walletsRes.results[0];
-        if (wallet) {
-          setBalance(toNumber(wallet.balance, 0));
-          setToReceive(toNumber(wallet.to_receive, 0));
-          setToPay(toNumber(wallet.to_pay, 0));
-          const txRes = await transactionApi.list({ wallet: wallet.id, per_page: 20 });
-          setTransactions(txRes.results.map(transactionToAppTransaction));
-        }
-      } catch {
-        setTransactions([]);
-      }
-    };
-    run();
-  }, [user?.id]);
+    refreshWallet();
+  }, [refreshWallet]);
 
   return (
     <div className="min-h-screen">
@@ -47,9 +50,20 @@ export default function UserWallet() {
           <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} />
         </motion.div>
       <div className="space-y-5">
-        <Link to="/app/user/deposit">
-          <Button className="w-full h-12 rounded-xl font-semibold">Deposit</Button>
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link to="/app/user/deposit">
+            <Button className="w-full h-12 rounded-xl font-semibold">Deposit</Button>
+          </Link>
+          <Button variant="outline" className="w-full h-12 rounded-xl font-semibold" onClick={() => setShowTransferModal(true)}>
+            Transfer
+          </Button>
+        </div>
+        <TransferModal
+          open={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+          onSuccess={refreshWallet}
+          currentUserId={user?.id}
+        />
         <div>
           <h3 className="font-bold text-sm mb-3">Recent Transactions</h3>
           <div className="space-y-2">

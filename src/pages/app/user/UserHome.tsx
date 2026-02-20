@@ -7,13 +7,14 @@ import {
   User,
   Receipt,
   PlusCircle,
-  ArrowRight,
   FileText,
+  Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppBar from "@/components/app/AppBar";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
+import TransferModal from "@/components/app/TransferModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -27,6 +28,7 @@ const gridCards = [
   { label: "Book Trip", icon: CalendarDays, to: "/app/user/booking", color: "gradient-primary" },
   { label: "My Booking", icon: FileText, to: "/app/user/booking?tab=my-booking", color: "bg-primary/20 text-primary" },
   { label: "Wallet", icon: Wallet, to: "/app/user/wallet", color: "bg-primary/20 text-primary" },
+  { label: "Transfer", icon: Send, action: "transfer" as const, color: "bg-primary/20 text-primary" },
   { label: "Deposit", icon: PlusCircle, to: "/app/user/deposit", color: "bg-primary/20 text-primary" },
   { label: "Card", icon: CreditCard, to: "/app/user/card", color: "bg-primary/20 text-primary" },
   { label: "Topup Card", icon: CreditCard, to: "/app/user/card/topup", color: "bg-primary/20 text-primary" },
@@ -42,31 +44,33 @@ export default function UserHome() {
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
   const [myBookings, setMyBookings] = useState<VehicleTicketBookingRecord[]>([]);
   const [homeTab, setHomeTab] = useState<"bookings" | "transactions">("bookings");
+  const [showTransferModal, setShowTransferModal] = useState(false);
+
+  const refreshWallet = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
+      const wallet = walletsRes.results[0];
+      if (wallet) {
+        setBalance(toNumber(wallet.balance, 0));
+        setToReceive(toNumber(wallet.to_receive, 0));
+        setToPay(toNumber(wallet.to_pay, 0));
+        const [txRes, bookingsRes] = await Promise.all([
+          transactionApi.list({ wallet: wallet.id, per_page: 20 }),
+          vehicleTicketBookingApi.list({ user: user.id, per_page: 20, expand: true }),
+        ]);
+        setTransactions(txRes.results.map(transactionToAppTransaction));
+        setMyBookings(bookingsRes.results ?? []);
+      }
+    } catch {
+      setTransactions([]);
+      setMyBookings([]);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const run = async () => {
-      try {
-        const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
-        const wallet = walletsRes.results[0];
-        if (wallet) {
-          setBalance(toNumber(wallet.balance, 0));
-          setToReceive(toNumber(wallet.to_receive, 0));
-          setToPay(toNumber(wallet.to_pay, 0));
-          const [txRes, bookingsRes] = await Promise.all([
-            transactionApi.list({ wallet: wallet.id, per_page: 20 }),
-            vehicleTicketBookingApi.list({ user: user.id, per_page: 20, expand: true }),
-          ]);
-          setTransactions(txRes.results.map(transactionToAppTransaction));
-          setMyBookings(bookingsRes.results ?? []);
-        }
-      } catch {
-        setTransactions([]);
-        setMyBookings([]);
-      }
-    };
-    run();
-  }, [user?.id]);
+    refreshWallet();
+  }, [refreshWallet]);
 
   return (
     <div className="min-h-screen">
@@ -90,10 +94,26 @@ export default function UserHome() {
         <div className="grid grid-cols-4 gap-3">
           {gridCards.map((item) => {
             const Icon = item.icon;
+            const key = "to" in item ? item.to + item.label : item.label;
+            if ("action" in item && item.action === "transfer") {
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setShowTransferModal(true)}
+                  className="app-glass-card flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md transition-shadow"
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${item.color}`}>
+                    <Icon size={20} className={item.color.startsWith("gradient") ? "text-primary-foreground" : "text-primary"} />
+                  </div>
+                  <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
+                </button>
+              );
+            }
             return (
               <Link
-                key={item.to + item.label}
-                to={item.to}
+                key={key}
+                to={(item as { to: string }).to}
                 className="app-glass-card flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md transition-shadow"
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${item.color}`}>
@@ -104,6 +124,12 @@ export default function UserHome() {
             );
           })}
         </div>
+        <TransferModal
+          open={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+          onSuccess={refreshWallet}
+          currentUserId={user?.id}
+        />
 
         <div>
           <div className="flex gap-2 mb-3">

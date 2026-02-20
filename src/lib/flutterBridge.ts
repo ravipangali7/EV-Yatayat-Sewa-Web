@@ -106,6 +106,25 @@ export function playSound(text: string): void {
   }
 }
 
+/** Play a short beep (e.g. for checkout popup). Uses Web Audio so it works in and out of WebView. */
+export function playBeep(): void {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 800;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  } catch {
+    // ignore if AudioContext not allowed (e.g. autoplay policy)
+  }
+}
+
 export function playReachedStop(placeName: string): void {
   if (isAvailable() && window.FlutterBridge?.playReachedStop) {
     window.FlutterBridge.playReachedStop(placeName);

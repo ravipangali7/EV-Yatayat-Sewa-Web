@@ -39,4 +39,21 @@ export const walletApi = {
   deposit: async (amount: number): Promise<{ balance: string; message: string }> => {
     return api.post<{ balance: string; message: string }>('wallets/my/deposit/', { amount });
   },
+
+  // Transfer to another user by phone or user id
+  transfer: async (
+    amount: number,
+    recipientPhoneOrUserId: string
+  ): Promise<{ balance: string; message: string; recipient_name: string; recipient_phone: string }> => {
+    const body: { amount: number; recipient_phone?: string; recipient_user_id?: string } = { amount };
+    if (/^\d+$/.test(recipientPhoneOrUserId)) {
+      body.recipient_user_id = recipientPhoneOrUserId;
+    } else {
+      body.recipient_phone = recipientPhoneOrUserId;
+    }
+    return api.post<{ balance: string; message: string; recipient_name: string; recipient_phone: string }>(
+      'wallets/my/transfer/',
+      body
+    );
+  },
 };

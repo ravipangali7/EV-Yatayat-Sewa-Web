@@ -21,7 +21,7 @@ import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
 import { tripApi, type ActiveTrip, type CurrentStopResponse, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
-import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync } from "@/lib/flutterBridge";
+import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync, playBeep } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
 import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicleScheduleApi";
 import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
@@ -267,7 +267,7 @@ export default function Vehicle() {
   const [checkinAmount, setCheckinAmount] = useState<{ distanceKm: number; totalAmount: number; perKmCharge: number } | null>(null);
   const [isCreatingCheckin, setIsCreatingCheckin] = useState(false);
   const [showDropoffModal, setShowDropoffModal] = useState(false);
-  const [dropoffData, setDropoffData] = useState<{ placeId: string; placeName: string; dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string }> } | null>(null);
+  const [dropoffData, setDropoffData] = useState<{ placeId: string; placeName: string; dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string; trip_amount?: string }> } | null>(null);
   const lastDropoffPlaceIdRef = useRef<string | null>(null);
   const [outOfRangeCheckout, setOutOfRangeCheckout] = useState<{
     vehicle_seat_id: string;
@@ -400,6 +400,10 @@ export default function Vehicle() {
       }
     }).catch(() => {});
   }, [activeTrip?.id, driverState, lastLocation?.lat, lastLocation?.lng, seats]);
+
+  useEffect(() => {
+    if (showDropoffModal || showCheckoutModal) playBeep();
+  }, [showDropoffModal, showCheckoutModal]);
 
   useEffect(() => {
     if (driverState !== "trip_started" || tripTab !== "map") return;
@@ -1314,15 +1318,37 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
             </DialogDescription>
           </DialogHeader>
           {dropoffData && (
-            <div className="py-2">
-              <SwipeButton label="Swipe OKAY" onSwipe={() => confirmCheckOut()} />
+            <div className="space-y-3 py-2">
+              <div className="text-sm">
+                {dropoffData.dropoffs.map((d) => (
+                  <div key={d.booking_id} className="flex justify-between py-0.5">
+                    <span>Seat {d.seat_label} – {d.name}</span>
+                    {d.trip_amount != null && <span>Rs. {Number(d.trip_amount).toFixed(2)}</span>}
+                  </div>
+                ))}
+                {dropoffData.dropoffs.some((d) => d.trip_amount != null) && (
+                  <p className="font-semibold mt-2 pt-2 border-t">
+                    Total: Rs. {dropoffData.dropoffs.reduce((sum, d) => sum + Number(d.trip_amount ?? 0), 0).toFixed(2)}
+                  </p>
+                )}
+              </div>
+              <SwipeButton
+                labelRight="Swipe right to check out"
+                labelLeft="Swipe left to cancel"
+                onSwipe={() => confirmCheckOut()}
+                onCancel={() => { setShowDropoffModal(false); setDropoffData(null); }}
+              />
             </div>
           )}
         </DialogContent>
       </Dialog>
       <ConfirmModal open={showCheckinModal} onClose={() => setShowCheckinModal(false)} onConfirm={confirmCheckIn} title="Confirm Check-In" description={`Check in ${availableSelected.length} passenger(s)?`} confirmLabel="Check In" />
       <ConfirmModal open={showCheckoutModal} onClose={() => setShowCheckoutModal(false)} onConfirm={confirmCheckOut} title="Confirm Check-Out" confirmLabel="Check Out">
-        <MiniMap points={[currentLocation]} className="mb-3" />
+        <div className="space-y-2 mb-3">
+          <p className="text-sm font-medium">Seats: {bookedSelected.map((s) => s.label).join(", ") || "—"}</p>
+          <p className="text-xs text-muted-foreground">Amount will be confirmed at checkout.</p>
+          <MiniMap points={[currentLocation]} className="mt-2" />
+        </div>
       </ConfirmModal>
 
       <Dialog open={showSwitchModal} onOpenChange={setShowSwitchModal}>
