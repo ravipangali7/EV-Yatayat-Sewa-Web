@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { isAvailable as isFlutterBridgeAvailable, startVoiceSearchNative } from "@/lib/flutterBridge";
 
 declare global {
   interface Window {
@@ -33,12 +34,15 @@ export function useVoiceSearch(options?: { onResult?: (transcript: string) => vo
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const onResultRef = useRef(options?.onResult);
+  onResultRef.current = options?.onResult;
 
   const SpeechRecognitionClass =
     typeof window !== "undefined"
       ? window.SpeechRecognition || window.webkitSpeechRecognition
       : undefined;
-  const supported = !!SpeechRecognitionClass;
+  const useNative = typeof window !== "undefined" && isFlutterBridgeAvailable() && typeof startVoiceSearchNative === "function";
+  const supported = !!SpeechRecognitionClass || useNative;
 
   const stopListening = useCallback(() => {
     const rec = recognitionRef.current;
@@ -51,13 +55,31 @@ export function useVoiceSearch(options?: { onResult?: (transcript: string) => vo
     setListening(false);
   }, []);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
+    setError(null);
+    setTranscript("");
+
+    if (useNative) {
+      setListening(true);
+      try {
+        const result = await startVoiceSearchNative();
+        if (result.transcript) {
+          setTranscript(result.transcript);
+          onResultRef.current?.(result.transcript);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Voice search failed";
+        setError(msg);
+      } finally {
+        setListening(false);
+      }
+      return;
+    }
+
     if (!SpeechRecognitionClass) {
       setError("Voice search is not supported in this browser.");
       return;
     }
-    setError(null);
-    setTranscript("");
     const rec = new SpeechRecognitionClass();
     rec.continuous = false;
     rec.interimResults = false;
@@ -67,7 +89,7 @@ export function useVoiceSearch(options?: { onResult?: (transcript: string) => vo
       const text = result.isFinal ? result[0].transcript : "";
       if (text) {
         setTranscript(text);
-        options?.onResult?.(text);
+        onResultRef.current?.(text);
       }
     };
     rec.onerror = (e: SpeechRecognitionErrorEvent) => {
@@ -82,11 +104,11 @@ export function useVoiceSearch(options?: { onResult?: (transcript: string) => vo
     try {
       rec.start();
       setListening(true);
-    } catch (err) {
+    } catch {
       setError("Could not start microphone.");
       setListening(false);
     }
-  }, [SpeechRecognitionClass, options?.onResult, options?.lang]);
+  }, [SpeechRecognitionClass, useNative, options?.lang]);
 
   useEffect(() => {
     return () => {

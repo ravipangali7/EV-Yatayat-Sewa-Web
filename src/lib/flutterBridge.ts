@@ -31,13 +31,47 @@ declare global {
       playReachedStop: (placeName: string) => void;
       playBeepSound: () => void;
       refreshVehicle: () => void;
+      startVoiceSearch: () => void;
       onTripStarted: () => void;
       onTripEnded: () => void;
       onReachedStop: (placeName: string, pickupDetails?: string) => void;
     };
     __onScanResult?: (jsonStr: string) => void;
     __onLocationResult?: (jsonStr: string) => void;
+    __onVoiceSearchResult?: (jsonStr: string) => void;
   }
+}
+
+export interface VoiceSearchResult {
+  transcript: string;
+  error?: string;
+}
+
+/** Start voice search via Flutter native (when in WebView). Returns a promise that resolves with transcript or rejects with error. */
+export function startVoiceSearchNative(): Promise<VoiceSearchResult> {
+  if (!isAvailable() || !window.FlutterBridge?.startVoiceSearch) {
+    return Promise.reject(new Error('Voice search not available'));
+  }
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      if (window.__onVoiceSearchResult) {
+        window.__onVoiceSearchResult = undefined;
+        reject(new Error('Voice search timed out'));
+      }
+    }, 15000);
+    window.__onVoiceSearchResult = (jsonStr: string) => {
+      window.clearTimeout(timeout);
+      window.__onVoiceSearchResult = undefined;
+      try {
+        const data = JSON.parse(jsonStr) as VoiceSearchResult;
+        if (data.error) reject(new Error(data.error));
+        else resolve(data);
+      } catch {
+        reject(new Error('Invalid response'));
+      }
+    };
+    window.FlutterBridge.startVoiceSearch();
+  });
 }
 
 export function isAvailable(): boolean {

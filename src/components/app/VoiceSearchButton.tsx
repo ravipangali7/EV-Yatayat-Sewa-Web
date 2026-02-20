@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface VoiceSearchButtonProps {
   onResult: (transcript: string) => void;
@@ -18,10 +20,14 @@ export function VoiceSearchButton({
   size = "default",
   variant = "ghost",
 }: VoiceSearchButtonProps) {
-  const { listening, startListening, stopListening, supported } = useVoiceSearch({
+  const { listening, startListening, stopListening, supported, error } = useVoiceSearch({
     onResult: (t) => onResult(t.trim()),
     lang: "en-NP",
   });
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   if (!supported) return null;
 
