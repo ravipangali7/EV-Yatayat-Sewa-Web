@@ -43,11 +43,25 @@ export interface PttCaptureHandle {
 }
 
 /**
+ * Create and resume an AudioContext in the current call stack (e.g. inside mousedown).
+ * Call this from a user gesture so the context is allowed to start. Pass the result to startPttCapture.
+ */
+export function createPttAudioContext(): AudioContext {
+  const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  const ctx = new AudioContextClass();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+/**
  * Start capturing microphone and call onChunk with base64-encoded PCM 16-bit 16kHz mono.
- * Call this from a user gesture (e.g. mousedown on PTT button) so getUserMedia can prompt.
+ * Pass a context from createPttAudioContext() (called in the same user gesture) so capture is not suspended.
  * Returns a handle with stop() to end capture and release the stream.
  */
-export function startPttCapture(onChunk: (base64: string) => void): Promise<PttCaptureHandle> {
+export function startPttCapture(
+  onChunk: (base64: string) => void,
+  existingContext?: AudioContext
+): Promise<PttCaptureHandle> {
   return new Promise((resolve, reject) => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       reject(new Error("getUserMedia not supported"));
@@ -57,23 +71,24 @@ export function startPttCapture(onChunk: (base64: string) => void): Promise<PttC
       .getUserMedia({ audio: true })
       .then((stream) => {
         const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = new AudioContextClass();
+        const ctx = existingContext ?? new AudioContextClass();
+        if (ctx.state === "suspended") ctx.resume().catch(() => {});
         const source = ctx.createMediaStreamSource(stream);
         const bufferSize = 4096;
-        const numChannels = 2; // mic often stereo; we mix to mono
+        const numChannels = 1; // use 1 for compatibility; we mix to mono in handler if needed
         const processor = ctx.createScriptProcessor(bufferSize, numChannels, 1);
         const inputSampleRate = ctx.sampleRate;
 
         processor.onaudioprocess = (e: AudioProcessingEvent) => {
           const ib = e.inputBuffer;
+          const ch0 = ib.getChannelData(0);
           const mono =
             ib.numberOfChannels === 1
-              ? ib.getChannelData(0)
+              ? ch0
               : (() => {
-                  const left = ib.getChannelData(0);
-                  const right = ib.getChannelData(1);
-                  const m = new Float32Array(left.length);
-                  for (let i = 0; i < left.length; i++) m[i] = (left[i] + right[i]) / 2;
+                  const m = new Float32Array(ch0.length);
+                  const ch1 = ib.getChannelData(1);
+                  for (let i = 0; i < ch0.length; i++) m[i] = (ch0[i] + ch1[i]) / 2;
                   return m;
                 })();
           const resampled = resampleTo16k(mono, ib.sampleRate);

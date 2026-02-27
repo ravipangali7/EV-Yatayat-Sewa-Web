@@ -17,7 +17,7 @@ import {
   pttEnd as bridgePttEnd,
 } from "@/lib/flutterBridge";
 import { playPcmBase64Chunk } from "@/lib/pttPlayback";
-import { startPttCapture, type PttCaptureHandle } from "@/lib/pttCapture";
+import { createPttAudioContext, startPttCapture, type PttCaptureHandle } from "@/lib/pttCapture";
 import {
   walkietalkieApi,
   type WalkieTalkieGroup,
@@ -175,9 +175,13 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       if (!socketRef.current?.connected) return;
       setPttActive(true);
       socketRef.current.emit("ptt_start", { groupId });
-      startPttCapture((base64) => {
-        socketRef.current?.emit("ptt_audio", base64);
-      })
+      const audioContext = createPttAudioContext();
+      startPttCapture(
+        (base64) => {
+          socketRef.current?.emit("ptt_audio", base64);
+        },
+        audioContext
+      )
         .then((handle) => {
           captureHandleRef.current = handle;
         })
