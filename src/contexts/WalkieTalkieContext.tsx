@@ -32,7 +32,7 @@ function getPttServerUrl(): string {
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return `${window.location.protocol}//${window.location.hostname}:8001`;
   }
-  return typeof window !== "undefined" ? window.location.origin : "";
+  return typeof window !== "undefined" ? `https://node.evyatayatsewa.com` : "";
 }
 
 interface WalkieTalkieContextType {

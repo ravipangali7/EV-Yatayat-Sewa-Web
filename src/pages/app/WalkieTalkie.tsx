@@ -18,7 +18,7 @@ function getPttServerUrl(): string {
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return `${window.location.protocol}//${window.location.hostname}:8001`;
   }
-  return window.location.origin;
+  return `https://node.evyatayatsewa.com`;
 }
 
 export default function WalkieTalkie() {
