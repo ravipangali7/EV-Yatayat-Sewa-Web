@@ -19,6 +19,13 @@ export interface LocationResult {
   error?: string;
 }
 
+export type WalkieTalkieStatus = 'connected' | 'disconnected' | 'error';
+
+export interface WalkieTalkieStatusPayload {
+  status: WalkieTalkieStatus;
+  message?: string;
+}
+
 declare global {
   interface Window {
     FlutterBridge?: {
@@ -35,10 +42,19 @@ declare global {
       onTripStarted: () => void;
       onTripEnded: () => void;
       onReachedStop: (placeName: string, pickupDetails?: string) => void;
+      connectWalkieTalkie: (serverUrl: string, token: string, groupIds: string[]) => void;
+      disconnectWalkieTalkie: () => void;
+      joinGroups: (groupIds: string[]) => void;
+      pttStart: (groupId: string) => void;
+      pttEnd: (groupId: string) => void;
     };
     __onScanResult?: (jsonStr: string) => void;
     __onLocationResult?: (jsonStr: string) => void;
     __onVoiceSearchResult?: (jsonStr: string) => void;
+    __onWalkieTalkieStatus?: (jsonStr: string) => void;
+    __onPTTStarted?: (jsonStr: string) => void;
+    __onPTTEnded?: (jsonStr: string) => void;
+    __onPTTAudio?: (jsonStr: string) => void;
   }
 }
 
@@ -198,5 +214,35 @@ export function onTripEnded(): void {
 export function onReachedStop(placeName: string, pickupDetails?: string): void {
   if (isAvailable() && window.FlutterBridge?.onReachedStop) {
     window.FlutterBridge.onReachedStop(placeName, pickupDetails);
+  }
+}
+
+export function connectWalkieTalkie(serverUrl: string, token: string, groupIds: string[]): void {
+  if (isAvailable() && window.FlutterBridge?.connectWalkieTalkie) {
+    window.FlutterBridge.connectWalkieTalkie(serverUrl, token, groupIds);
+  }
+}
+
+export function disconnectWalkieTalkie(): void {
+  if (isAvailable() && window.FlutterBridge?.disconnectWalkieTalkie) {
+    window.FlutterBridge.disconnectWalkieTalkie();
+  }
+}
+
+export function joinGroupsWalkieTalkie(groupIds: string[]): void {
+  if (isAvailable() && window.FlutterBridge?.joinGroups) {
+    window.FlutterBridge.joinGroups(groupIds);
+  }
+}
+
+export function pttStart(groupId: string): void {
+  if (isAvailable() && window.FlutterBridge?.pttStart) {
+    window.FlutterBridge.pttStart(groupId);
+  }
+}
+
+export function pttEnd(groupId: string): void {
+  if (isAvailable() && window.FlutterBridge?.pttEnd) {
+    window.FlutterBridge.pttEnd(groupId);
   }
 }

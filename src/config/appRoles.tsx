@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Home, Car, Wallet, User, CalendarDays, CreditCard } from "lucide-react";
+import { Home, Car, Wallet, User, CalendarDays, CreditCard, Radio } from "lucide-react";
 import type { User as UserType } from "@/types";
 
 // Driver pages
@@ -24,10 +24,11 @@ import DealerRevenue from "@/pages/app/user/DealerRevenue";
 import DealerProfile from "@/pages/app/user/DealerProfile";
 import AppTransactions from "@/pages/app/AppTransactions";
 import AppTransactionDetail from "@/pages/app/AppTransactionDetail";
+import WalkieTalkie from "@/pages/app/WalkieTalkie";
 
 export type AppRoleId = "driver" | "user" | "ticket_dealer";
 
-export type AppNavIconName = "home" | "car" | "wallet" | "user" | "calendar" | "card";
+export type AppNavIconName = "home" | "car" | "wallet" | "user" | "calendar" | "card" | "radio";
 
 export const APP_NAV_ICON_MAP: Record<
   AppNavIconName,
@@ -39,6 +40,7 @@ export const APP_NAV_ICON_MAP: Record<
   user: User,
   calendar: CalendarDays,
   card: CreditCard,
+  radio: Radio,
 };
 
 export interface AppNavItemConfig {
@@ -61,12 +63,14 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     navItems: [
       { label: "Home", path: "home", icon: "home" },
       { label: "Vehicle", path: "vehicle", icon: "car" },
+      { label: "Walkie-Talkie", path: "walkietalkie", icon: "radio" },
       { label: "Wallet", path: "wallet", icon: "wallet" },
       { label: "Profile", path: "profile", icon: "user" },
     ],
     routes: {
       home: DriverHome,
       vehicle: DriverVehicle,
+      walkietalkie: WalkieTalkie,
       wallet: DriverWallet,
       profile: DriverProfile,
       "trip-history": DriverTripHistory,
@@ -84,6 +88,7 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     navItems: [
       { label: "Home", path: "home", icon: "home" },
       { label: "Booking", path: "booking", icon: "calendar" },
+      { label: "Walkie-Talkie", path: "walkietalkie", icon: "radio" },
       { label: "Wallet", path: "wallet", icon: "wallet" },
       { label: "Card", path: "card", icon: "card" },
       { label: "Profile", path: "profile", icon: "user" },
@@ -91,6 +96,7 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     routes: {
       home: UserHome,
       booking: UserBooking,
+      walkietalkie: WalkieTalkie,
       wallet: UserWallet,
       card: UserCard,
       profile: UserProfile,
@@ -106,12 +112,14 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     navItems: [
       { label: "Home", path: "home", icon: "home" },
       { label: "Book", path: "booking", icon: "calendar" },
+      { label: "Walkie-Talkie", path: "walkietalkie", icon: "radio" },
       { label: "Wallet", path: "wallet", icon: "wallet" },
       { label: "Profile", path: "profile", icon: "user" },
     ],
     routes: {
       home: UserHome,
       booking: UserBooking,
+      walkietalkie: WalkieTalkie,
       wallet: UserWallet,
       card: UserCard,
       profile: DealerProfile,
