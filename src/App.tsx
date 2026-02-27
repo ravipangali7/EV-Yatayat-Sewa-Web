@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { GoogleMapsProvider } from "@/contexts/GoogleMapsContext";
+import { WalkieTalkieProvider } from "@/contexts/WalkieTalkieContext";
+import { WalkieTalkieFab } from "@/components/walkietalkie/WalkieTalkieFab";
+import { WalkieTalkieDrawer } from "@/components/walkietalkie/WalkieTalkieDrawer";
+import { useLocation } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 
 // Pages
@@ -104,6 +108,27 @@ function AppLoginRoute() {
     return <Navigate to={getHomePathForUser(user)} replace />;
   }
   return <AppLogin />;
+}
+
+function AppRoutesWithWalkieTalkie() {
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const showFab =
+    isAuthenticated &&
+    (location.pathname.startsWith("/admin") || location.pathname.startsWith("/app")) &&
+    !location.pathname.includes("/app/login");
+
+  return (
+    <>
+      <AppRoutes />
+      {showFab && (
+        <>
+          <WalkieTalkieFab />
+          <WalkieTalkieDrawer />
+        </>
+      )}
+    </>
+  );
 }
 
 function AppRoutes() {
@@ -229,7 +254,9 @@ const router = createBrowserRouter(
     <Route path="*" element={
       <AuthProvider>
         <GoogleMapsProvider>
-          <AppRoutes />
+          <WalkieTalkieProvider>
+            <AppRoutesWithWalkieTalkie />
+          </WalkieTalkieProvider>
         </GoogleMapsProvider>
       </AuthProvider>
     } />

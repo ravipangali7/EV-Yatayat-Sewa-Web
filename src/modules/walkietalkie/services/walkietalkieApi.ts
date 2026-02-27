@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import apiClient from "@/lib/api";
 
 export interface WalkieTalkieGroup {
   id: number;
@@ -7,7 +8,34 @@ export interface WalkieTalkieGroup {
   member_count: number;
 }
 
+export interface WalkieTalkieRecording {
+  id: number;
+  group: number;
+  user: number;
+  started_at: string;
+  ended_at: string;
+  file_path: string | null;
+  storage_key: string | null;
+  duration_seconds: number | null;
+  file_size_bytes: number | null;
+  created_at: string;
+}
+
 export const walkietalkieApi = {
   listGroups: (): Promise<WalkieTalkieGroup[]> =>
     api.get<WalkieTalkieGroup[]>("walkietalkie/groups/"),
+
+  listRecordings: (params?: { group_id?: number; user_id?: number }): Promise<WalkieTalkieRecording[]> => {
+    const q = new URLSearchParams();
+    if (params?.group_id != null) q.set("group_id", String(params.group_id));
+    if (params?.user_id != null) q.set("user_id", String(params.user_id));
+    const query = q.toString();
+    const url = query ? `walkietalkie/recordings/?${query}` : "walkietalkie/recordings/";
+    return api.get<WalkieTalkieRecording[]>(url);
+  },
+
+  getRecordingPlayBlob: (id: number): Promise<Blob> =>
+    apiClient
+      .get(`walkietalkie/recordings/${id}/play/`, { responseType: "blob" })
+      .then((res) => res.data as Blob),
 };
