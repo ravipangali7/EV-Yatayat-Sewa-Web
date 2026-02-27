@@ -30,7 +30,7 @@ function getPttServerUrl(): string {
     return import.meta.env.VITE_PTT_SERVER_URL.replace(/\/$/, "");
   }
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
-    return `${window.location.protocol}//${window.location.hostname}:3001`;
+    return `${window.location.protocol}//${window.location.hostname}:8001`;
   }
   return typeof window !== "undefined" ? window.location.origin : "";
 }
