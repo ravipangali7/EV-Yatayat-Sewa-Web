@@ -17,6 +17,7 @@ import {
   pttEnd as bridgePttEnd,
 } from "@/lib/flutterBridge";
 import { playPcmBase64Chunk } from "@/lib/pttPlayback";
+import { startPttCapture, type PttCaptureHandle } from "@/lib/pttCapture";
 import {
   walkietalkieApi,
   type WalkieTalkieGroup,
@@ -70,6 +71,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const hasAutoConnected = useRef(false);
+  const captureHandleRef = useRef<PttCaptureHandle | null>(null);
 
   const isWebView = isFlutterBridgeAvailable();
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
@@ -165,17 +167,41 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
 
   const pttStart = useCallback(
     (groupId: string) => {
-      if (isWebView) bridgePttStart(groupId);
-      else if (socketRef.current?.connected) socketRef.current.emit("ptt_start", { groupId });
+      if (isWebView) {
+        bridgePttStart(groupId);
+        setPttActive(true);
+        return;
+      }
+      if (!socketRef.current?.connected) return;
       setPttActive(true);
+      socketRef.current.emit("ptt_start", { groupId });
+      startPttCapture((base64) => {
+        socketRef.current?.emit("ptt_audio", base64);
+      })
+        .then((handle) => {
+          captureHandleRef.current = handle;
+        })
+        .catch((err) => {
+          console.error("PTT mic error:", err);
+          setPttActive(false);
+          setStatusMessage("Microphone access denied or failed");
+        });
     },
     [isWebView]
   );
 
   const pttEnd = useCallback(
     (groupId: string) => {
-      if (isWebView) bridgePttEnd(groupId);
-      else if (socketRef.current?.connected) socketRef.current.emit("ptt_end", { groupId });
+      if (isWebView) {
+        bridgePttEnd(groupId);
+        setPttActive(false);
+        return;
+      }
+      if (captureHandleRef.current) {
+        captureHandleRef.current.stop();
+        captureHandleRef.current = null;
+      }
+      if (socketRef.current?.connected) socketRef.current.emit("ptt_end", { groupId });
       setPttActive(false);
     },
     [isWebView]
