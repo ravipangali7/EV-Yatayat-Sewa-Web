@@ -293,13 +293,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!user || !token) return;
+    if (!token) return;
     let cancelled = false;
     setStatus("disconnected");
     setStatusMessage("Connecting…");
     (async () => {
       try {
-        const list = await walkietalkieApi.listGroups();
+        const raw = await walkietalkieApi.listGroups();
+        const list = Array.isArray(raw) ? raw : [];
         if (cancelled) return;
         setGroups(list);
         if (list.length === 0) setStatusMessage(null);
@@ -374,7 +375,19 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       }
       hasAutoConnected.current = false;
     };
-  }, [user, token, serverUrl, isWebView, connectRetryKey]);
+  }, [token, serverUrl, isWebView, connectRetryKey]);
+
+  // Refetch groups when drawer opens so list is fresh and recovers from earlier load failure
+  useEffect(() => {
+    if (!drawerOpen || !token) return;
+    walkietalkieApi
+      .listGroups()
+      .then((raw) => {
+        const list = Array.isArray(raw) ? raw : [];
+        setGroups(list);
+      })
+      .catch(() => {});
+  }, [drawerOpen, token]);
 
   useEffect(() => {
     if (!isWebView) return;
