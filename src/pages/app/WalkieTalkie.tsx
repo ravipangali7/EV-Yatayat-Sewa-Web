@@ -30,6 +30,7 @@ export default function WalkieTalkie() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [pttActive, setPttActive] = useState(false);
   const statusCallbackRef = useRef<((jsonStr: string) => void) | null>(null);
+  const pttButtonRef = useRef<HTMLButtonElement>(null);
 
   const fetchGroups = useCallback(async () => {
     try {
@@ -100,6 +101,31 @@ export default function WalkieTalkie() {
       setPttActive(false);
     }
   };
+
+  const handlePttDownRef = useRef(handlePttDown);
+  const handlePttUpRef = useRef(handlePttUp);
+  handlePttDownRef.current = handlePttDown;
+  handlePttUpRef.current = handlePttUp;
+
+  useEffect(() => {
+    const el = pttButtonRef.current;
+    if (!el) return;
+    const opts: AddEventListenerOptions = { passive: false };
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      handlePttDownRef.current();
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      handlePttUpRef.current();
+    };
+    el.addEventListener("touchstart", onTouchStart, opts);
+    el.addEventListener("touchend", onTouchEnd, opts);
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart, opts);
+      el.removeEventListener("touchend", onTouchEnd, opts);
+    };
+  }, [status]);
 
   const inApp = isFlutterBridgeAvailable();
 
@@ -189,19 +215,12 @@ export default function WalkieTalkie() {
                   Hold the button to talk in <strong>{groups.find((g) => String(g.id) === selectedGroupId)?.name ?? selectedGroupId}</strong>
                 </p>
                 <button
+                  ref={pttButtonRef}
                   type="button"
                   className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center touch-manipulation select-none"
                   onMouseDown={handlePttDown}
                   onMouseUp={handlePttUp}
                   onMouseLeave={handlePttUp}
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    handlePttDown();
-                  }}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    handlePttUp();
-                  }}
                 >
                   <Mic className={`w-10 h-10 ${pttActive ? "scale-110" : ""}`} />
                 </button>

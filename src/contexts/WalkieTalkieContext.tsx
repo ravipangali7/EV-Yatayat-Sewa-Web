@@ -17,6 +17,7 @@ import {
   pttEnd as bridgePttEnd,
 } from "@/lib/flutterBridge";
 import { playPcmBase64Chunk } from "@/lib/pttPlayback";
+import { toast } from "sonner";
 import { createPttAudioContext, startPttCapture, type PttCaptureHandle } from "@/lib/pttCapture";
 import {
   walkietalkieApi,
@@ -98,7 +99,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       audio.onended = () => URL.revokeObjectURL(url);
       await audio.play();
     } catch {
-      // ignore
+      toast.error("Playback failed");
     }
   }, []);
 

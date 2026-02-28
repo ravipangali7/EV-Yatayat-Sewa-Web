@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Mic, Play } from "lucide-react";
 import {
   Sheet,
@@ -48,6 +48,7 @@ export function WalkieTalkieDrawer() {
   } = useWalkieTalkie();
   const [drivers, setDrivers] = useState<WalkieTalkieDriver[]>([]);
   const isSuperuser = !!user?.is_superuser;
+  const pttButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -62,6 +63,26 @@ export function WalkieTalkieDrawer() {
     if (!drawerOpen || !isSuperuser) return;
     walkietalkieApi.listDrivers().then(setDrivers).catch(() => setDrivers([]));
   }, [drawerOpen, isSuperuser]);
+
+  useEffect(() => {
+    const el = pttButtonRef.current;
+    if (!el) return;
+    const opts: AddEventListenerOptions = { passive: false };
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      if (selectedGroupId) pttStart(selectedGroupId);
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      if (selectedGroupId) pttEnd(selectedGroupId);
+    };
+    el.addEventListener("touchstart", onTouchStart, opts);
+    el.addEventListener("touchend", onTouchEnd, opts);
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart, opts);
+      el.removeEventListener("touchend", onTouchEnd, opts);
+    };
+  }, [selectedGroupId, pttStart, pttEnd]);
 
   const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
   const isDirect = selectedGroupId.startsWith("direct:");
@@ -208,20 +229,13 @@ export function WalkieTalkieDrawer() {
               </p>
             )}
             <button
+              ref={pttButtonRef}
               type="button"
               disabled={!isConnected || !selectedGroupId || selectedGroupId === "direct"}
               className="w-full touch-manipulation select-none rounded-xl bg-primary py-5 text-primary-foreground flex flex-col items-center justify-center gap-1.5 disabled:opacity-50"
               onMouseDown={() => selectedGroupId && pttStart(selectedGroupId)}
               onMouseUp={() => selectedGroupId && pttEnd(selectedGroupId)}
               onMouseLeave={() => selectedGroupId && pttEnd(selectedGroupId)}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                selectedGroupId && pttStart(selectedGroupId);
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                selectedGroupId && pttEnd(selectedGroupId);
-              }}
             >
               <Mic className={`h-9 w-9 ${pttActive ? "scale-110" : ""}`} />
               <span className="text-sm">{pttActive ? "Speaking…" : "Hold to talk"}</span>

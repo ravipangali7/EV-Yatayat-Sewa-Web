@@ -53,8 +53,11 @@ export function createPttAudioContext(): AudioContext {
   return ctx;
 }
 
+const WORKLET_URL = new URL("./ptt-processor.worklet.js", import.meta.url).href;
+
 /**
  * Start capturing microphone and call onChunk with base64-encoded PCM 16-bit 16kHz mono.
+ * Uses Audio Worklet (replaces deprecated ScriptProcessorNode).
  * Pass a context from createPttAudioContext() (called in the same user gesture) so capture is not suspended.
  * Returns a handle with stop() to end capture and release the stream.
  */
@@ -69,42 +72,35 @@ export function startPttCapture(
     }
     navigator.mediaDevices
       .getUserMedia({ audio: true })
-      .then((stream) => {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      .then(async (stream) => {
+        const AudioContextClass =
+          window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         const ctx = existingContext ?? new AudioContextClass();
         if (ctx.state === "suspended") ctx.resume().catch(() => {});
-        const source = ctx.createMediaStreamSource(stream);
-        const bufferSize = 4096;
-        const numChannels = 1; // use 1 for compatibility; we mix to mono in handler if needed
-        const processor = ctx.createScriptProcessor(bufferSize, numChannels, 1);
         const inputSampleRate = ctx.sampleRate;
 
-        processor.onaudioprocess = (e: AudioProcessingEvent) => {
-          const ib = e.inputBuffer;
-          const ch0 = ib.getChannelData(0);
-          const mono =
-            ib.numberOfChannels === 1
-              ? ch0
-              : (() => {
-                  const m = new Float32Array(ch0.length);
-                  const ch1 = ib.getChannelData(1);
-                  for (let i = 0; i < ch0.length; i++) m[i] = (ch0[i] + ch1[i]) / 2;
-                  return m;
-                })();
-          const resampled = resampleTo16k(mono, ib.sampleRate);
+        try {
+          await ctx.audioWorklet.addModule(WORKLET_URL);
+        } catch (err) {
+          stream.getTracks().forEach((t) => t.stop());
+          reject(err instanceof Error ? err : new Error("Failed to load audio worklet"));
+          return;
+        }
+
+        const source = ctx.createMediaStreamSource(stream);
+        const workletNode = new AudioWorkletNode(ctx, "ptt-pcm-processor");
+        workletNode.port.onmessage = (e: MessageEvent<{ samples: ArrayBuffer }>) => {
+          const samples = new Float32Array(e.data.samples);
+          const resampled = resampleTo16k(samples, inputSampleRate);
           const pcm = floatTo16BitPcm(resampled);
           const base64 = arrayBufferToBase64(pcm.buffer);
           onChunk(base64);
-          const out = e.outputBuffer.getChannelData(0);
-          out.fill(0);
         };
-
-        source.connect(processor);
-        processor.connect(ctx.destination);
+        source.connect(workletNode);
 
         const stop = () => {
           try {
-            processor.disconnect();
+            workletNode.disconnect();
             source.disconnect();
             stream.getTracks().forEach((t) => t.stop());
             ctx.close();
