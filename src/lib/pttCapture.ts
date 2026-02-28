@@ -53,7 +53,13 @@ export function createPttAudioContext(): AudioContext {
   return ctx;
 }
 
-const WORKLET_URL = new URL("./ptt-processor.worklet.js", import.meta.url).href;
+// Load from same-origin URL to avoid CSP blocking data: inline script (build can inline worklet as data URL).
+function getWorkletUrl(): string {
+  if (typeof window === "undefined") return "";
+  const base = (import.meta.env?.BASE_URL ?? "/").replace(/\/$/, "");
+  const path = base ? `${base}/ptt-processor.worklet.js` : "/ptt-processor.worklet.js";
+  return `${window.location.origin}${path}`;
+}
 
 /**
  * Start capturing microphone and call onChunk with base64-encoded PCM 16-bit 16kHz mono.
@@ -80,7 +86,7 @@ export function startPttCapture(
         const inputSampleRate = ctx.sampleRate;
 
         try {
-          await ctx.audioWorklet.addModule(WORKLET_URL);
+          await ctx.audioWorklet.addModule(getWorkletUrl());
         } catch (err) {
           stream.getTracks().forEach((t) => t.stop());
           reject(err instanceof Error ? err : new Error("Failed to load audio worklet"));

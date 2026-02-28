@@ -136,7 +136,7 @@ export function WalkieTalkieDrawer() {
 
         <div className="flex flex-1 flex-col gap-4 overflow-hidden min-h-0">
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">Group</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Group & drivers</p>
             <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin">
               {groups.map((g) => {
                 const isSelected = String(g.id) === selectedGroupId;
@@ -159,51 +159,34 @@ export function WalkieTalkieDrawer() {
                   </button>
                 );
               })}
-              {isSuperuser && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedGroupId("direct")}
-                  className={`flex shrink-0 flex-col items-center gap-1 transition-all ${
-                    selectedGroupId === "direct" || selectedGroupId.startsWith("direct:")
-                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-full"
-                      : ""
-                  }`}
-                >
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="text-sm bg-amber-500/20 text-amber-700 dark:text-amber-400">
-                      D
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs text-muted-foreground max-w-[4rem] truncate">Direct</span>
-                </button>
-              )}
+              {isSuperuser && drivers.map((d) => {
+                const directId = `direct:${d.id}`;
+                const isSelected = selectedGroupId === directId;
+                return (
+                  <button
+                    key={directId}
+                    type="button"
+                    onClick={() => handleSelectDriver(d)}
+                    className={`flex shrink-0 flex-col items-center gap-1 transition-all ${
+                      isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-full" : ""
+                    }`}
+                  >
+                    <Avatar className="h-12 w-12">
+                      {d.avatar ? <AvatarImage src={d.avatar} alt={d.name} /> : null}
+                      <AvatarFallback className="text-sm bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                        {d.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs text-muted-foreground max-w-[4rem] truncate">{d.name}</span>
+                  </button>
+                );
+              })}
             </div>
             {selectedGroup && (
               <p className="text-xs text-muted-foreground mt-1">In {selectedGroup.name}</p>
             )}
-            {selectedGroupId === "direct" && (
-              <p className="text-xs text-muted-foreground mt-1">Talk to driver</p>
-            )}
             {selectedDriver && (
               <p className="text-xs text-muted-foreground mt-1">Direct to {selectedDriver.name}</p>
-            )}
-            {selectedGroupId === "direct" && drivers.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {drivers.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => handleSelectDriver(d)}
-                    className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-left hover:bg-accent"
-                  >
-                    <Avatar className="h-8 w-8">
-                      {d.avatar ? <AvatarImage src={d.avatar} alt={d.name} /> : null}
-                      <AvatarFallback className="text-xs">{d.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium">{d.name}</span>
-                  </button>
-                ))}
-              </div>
             )}
             {groups.length === 0 && !isSuperuser && (
               <p className="text-sm text-muted-foreground mt-1">No groups. Add members in admin.</p>
@@ -245,7 +228,7 @@ export function WalkieTalkieDrawer() {
             <button
               ref={pttButtonRef}
               type="button"
-              disabled={!isConnected || !selectedGroupId || selectedGroupId === "direct"}
+              disabled={!isConnected || !selectedGroupId}
               className="w-full touch-manipulation select-none rounded-xl bg-primary py-5 text-primary-foreground flex flex-col items-center justify-center gap-1.5 disabled:opacity-50"
               onMouseDown={() => selectedGroupId && pttStart(selectedGroupId)}
               onMouseUp={() => selectedGroupId && pttEnd(selectedGroupId)}
