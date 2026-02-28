@@ -85,6 +85,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const hasAutoConnected = useRef(false);
   const captureHandleRef = useRef<PttCaptureHandle | null>(null);
   const lastPausedOffsetRef = useRef(0);
+  const selectedGroupIdRef = useRef(selectedGroupId);
+  const fetchRecordingsRef = useRef<(params?: { group_id?: number }) => Promise<void>>(() => Promise.resolve());
 
   const isWebView = isFlutterBridgeAvailable();
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
@@ -102,6 +104,13 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    selectedGroupIdRef.current = selectedGroupId;
+  }, [selectedGroupId]);
+  useEffect(() => {
+    fetchRecordingsRef.current = fetchRecordings;
+  }, [fetchRecordings]);
+
   const playRecording = useCallback(async (id: number) => {
     try {
       const isResume = activeRecordingId === id && !isPlaybackPlaying;
@@ -109,7 +118,9 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         recordingPlayer.stop();
         if (activeRecordingId !== null) setActiveRecordingId(null);
         const blob = await walkietalkieApi.getRecordingPlayBlob(id);
-        await recordingPlayer.loadFromBlob(blob);
+        const rec = recordings.find((r) => r.id === id);
+        const sampleRate = rec?.sample_rate ?? 16000;
+        await recordingPlayer.loadFromBlob(blob, sampleRate);
         setPlaybackDuration(recordingPlayer.getDuration());
         setPlaybackCurrentTime(0);
         lastPausedOffsetRef.current = 0;
@@ -132,7 +143,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       toast.error("Playback failed");
       setIsPlaybackPlaying(false);
     }
-  }, [activeRecordingId, isPlaybackPlaying]);
+  }, [activeRecordingId, isPlaybackPlaying, recordings]);
 
   const pausePlayback = useCallback(() => {
     const offset = recordingPlayer.pause();
@@ -199,7 +210,16 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number }) => {
       if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
     });
-    socket.on("ptt_ended", () => setSpeakingUser(null));
+    socket.on("ptt_ended", () => {
+      setSpeakingUser(null);
+      setTimeout(() => {
+        const groupId = selectedGroupIdRef.current;
+        if (groupId && !groupId.startsWith("direct")) {
+          const id = Number(groupId);
+          if (!Number.isNaN(id)) fetchRecordingsRef.current?.({ group_id: id });
+        }
+      }, 1500);
+    });
     socket.on("disconnect", () => setStatus("disconnected"));
     socket.on("connect_error", () => {
       setStatus("error");
@@ -262,8 +282,12 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       }
       if (socketRef.current?.connected) socketRef.current.emit("ptt_end", { groupId });
       setPttActive(false);
+      if (groupId && !groupId.startsWith("direct")) {
+        const id = Number(groupId);
+        if (!Number.isNaN(id)) setTimeout(() => fetchRecordings({ group_id: id }), 1500);
+      }
     },
-    [isWebView]
+    [isWebView, fetchRecordings]
   );
 
   useEffect(() => {
@@ -311,7 +335,16 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
             socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number }) => {
               if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
             });
-            socket.on("ptt_ended", () => setSpeakingUser(null));
+            socket.on("ptt_ended", () => {
+              setSpeakingUser(null);
+              setTimeout(() => {
+                const groupId = selectedGroupIdRef.current;
+                if (groupId && !groupId.startsWith("direct")) {
+                  const id = Number(groupId);
+                  if (!Number.isNaN(id)) fetchRecordingsRef.current?.({ group_id: id });
+                }
+              }, 1500);
+            });
             socket.on("disconnect", () => setStatus("disconnected"));
             socket.on("connect_error", () => {
               setStatus("error");
@@ -360,7 +393,16 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         // ignore
       }
     };
-    const onPTTEnded = () => setSpeakingUser(null);
+    const onPTTEnded = () => {
+      setSpeakingUser(null);
+      setTimeout(() => {
+        const groupId = selectedGroupIdRef.current;
+        if (groupId && !groupId.startsWith("direct")) {
+          const id = Number(groupId);
+          if (!Number.isNaN(id)) fetchRecordingsRef.current?.({ group_id: id });
+        }
+      }, 1500);
+    };
     window.__onWalkieTalkieStatus = onStatus;
     window.__onPTTStarted = onPTTStarted;
     window.__onPTTAudio = onPTTAudio;

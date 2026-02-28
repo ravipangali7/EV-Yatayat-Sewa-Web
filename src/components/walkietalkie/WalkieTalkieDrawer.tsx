@@ -65,6 +65,14 @@ export function WalkieTalkieDrawer() {
   }, [drawerOpen, selectedGroupId, fetchRecordings]);
 
   useEffect(() => {
+    if (!drawerOpen || selectedGroupId.startsWith("direct:") || selectedGroupId === "direct") return;
+    const groupId = Number(selectedGroupId);
+    if (Number.isNaN(groupId)) return;
+    const interval = setInterval(() => fetchRecordings({ group_id: groupId }), 10000);
+    return () => clearInterval(interval);
+  }, [drawerOpen, selectedGroupId, fetchRecordings]);
+
+  useEffect(() => {
     if (!drawerOpen || !isSuperuser) return;
     walkietalkieApi.listDrivers().then(setDrivers).catch(() => setDrivers([]));
   }, [drawerOpen, isSuperuser]);

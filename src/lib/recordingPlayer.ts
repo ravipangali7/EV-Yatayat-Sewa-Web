@@ -1,8 +1,9 @@
 /**
- * Controllable playback for recorded PCM (16-bit, 16 kHz, mono).
+ * Controllable playback for recorded PCM (16-bit mono).
  * Supports play, pause, resume from offset, and progress callbacks.
+ * sampleRate defaults to 16000 for backward compatibility.
  */
-const SAMPLE_RATE = 16000;
+const DEFAULT_SAMPLE_RATE = 16000;
 let audioContext: AudioContext | null = null;
 let currentBuffer: AudioBuffer | null = null;
 let currentDurationSeconds = 0;
@@ -20,10 +21,11 @@ function getContext(): AudioContext {
   return audioContext;
 }
 
-function pcmBytesToAudioBuffer(bytes: Uint8Array, ctx: AudioContext): AudioBuffer {
+function pcmBytesToAudioBuffer(bytes: Uint8Array, ctx: AudioContext, sampleRate: number): AudioBuffer {
   const numSamples = Math.floor(bytes.length / 2);
   if (numSamples <= 0) throw new Error("Invalid PCM length");
-  const buffer = ctx.createBuffer(1, numSamples, SAMPLE_RATE);
+  const sr = sampleRate > 0 ? sampleRate : DEFAULT_SAMPLE_RATE;
+  const buffer = ctx.createBuffer(1, numSamples, sr);
   const channel = buffer.getChannelData(0);
   const view = new DataView(bytes.buffer, bytes.byteOffset, numSamples * 2);
   for (let i = 0; i < numSamples; i++) {
@@ -33,12 +35,13 @@ function pcmBytesToAudioBuffer(bytes: Uint8Array, ctx: AudioContext): AudioBuffe
   return buffer;
 }
 
-export async function loadFromBlob(blob: Blob): Promise<{ durationSeconds: number }> {
+export async function loadFromBlob(blob: Blob, sampleRate: number = DEFAULT_SAMPLE_RATE): Promise<{ durationSeconds: number }> {
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
   const ctx = getContext();
-  currentBuffer = pcmBytesToAudioBuffer(bytes, ctx);
-  currentDurationSeconds = currentBuffer.length / SAMPLE_RATE;
+  const sr = sampleRate > 0 ? sampleRate : DEFAULT_SAMPLE_RATE;
+  currentBuffer = pcmBytesToAudioBuffer(bytes, ctx, sr);
+  currentDurationSeconds = currentBuffer.length / sr;
   return { durationSeconds: currentDurationSeconds };
 }
 

@@ -20,6 +20,7 @@ export interface WalkieTalkieRecording {
   storage_key: string | null;
   duration_seconds: number | null;
   file_size_bytes: number | null;
+  sample_rate?: number | null;
   created_at: string;
 }
 
