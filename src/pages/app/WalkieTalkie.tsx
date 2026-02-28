@@ -113,17 +113,25 @@ export default function WalkieTalkie() {
     const opts: AddEventListenerOptions = { passive: false };
     const onTouchStart = (e: TouchEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       handlePttDownRef.current();
     };
     const onTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handlePttUpRef.current();
+    };
+    const onTouchCancel = (e: TouchEvent) => {
       e.preventDefault();
       handlePttUpRef.current();
     };
     el.addEventListener("touchstart", onTouchStart, opts);
     el.addEventListener("touchend", onTouchEnd, opts);
+    el.addEventListener("touchcancel", onTouchCancel, opts);
     return () => {
       el.removeEventListener("touchstart", onTouchStart, opts);
       el.removeEventListener("touchend", onTouchEnd, opts);
+      el.removeEventListener("touchcancel", onTouchCancel, opts);
     };
   }, [status]);
 
@@ -238,7 +246,8 @@ export default function WalkieTalkie() {
                 <button
                   ref={pttButtonRef}
                   type="button"
-                  className="h-28 w-28 rounded-full bg-primary text-primary-foreground flex items-center justify-center touch-manipulation select-none shadow-xl shadow-primary/30 hover:shadow-2xl active:scale-95 transition-transform"
+                  className="h-28 w-28 rounded-full bg-primary text-primary-foreground flex items-center justify-center touch-manipulation select-none shadow-xl shadow-primary/30 hover:shadow-2xl active:scale-95 transition-transform outline-none"
+                  style={{ touchAction: "none" }}
                   onMouseDown={handlePttDown}
                   onMouseUp={handlePttUp}
                   onMouseLeave={handlePttUp}

@@ -84,25 +84,34 @@ export function WalkieTalkieDrawer() {
     walkietalkieApi.listDrivers().then(setDrivers).catch(() => setDrivers([]));
   }, [drawerOpen, isSuperuser]);
 
+  // Touch handlers for mobile/WebView: must use passive: false and touch-action so long-press works
   useEffect(() => {
     const el = pttButtonRef.current;
     if (!el) return;
     const opts: AddEventListenerOptions = { passive: false };
     const onTouchStart = (e: TouchEvent) => {
       e.preventDefault();
-      if (selectedGroupId) pttStart(selectedGroupId);
+      e.stopPropagation();
+      if (selectedGroupId && isConnected) pttStart(selectedGroupId);
     };
     const onTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (selectedGroupId) pttEnd(selectedGroupId);
+    };
+    const onTouchCancel = (e: TouchEvent) => {
       e.preventDefault();
       if (selectedGroupId) pttEnd(selectedGroupId);
     };
     el.addEventListener("touchstart", onTouchStart, opts);
     el.addEventListener("touchend", onTouchEnd, opts);
+    el.addEventListener("touchcancel", onTouchCancel, opts);
     return () => {
       el.removeEventListener("touchstart", onTouchStart, opts);
       el.removeEventListener("touchend", onTouchEnd, opts);
+      el.removeEventListener("touchcancel", onTouchCancel, opts);
     };
-  }, [selectedGroupId, pttStart, pttEnd]);
+  }, [drawerOpen, selectedGroupId, isConnected, pttStart, pttEnd]);
 
   const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
   const isDirect = selectedGroupId.startsWith("direct:");
@@ -280,9 +289,10 @@ export function WalkieTalkieDrawer() {
           <button
             ref={pttButtonRef}
             type="button"
-            disabled={!isConnected || !selectedGroupId}
-            className="w-full touch-manipulation select-none rounded-3xl py-6 flex flex-col items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg border-2 border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] disabled:active:scale-100 disabled:border-slate-200 dark:disabled:border-slate-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:shadow-none"
-            onMouseDown={() => selectedGroupId && pttStart(selectedGroupId)}
+            aria-disabled={!isConnected || !selectedGroupId}
+            className={`w-full touch-manipulation select-none rounded-3xl py-6 flex flex-col items-center justify-center gap-2 transition-all shadow-lg border-2 border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] outline-none ${!isConnected || !selectedGroupId ? "opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800" : "cursor-pointer"}`}
+            style={{ touchAction: "none" }}
+            onMouseDown={() => isConnected && selectedGroupId && pttStart(selectedGroupId)}
             onMouseUp={() => selectedGroupId && pttEnd(selectedGroupId)}
             onMouseLeave={() => selectedGroupId && pttEnd(selectedGroupId)}
           >
