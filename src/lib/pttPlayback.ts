@@ -3,8 +3,8 @@
  * Uses sampleRate from the stream (e.g. 48000) for correct speed and clarity.
  * Chunks are scheduled back-to-back so they don't overlap.
  */
-/** Default if sender doesn't pass sample rate (e.g. old recordings). */
-const FALLBACK_SAMPLE_RATE = 16000;
+/** Default when sender doesn't pass sample rate. Use 48k so 48k capture (typical) plays at correct speed. */
+const FALLBACK_SAMPLE_RATE = 48000;
 /** Don't schedule more than this far ahead to avoid buildup. */
 const MAX_SCHEDULE_AHEAD = 0.12;
 
@@ -20,10 +20,11 @@ function getContext(): AudioContext {
 
 export function playPcmBase64Chunk(base64: string, sampleRate?: number): void {
   try {
+    const sr = sampleRate != null && sampleRate > 0 ? sampleRate : FALLBACK_SAMPLE_RATE;
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    playPcmBytes(bytes, sampleRate ?? FALLBACK_SAMPLE_RATE);
+    playPcmBytes(bytes, sr);
   } catch {
     // ignore decode errors
   }

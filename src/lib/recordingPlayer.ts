@@ -1,9 +1,9 @@
 /**
  * Controllable playback for recorded PCM (16-bit mono).
  * Supports play, pause, resume from offset, and progress callbacks.
- * sampleRate defaults to 16000 for backward compatibility.
+ * Default 48k so recordings from current capture (48k) play at correct speed when sample_rate is missing.
  */
-const DEFAULT_SAMPLE_RATE = 16000;
+const DEFAULT_SAMPLE_RATE = 48000;
 let audioContext: AudioContext | null = null;
 let currentBuffer: AudioBuffer | null = null;
 let currentDurationSeconds = 0;

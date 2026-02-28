@@ -121,7 +121,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         if (activeRecordingId !== null) setActiveRecordingId(null);
         const blob = await walkietalkieApi.getRecordingPlayBlob(id);
         const rec = recordings.find((r) => r.id === id);
-        const sampleRate = rec?.sample_rate ?? 16000;
+        const sampleRate = rec?.sample_rate != null && rec.sample_rate > 0 ? rec.sample_rate : 48000;
         await recordingPlayer.loadFromBlob(blob, sampleRate);
         setPlaybackDuration(recordingPlayer.getDuration());
         setPlaybackCurrentTime(0);
@@ -209,8 +209,11 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         groupId: data.groupId ?? "",
       });
     });
-    socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number }) => {
-      if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
+    socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number; sample_rate?: number }) => {
+      if (typeof data.chunk === "string") {
+        const sr = data.sampleRate ?? data.sample_rate;
+        playPcmBase64Chunk(data.chunk, sr);
+      }
     });
     socket.on("ptt_ended", () => {
       setSpeakingUser(null);
@@ -339,8 +342,11 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
               groupId: data.groupId ?? "",
             });
           });
-          socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number }) => {
-            if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
+          socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number; sample_rate?: number }) => {
+            if (typeof data.chunk === "string") {
+              const sr = data.sampleRate ?? data.sample_rate;
+              playPcmBase64Chunk(data.chunk, sr);
+            }
           });
           socket.on("ptt_ended", () => {
             setSpeakingUser(null);
@@ -424,8 +430,11 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     };
     const onPTTAudio = (jsonStr: string) => {
       try {
-        const data = JSON.parse(jsonStr) as { chunk?: string; sampleRate?: number };
-        if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
+        const data = JSON.parse(jsonStr) as { chunk?: string; sampleRate?: number; sample_rate?: number };
+        if (typeof data.chunk === "string") {
+          const sr = data.sampleRate ?? data.sample_rate;
+          playPcmBase64Chunk(data.chunk, sr);
+        }
       } catch {
         // ignore
       }

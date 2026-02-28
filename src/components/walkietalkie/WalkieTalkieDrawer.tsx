@@ -331,7 +331,17 @@ function VoiceMessageRow({
 }) {
   const name = rec.user_name ?? `User #${rec.user}`;
   const initials = getInitials(rec.user_name, rec.user);
-  const totalSeconds = rec.duration_seconds ?? duration;
+  // Use stored duration_seconds, or compute from started_at/ended_at for old recordings, or playback duration when active
+  const computedFromDates =
+    rec.started_at && rec.ended_at
+      ? (new Date(rec.ended_at).getTime() - new Date(rec.started_at).getTime()) / 1000
+      : 0;
+  const totalSeconds =
+    rec.duration_seconds != null && rec.duration_seconds > 0
+      ? rec.duration_seconds
+      : computedFromDates > 0
+        ? computedFromDates
+        : duration;
   const displayDuration = isActive ? duration : totalSeconds;
   const displayCurrent = isActive ? currentTime : 0;
   const progressPercent = displayDuration > 0 ? (displayCurrent / displayDuration) * 100 : 0;
