@@ -3,6 +3,8 @@
  * Chunks are scheduled back-to-back so they don't overlap (clear speech).
  */
 const PLAYBACK_SAMPLE_RATE = 16000;
+/** Don't schedule more than this far ahead to avoid slow/echoey playback. */
+const MAX_SCHEDULE_AHEAD = 0.15;
 
 let audioContext: AudioContext | null = null;
 /** When the next chunk should start so playback is continuous. */
@@ -42,7 +44,11 @@ export function playPcmBytes(bytes: Uint8Array): void {
   }
 
   const duration = numSamples / PLAYBACK_SAMPLE_RATE;
-  const when = Math.max(ctx.currentTime, nextStartTime);
+  let when = Math.max(ctx.currentTime, nextStartTime);
+  if (when > ctx.currentTime + MAX_SCHEDULE_AHEAD) {
+    when = ctx.currentTime;
+    nextStartTime = when;
+  }
   nextStartTime = when + duration;
 
   const source = ctx.createBufferSource();
