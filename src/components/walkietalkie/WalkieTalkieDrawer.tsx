@@ -3,6 +3,7 @@ import { Mic, Play, Pause, Radio, RefreshCw, Wifi, WifiOff, AlertCircle } from "
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -128,7 +129,9 @@ export function WalkieTalkieDrawer() {
       <SheetContent
         side="bottom"
         className="h-[85vh] max-h-[700px] flex flex-col rounded-t-3xl border-t border-x p-0 gap-0 overflow-hidden bg-slate-50 dark:bg-slate-950"
+        aria-describedby={undefined}
       >
+        <SheetTitle className="sr-only">Walkie-Talkie</SheetTitle>
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-5 pt-5 pb-4 bg-gradient-to-b from-primary/10 to-transparent dark:from-primary/5">
           <div className="flex items-center gap-3">
