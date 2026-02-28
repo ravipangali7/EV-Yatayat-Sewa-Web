@@ -30,12 +30,12 @@ export function playPcmBytes(bytes: Uint8Array): void {
   const ctx = getContext();
   if (ctx.state === "suspended") ctx.resume().catch(() => {});
 
-  const numSamples = bytes.length / 2;
+  const numSamples = Math.floor(bytes.length / 2);
   if (numSamples <= 0) return;
 
   const buffer = ctx.createBuffer(1, numSamples, PLAYBACK_SAMPLE_RATE);
   const channel = buffer.getChannelData(0);
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, numSamples * 2);
   for (let i = 0; i < numSamples; i++) {
     const s = view.getInt16(i * 2, true);
     channel[i] = s / 32768;

@@ -19,17 +19,32 @@ function floatTo16BitPcm(float32Array: Float32Array): Uint8Array {
   return new Uint8Array(buffer);
 }
 
+/** Simple one-pole low-pass to reduce aliasing when downsampling (cutoff ~7.5kHz at 48k). */
+function lowPass7k5(input: Float32Array, sampleRate: number): Float32Array {
+  const fc = 7500;
+  const rc = 1 / (2 * Math.PI * fc);
+  const dt = 1 / sampleRate;
+  const alpha = dt / (rc + dt);
+  const out = new Float32Array(input.length);
+  out[0] = input[0];
+  for (let i = 1; i < input.length; i++) {
+    out[i] = out[i - 1] + alpha * (input[i] - out[i - 1]);
+  }
+  return out;
+}
+
 function resampleTo16k(input: Float32Array, inputSampleRate: number): Float32Array {
   if (inputSampleRate === TARGET_SAMPLE_RATE) return input;
+  const filtered = inputSampleRate > TARGET_SAMPLE_RATE ? lowPass7k5(input, inputSampleRate) : input;
   const ratio = inputSampleRate / TARGET_SAMPLE_RATE;
-  const outputLength = Math.floor(input.length / ratio);
+  const outputLength = Math.floor(filtered.length / ratio);
   const output = new Float32Array(outputLength);
   for (let i = 0; i < outputLength; i++) {
     const srcIndex = i * ratio;
     const idx = Math.floor(srcIndex);
     const frac = srcIndex - idx;
-    const next = Math.min(idx + 1, input.length - 1);
-    output[i] = input[idx] * (1 - frac) + input[next] * frac;
+    const next = Math.min(idx + 1, filtered.length - 1);
+    output[i] = filtered[idx] * (1 - frac) + filtered[next] * frac;
   }
   return output;
 }
@@ -99,9 +114,9 @@ export function startPttCapture(
         const source = ctx.createMediaStreamSource(stream);
         const workletNode = new AudioWorkletNode(ctx, "ptt-pcm-processor");
         const batch: number[] = [];
-        const flushBatch = (float32Samples: Float32Array) => {
-          const resampled = resampleTo16k(float32Samples, inputSampleRate);
-          const pcm = floatTo16BitPcm(resampled);
+        /** Flush samples that are already at 16k (no resample). */
+        const flushBatch = (float32At16k: Float32Array) => {
+          const pcm = floatTo16BitPcm(float32At16k);
           const base64 = arrayBufferToBase64(pcm.buffer);
           onChunk(base64);
         };
