@@ -16,7 +16,8 @@ import {
   pttStart as bridgePttStart,
   pttEnd as bridgePttEnd,
 } from "@/lib/flutterBridge";
-import { playPcmBase64Chunk, playPcmBytes } from "@/lib/pttPlayback";
+import { playPcmBase64Chunk } from "@/lib/pttPlayback";
+import * as recordingPlayer from "@/lib/recordingPlayer";
 import { toast } from "sonner";
 import { createPttAudioContext, startPttCapture, type PttCaptureHandle } from "@/lib/pttCapture";
 import {
@@ -55,6 +56,11 @@ interface WalkieTalkieContextType {
   pttEnd: (groupId: string) => void;
   fetchRecordings: (params?: { group_id?: number }) => Promise<void>;
   playRecording: (id: number) => Promise<void>;
+  pausePlayback: () => void;
+  activeRecordingId: number | null;
+  playbackCurrentTime: number;
+  playbackDuration: number;
+  isPlaybackPlaying: boolean;
   joinDirectRoom: (driverId: number) => void;
   isWebView: boolean;
 }
@@ -71,9 +77,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const [pttActive, setPttActive] = useState(false);
   const [speakingUser, setSpeakingUser] = useState<{ userId: number; name?: string; groupId: string } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeRecordingId, setActiveRecordingId] = useState<number | null>(null);
+  const [playbackCurrentTime, setPlaybackCurrentTime] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
+  const [isPlaybackPlaying, setIsPlaybackPlaying] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const hasAutoConnected = useRef(false);
   const captureHandleRef = useRef<PttCaptureHandle | null>(null);
+  const lastPausedOffsetRef = useRef(0);
 
   const isWebView = isFlutterBridgeAvailable();
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
@@ -93,12 +104,41 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
 
   const playRecording = useCallback(async (id: number) => {
     try {
-      const blob = await walkietalkieApi.getRecordingPlayBlob(id);
-      const arrayBuffer = await blob.arrayBuffer();
-      playPcmBytes(new Uint8Array(arrayBuffer));
+      const isResume = activeRecordingId === id && !isPlaybackPlaying;
+      if (!isResume) {
+        recordingPlayer.stop();
+        if (activeRecordingId !== null) setActiveRecordingId(null);
+        const blob = await walkietalkieApi.getRecordingPlayBlob(id);
+        await recordingPlayer.loadFromBlob(blob);
+        setPlaybackDuration(recordingPlayer.getDuration());
+        setPlaybackCurrentTime(0);
+        lastPausedOffsetRef.current = 0;
+      }
+      setActiveRecordingId(id);
+      setIsPlaybackPlaying(true);
+      const startOffset = isResume ? lastPausedOffsetRef.current : 0;
+      recordingPlayer.play(
+        startOffset,
+        (current, duration) => {
+          setPlaybackCurrentTime(current);
+          setPlaybackDuration(duration);
+        },
+        () => {
+          setIsPlaybackPlaying(false);
+          setPlaybackCurrentTime(recordingPlayer.getDuration());
+        }
+      );
     } catch {
       toast.error("Playback failed");
+      setIsPlaybackPlaying(false);
     }
+  }, [activeRecordingId, isPlaybackPlaying]);
+
+  const pausePlayback = useCallback(() => {
+    const offset = recordingPlayer.pause();
+    lastPausedOffsetRef.current = offset;
+    setPlaybackCurrentTime(offset);
+    setIsPlaybackPlaying(false);
   }, []);
 
   const joinDirectRoom = useCallback(
@@ -333,6 +373,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     return () => {
       hasAutoConnected.current = false;
+      recordingPlayer.stop();
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current.removeAllListeners();
@@ -359,6 +400,11 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     pttEnd,
     fetchRecordings,
     playRecording,
+    pausePlayback,
+    activeRecordingId,
+    playbackCurrentTime,
+    playbackDuration,
+    isPlaybackPlaying,
     joinDirectRoom,
     isWebView,
   };

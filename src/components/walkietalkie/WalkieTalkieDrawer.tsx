@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Mic, Play } from "lucide-react";
+import { Mic, Play, Pause } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -43,6 +43,11 @@ export function WalkieTalkieDrawer() {
     pttEnd,
     fetchRecordings,
     playRecording,
+    pausePlayback,
+    activeRecordingId,
+    playbackCurrentTime,
+    playbackDuration,
+    isPlaybackPlaying,
     joinDirectRoom,
     connect,
   } = useWalkieTalkie();
@@ -216,7 +221,16 @@ export function WalkieTalkieDrawer() {
                 </p>
               ) : (
                 displayRecordings.map((rec) => (
-                  <VoiceMessageRow key={rec.id} rec={rec} onPlay={() => playRecording(rec.id)} />
+                  <VoiceMessageRow
+                    key={rec.id}
+                    rec={rec}
+                    isActive={activeRecordingId === rec.id}
+                    isPlaying={isPlaybackPlaying}
+                    currentTime={playbackCurrentTime}
+                    duration={playbackDuration}
+                    onPlay={() => playRecording(rec.id)}
+                    onPause={pausePlayback}
+                  />
                 ))
               )}
             </div>
@@ -247,10 +261,35 @@ export function WalkieTalkieDrawer() {
   );
 }
 
-function VoiceMessageRow({ rec, onPlay }: { rec: WalkieTalkieRecording; onPlay: () => void }) {
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function VoiceMessageRow({
+  rec,
+  isActive,
+  isPlaying,
+  currentTime,
+  duration,
+  onPlay,
+  onPause,
+}: {
+  rec: WalkieTalkieRecording;
+  isActive: boolean;
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  onPlay: () => void;
+  onPause: () => void;
+}) {
   const name = rec.user_name ?? `User #${rec.user}`;
   const initials = getInitials(rec.user_name, rec.user);
-  const duration = rec.duration_seconds != null ? `${Math.round(rec.duration_seconds)}s` : null;
+  const totalSeconds = rec.duration_seconds ?? duration;
+  const displayDuration = isActive ? duration : totalSeconds;
+  const displayCurrent = isActive ? currentTime : 0;
+  const progressPercent = displayDuration > 0 ? (displayCurrent / displayDuration) * 100 : 0;
 
   return (
     <div className="flex items-center gap-3 rounded-lg border bg-card p-2.5">
@@ -264,12 +303,39 @@ function VoiceMessageRow({ rec, onPlay }: { rec: WalkieTalkieRecording; onPlay: 
         <p className="text-sm font-medium truncate">{name}</p>
         <p className="text-xs text-muted-foreground">
           {format(new Date(rec.started_at), "MMM d, HH:mm")}
-          {duration ? ` · ${duration}` : ""}
         </p>
+        <div className="flex items-center gap-2 mt-1.5 rounded-2xl bg-primary text-primary-foreground py-2 px-3 min-w-0 max-w-full w-fit">
+          <button
+            type="button"
+            className="shrink-0 p-0.5 rounded-full hover:bg-primary-foreground/20"
+            onClick={isPlaying ? onPause : onPlay}
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? (
+              <Pause className="h-5 w-5" />
+            ) : (
+              <Play className="h-5 w-5" />
+            )}
+          </button>
+          <div
+            className="flex-1 min-w-[60px] max-w-[120px] h-1.5 rounded-full bg-primary-foreground/30 overflow-hidden"
+            role="progressbar"
+            aria-valuenow={isActive ? displayCurrent : undefined}
+            aria-valuemin={0}
+            aria-valuemax={isActive ? displayDuration : undefined}
+          >
+            <div
+              className="h-full rounded-full bg-primary-foreground transition-all duration-150"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <span className="text-xs font-medium tabular-nums shrink-0">
+            {isActive
+              ? `${formatTime(displayCurrent)} / ${formatTime(displayDuration)}`
+              : formatTime(displayDuration)}
+          </span>
+        </div>
       </div>
-      <Button size="sm" variant="ghost" className="h-9 w-9 p-0 shrink-0" onClick={onPlay}>
-        <Play className="h-5 w-5" />
-      </Button>
     </div>
   );
 }
