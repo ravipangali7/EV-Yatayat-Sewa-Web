@@ -196,8 +196,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         groupId: data.groupId ?? "",
       });
     });
-    socket.on("ptt_audio", (data: { chunk?: string }) => {
-      if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk);
+    socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number }) => {
+      if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
     });
     socket.on("ptt_ended", () => setSpeakingUser(null));
     socket.on("disconnect", () => setStatus("disconnected"));
@@ -232,8 +232,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       socketRef.current.emit("ptt_start", { groupId });
       const audioContext = createPttAudioContext();
       startPttCapture(
-        (base64) => {
-          socketRef.current?.emit("ptt_audio", base64);
+        (base64, sampleRate) => {
+          socketRef.current?.emit("ptt_audio", { chunk: base64, sampleRate });
         },
         audioContext
       )
@@ -308,8 +308,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
                 groupId: data.groupId ?? "",
               });
             });
-            socket.on("ptt_audio", (data: { chunk?: string }) => {
-              if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk);
+            socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number }) => {
+              if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
             });
             socket.on("ptt_ended", () => setSpeakingUser(null));
             socket.on("disconnect", () => setStatus("disconnected"));
@@ -354,8 +354,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     };
     const onPTTAudio = (jsonStr: string) => {
       try {
-        const data = JSON.parse(jsonStr) as { chunk?: string };
-        if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk);
+        const data = JSON.parse(jsonStr) as { chunk?: string; sampleRate?: number };
+        if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
       } catch {
         // ignore
       }

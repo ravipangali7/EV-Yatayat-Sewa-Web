@@ -1,13 +1,14 @@
 /**
- * Play PCM 16-bit 16kHz mono chunks in real time via Web Audio API.
- * Chunks are scheduled back-to-back so they don't overlap (clear speech).
+ * Play PCM 16-bit mono chunks in real time via Web Audio API.
+ * Uses sampleRate from the stream (e.g. 48000) for correct speed and clarity.
+ * Chunks are scheduled back-to-back so they don't overlap.
  */
-const PLAYBACK_SAMPLE_RATE = 16000;
-/** Don't schedule more than this far ahead to avoid slow/echoey playback. */
-const MAX_SCHEDULE_AHEAD = 0.15;
+/** Default if sender doesn't pass sample rate (e.g. old recordings). */
+const FALLBACK_SAMPLE_RATE = 16000;
+/** Don't schedule more than this far ahead to avoid buildup. */
+const MAX_SCHEDULE_AHEAD = 0.12;
 
 let audioContext: AudioContext | null = null;
-/** When the next chunk should start so playback is continuous. */
 let nextStartTime = 0;
 
 function getContext(): AudioContext {
@@ -17,25 +18,26 @@ function getContext(): AudioContext {
   return audioContext;
 }
 
-export function playPcmBase64Chunk(base64: string): void {
+export function playPcmBase64Chunk(base64: string, sampleRate?: number): void {
   try {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    playPcmBytes(bytes);
+    playPcmBytes(bytes, sampleRate ?? FALLBACK_SAMPLE_RATE);
   } catch {
     // ignore decode errors
   }
 }
 
-export function playPcmBytes(bytes: Uint8Array): void {
+export function playPcmBytes(bytes: Uint8Array, sampleRate: number = FALLBACK_SAMPLE_RATE): void {
   const ctx = getContext();
   if (ctx.state === "suspended") ctx.resume().catch(() => {});
 
   const numSamples = Math.floor(bytes.length / 2);
   if (numSamples <= 0) return;
 
-  const buffer = ctx.createBuffer(1, numSamples, PLAYBACK_SAMPLE_RATE);
+  const sr = sampleRate > 0 ? sampleRate : FALLBACK_SAMPLE_RATE;
+  const buffer = ctx.createBuffer(1, numSamples, sr);
   const channel = buffer.getChannelData(0);
   const view = new DataView(bytes.buffer, bytes.byteOffset, numSamples * 2);
   for (let i = 0; i < numSamples; i++) {
@@ -43,7 +45,7 @@ export function playPcmBytes(bytes: Uint8Array): void {
     channel[i] = s / 32768;
   }
 
-  const duration = numSamples / PLAYBACK_SAMPLE_RATE;
+  const duration = numSamples / sr;
   let when = Math.max(ctx.currentTime, nextStartTime);
   if (when > ctx.currentTime + MAX_SCHEDULE_AHEAD) {
     when = ctx.currentTime;
