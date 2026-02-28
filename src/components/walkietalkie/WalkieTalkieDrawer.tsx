@@ -56,6 +56,14 @@ export function WalkieTalkieDrawer() {
   const isSuperuser = !!user?.is_superuser;
   const pttButtonRef = useRef<HTMLButtonElement>(null);
 
+  // When groups load, ensure we have a valid selection so recordings fetch runs
+  useEffect(() => {
+    if (groups.length === 0) return;
+    const isDirect = selectedGroupId.startsWith("direct:");
+    const inList = groups.some((g) => String(g.id) === selectedGroupId);
+    if (!isDirect && !inList) setSelectedGroupId(String(groups[0].id));
+  }, [groups, selectedGroupId, setSelectedGroupId]);
+
   useEffect(() => {
     if (!drawerOpen) return;
     if (selectedGroupId.startsWith("direct:") || selectedGroupId === "direct") return;

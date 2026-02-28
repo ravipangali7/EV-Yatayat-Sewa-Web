@@ -377,7 +377,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     };
   }, [token, serverUrl, isWebView, connectRetryKey]);
 
-  // Refetch groups when drawer opens so list is fresh and recovers from earlier load failure
+  // Refetch groups when drawer opens; sync to socket so PTT works after groups load
   useEffect(() => {
     if (!drawerOpen || !token) return;
     walkietalkieApi
@@ -386,6 +386,11 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         const list = Array.isArray(raw) ? raw : [];
         setGroups(list);
         if (list.length > 0 && !selectedGroupIdRef.current) setSelectedGroupId(String(list[0].id));
+        // If socket already connected but we had 0 groups before, join rooms now so hold-to-talk works
+        const groupIds = list.map((g) => String(g.id));
+        if (groupIds.length > 0 && socketRef.current?.connected) {
+          socketRef.current.emit("join_groups", { groupIds });
+        }
       })
       .catch(() => {
         setStatus("error");
