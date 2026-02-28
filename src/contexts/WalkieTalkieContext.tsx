@@ -304,58 +304,58 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         setGroups(list);
         if (list.length === 0) setStatusMessage(null);
         if (list.length > 0 && !selectedGroupId) setSelectedGroupId(String(list[0].id));
-        if (list.length > 0 && !hasAutoConnected.current) {
-          hasAutoConnected.current = true;
-          if (isWebView) {
-            connectWalkieTalkie(serverUrl, token, list.map((g) => String(g.id)));
-            setStatusMessage("Connecting…");
-          } else {
-            setStatusMessage("Connecting…");
-            const socket = io(serverUrl, { path: "/socket.io/", transports: ["websocket", "polling"] });
-            socketRef.current = socket;
-            socket.on("connect", () => {
-              socket.emit("auth", { token }, (ack: unknown) => {
-                if (ack && typeof ack === "object" && (ack as { success?: boolean }).success) {
-                  socket.emit("join_groups", { groupIds: list.map((g) => String(g.id)) });
-                } else {
-                  setStatus("error");
-                  setStatusMessage("Authentication failed");
-                  socket.disconnect();
-                }
-              });
-            });
-            socket.on("joined_groups", () => setStatus("connected"));
-            socket.on("error", (data: { message?: string }) => {
-              setStatus("error");
-              setStatusMessage(data?.message ?? "Error");
-            });
-            socket.on("ptt_started", (data: { userId?: number; name?: string; groupId?: string }) => {
-              resetPttPlaybackSchedule();
-              setSpeakingUser({
-                userId: data.userId ?? 0,
-                name: data.name,
-                groupId: data.groupId ?? "",
-              });
-            });
-            socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number }) => {
-              if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
-            });
-            socket.on("ptt_ended", () => {
-              setSpeakingUser(null);
-              setTimeout(() => {
-                const groupId = selectedGroupIdRef.current;
-                if (groupId && !groupId.startsWith("direct")) {
-                  const id = Number(groupId);
-                  if (!Number.isNaN(id)) fetchRecordingsRef.current?.({ group_id: id });
-                }
-              }, 1500);
-            });
-            socket.on("disconnect", () => setStatus("disconnected"));
-            socket.on("connect_error", () => {
-              setStatus("error");
-              setStatusMessage("Connection failed");
-            });
+        const groupIds = list.map((g) => String(g.id));
+        if (isWebView) {
+          if (list.length > 0) {
+            hasAutoConnected.current = true;
+            connectWalkieTalkie(serverUrl, token, groupIds);
           }
+        } else {
+          // Browser: always connect to socket so status can show "connected" even with 0 groups
+          const socket = io(serverUrl, { path: "/socket.io/", transports: ["websocket", "polling"] });
+          socketRef.current = socket;
+          socket.on("connect", () => {
+            socket.emit("auth", { token }, (ack: unknown) => {
+              if (ack && typeof ack === "object" && (ack as { success?: boolean }).success) {
+                socket.emit("join_groups", { groupIds });
+              } else {
+                setStatus("error");
+                setStatusMessage("Authentication failed");
+                socket.disconnect();
+              }
+            });
+          });
+          socket.on("joined_groups", () => setStatus("connected"));
+          socket.on("error", (data: { message?: string }) => {
+            setStatus("error");
+            setStatusMessage(data?.message ?? "Error");
+          });
+          socket.on("ptt_started", (data: { userId?: number; name?: string; groupId?: string }) => {
+            resetPttPlaybackSchedule();
+            setSpeakingUser({
+              userId: data.userId ?? 0,
+              name: data.name,
+              groupId: data.groupId ?? "",
+            });
+          });
+          socket.on("ptt_audio", (data: { chunk?: string; sampleRate?: number }) => {
+            if (typeof data.chunk === "string") playPcmBase64Chunk(data.chunk, data.sampleRate);
+          });
+          socket.on("ptt_ended", () => {
+            setSpeakingUser(null);
+            setTimeout(() => {
+              const groupId = selectedGroupIdRef.current;
+              if (groupId && !groupId.startsWith("direct")) {
+                const id = Number(groupId);
+                if (!Number.isNaN(id)) fetchRecordingsRef.current?.({ group_id: id });
+              }
+            }, 1500);
+          });
+          socket.on("disconnect", () => setStatus("disconnected"));
+          socket.on("connect_error", () => {
+            setStatus("error");
+            setStatusMessage("Connection failed");
+          });
         }
       } catch {
         if (!cancelled) {
@@ -367,6 +367,12 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     })();
     return () => {
       cancelled = true;
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.removeAllListeners();
+        socketRef.current = null;
+      }
+      hasAutoConnected.current = false;
     };
   }, [user, token, serverUrl, isWebView, connectRetryKey]);
 
