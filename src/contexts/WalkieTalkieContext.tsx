@@ -16,7 +16,7 @@ import {
   pttStart as bridgePttStart,
   pttEnd as bridgePttEnd,
 } from "@/lib/flutterBridge";
-import { playPcmBase64Chunk } from "@/lib/pttPlayback";
+import { playPcmBase64Chunk, playPcmBytes } from "@/lib/pttPlayback";
 import { toast } from "sonner";
 import { createPttAudioContext, startPttCapture, type PttCaptureHandle } from "@/lib/pttCapture";
 import {
@@ -94,10 +94,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const playRecording = useCallback(async (id: number) => {
     try {
       const blob = await walkietalkieApi.getRecordingPlayBlob(id);
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => URL.revokeObjectURL(url);
-      await audio.play();
+      const arrayBuffer = await blob.arrayBuffer();
+      playPcmBytes(new Uint8Array(arrayBuffer));
     } catch {
       toast.error("Playback failed");
     }
