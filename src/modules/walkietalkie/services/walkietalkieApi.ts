@@ -12,6 +12,8 @@ export interface WalkieTalkieRecording {
   id: number;
   group: number;
   user: number;
+  user_name?: string;
+  user_avatar?: string;
   started_at: string;
   ended_at: string;
   file_path: string | null;
@@ -21,9 +23,18 @@ export interface WalkieTalkieRecording {
   created_at: string;
 }
 
+export interface WalkieTalkieDriver {
+  id: number;
+  name: string;
+  avatar?: string;
+}
+
 export const walkietalkieApi = {
   listGroups: (): Promise<WalkieTalkieGroup[]> =>
     api.get<WalkieTalkieGroup[]>("walkietalkie/groups/"),
+
+  listDrivers: (): Promise<WalkieTalkieDriver[]> =>
+    api.get<WalkieTalkieDriver[]>("walkietalkie/drivers/"),
 
   listRecordings: (params?: { group_id?: number; user_id?: number }): Promise<WalkieTalkieRecording[]> => {
     const q = new URLSearchParams();

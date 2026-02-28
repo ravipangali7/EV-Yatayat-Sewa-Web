@@ -52,8 +52,9 @@ interface WalkieTalkieContextType {
   disconnect: () => void;
   pttStart: (groupId: string) => void;
   pttEnd: (groupId: string) => void;
-  fetchRecordings: () => Promise<void>;
+  fetchRecordings: (params?: { group_id?: number }) => Promise<void>;
   playRecording: (id: number) => Promise<void>;
+  joinDirectRoom: (driverId: number) => void;
   isWebView: boolean;
 }
 
@@ -80,9 +81,9 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
-  const fetchRecordings = useCallback(async () => {
+  const fetchRecordings = useCallback(async (params?: { group_id?: number }) => {
     try {
-      const list = await walkietalkieApi.listRecordings();
+      const list = await walkietalkieApi.listRecordings(params);
       setRecordings(list);
     } catch {
       setRecordings([]);
@@ -100,6 +101,20 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       // ignore
     }
   }, []);
+
+  const joinDirectRoom = useCallback(
+    (driverId: number) => {
+      const directId = `direct:${driverId}`;
+      if (isWebView) {
+        const groupIds = [...groups.map((g) => String(g.id)), directId];
+        connectWalkieTalkie(serverUrl, token ?? "", groupIds);
+        return;
+      }
+      const ids = [...groups.map((g) => String(g.id)), directId];
+      socketRef.current?.emit("join_groups", { groupIds: ids });
+    },
+    [groups, isWebView, serverUrl, token]
+  );
 
   const connect = useCallback(() => {
     if (!token || groups.length === 0) return;
@@ -345,6 +360,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     pttEnd,
     fetchRecordings,
     playRecording,
+    joinDirectRoom,
     isWebView,
   };
 
