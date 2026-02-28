@@ -84,6 +84,14 @@ export function WalkieTalkieDrawer() {
     walkietalkieApi.listDrivers().then(setDrivers).catch(() => setDrivers([]));
   }, [drawerOpen, isSuperuser]);
 
+  const isConnected = status === "connected";
+  const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
+  const isDirect = selectedGroupId.startsWith("direct:");
+  const directDriverId = isDirect ? Number(selectedGroupId.slice(7)) : null;
+  const selectedDriver = directDriverId != null ? drivers.find((d) => d.id === directDriverId) : null;
+  const displayRecordings =
+    selectedGroupId.startsWith("direct:") || selectedGroupId === "direct" ? [] : recordings;
+
   // Touch handlers for mobile/WebView: must use passive: false and touch-action so long-press works
   useEffect(() => {
     const el = pttButtonRef.current;
@@ -112,14 +120,6 @@ export function WalkieTalkieDrawer() {
       el.removeEventListener("touchcancel", onTouchCancel, opts);
     };
   }, [drawerOpen, selectedGroupId, isConnected, pttStart, pttEnd]);
-
-  const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
-  const isDirect = selectedGroupId.startsWith("direct:");
-  const directDriverId = isDirect ? Number(selectedGroupId.slice(7)) : null;
-  const selectedDriver = directDriverId != null ? drivers.find((d) => d.id === directDriverId) : null;
-  const displayRecordings =
-    selectedGroupId.startsWith("direct:") || selectedGroupId === "direct" ? [] : recordings;
-  const isConnected = status === "connected";
 
   const handleSelectDriver = (driver: WalkieTalkieDriver) => {
     setSelectedGroupId(`direct:${driver.id}`);
