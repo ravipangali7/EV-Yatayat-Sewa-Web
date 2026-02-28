@@ -385,8 +385,12 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       .then((raw) => {
         const list = Array.isArray(raw) ? raw : [];
         setGroups(list);
+        if (list.length > 0 && !selectedGroupIdRef.current) setSelectedGroupId(String(list[0].id));
       })
-      .catch(() => {});
+      .catch(() => {
+        setStatus("error");
+        setStatusMessage("Could not load groups. Check your connection.");
+      });
   }, [drawerOpen, token]);
 
   useEffect(() => {
