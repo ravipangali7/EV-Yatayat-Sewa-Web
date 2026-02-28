@@ -50,6 +50,7 @@ export function WalkieTalkieDrawer() {
     isPlaybackPlaying,
     joinDirectRoom,
     connect,
+    retryConnect,
   } = useWalkieTalkie();
   const [drivers, setDrivers] = useState<WalkieTalkieDriver[]>([]);
   const isSuperuser = !!user?.is_superuser;
@@ -132,11 +133,16 @@ export function WalkieTalkieDrawer() {
                 isConnected ? "bg-green-500" : status === "error" ? "bg-destructive" : "bg-muted-foreground"
               }`}
             />
-            {isConnected ? "Listening" : status === "error" ? statusMessage || "Error" : "Disconnected"}
+            {isConnected ? "Listening" : status === "error" ? statusMessage || "Error" : (statusMessage || "Disconnected")}
           </span>
         </SheetHeader>
 
-        {!isConnected && groups.length > 0 && (
+        {status === "error" && (
+          <Button size="sm" variant="outline" className="mb-2 w-fit" onClick={retryConnect}>
+            Retry
+          </Button>
+        )}
+        {!isConnected && groups.length > 0 && status !== "error" && (
           <Button size="sm" variant="outline" className="mb-2 w-fit" onClick={connect}>
             Connect
           </Button>

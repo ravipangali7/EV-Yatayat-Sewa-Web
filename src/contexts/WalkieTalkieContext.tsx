@@ -63,6 +63,7 @@ interface WalkieTalkieContextType {
   isPlaybackPlaying: boolean;
   joinDirectRoom: (driverId: number) => void;
   isWebView: boolean;
+  retryConnect: () => void;
 }
 
 const WalkieTalkieContext = createContext<WalkieTalkieContextType | undefined>(undefined);
@@ -87,6 +88,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const lastPausedOffsetRef = useRef(0);
   const selectedGroupIdRef = useRef(selectedGroupId);
   const fetchRecordingsRef = useRef<(params?: { group_id?: number }) => Promise<void>>(() => Promise.resolve());
+  const [connectRetryKey, setConnectRetryKey] = useState(0);
 
   const isWebView = isFlutterBridgeAvailable();
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
@@ -293,11 +295,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user || !token) return;
     let cancelled = false;
+    setStatus("disconnected");
+    setStatusMessage("Connecting…");
     (async () => {
       try {
         const list = await walkietalkieApi.listGroups();
         if (cancelled) return;
         setGroups(list);
+        if (list.length === 0) setStatusMessage(null);
         if (list.length > 0 && !selectedGroupId) setSelectedGroupId(String(list[0].id));
         if (list.length > 0 && !hasAutoConnected.current) {
           hasAutoConnected.current = true;
@@ -353,13 +358,17 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch {
-        if (!cancelled) setGroups([]);
+        if (!cancelled) {
+          setGroups([]);
+          setStatus("error");
+          setStatusMessage("Could not load groups. Check your connection.");
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [user, token, serverUrl, isWebView]);
+  }, [user, token, serverUrl, isWebView, connectRetryKey]);
 
   useEffect(() => {
     if (!isWebView) return;
@@ -452,6 +461,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     isPlaybackPlaying,
     joinDirectRoom,
     isWebView,
+    retryConnect: () => setConnectRetryKey((k) => k + 1),
   };
 
   return (
