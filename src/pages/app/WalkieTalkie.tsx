@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Mic, Radio, Loader2 } from "lucide-react";
+import { Mic, Radio, Loader2, Wifi, WifiOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { walkietalkieApi, type WalkieTalkieGroup } from "@/modules/walkietalkie/services/walkietalkieApi";
 import {
@@ -128,103 +128,124 @@ export default function WalkieTalkie() {
   }, [status]);
 
   const inApp = isFlutterBridgeAvailable();
+  const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
+  const isConnected = status === "connected";
+  const StatusIcon = isConnected ? Wifi : status === "error" ? AlertCircle : WifiOff;
 
   if (!inApp) {
     return (
-      <div className="min-h-screen p-6 flex items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <Radio className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>Walkie-Talkie is available only in the mobile app (WebView).</p>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
+            <Radio className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-2">Walkie-Talkie</h2>
+          <p className="text-sm text-muted-foreground">
+            Push-to-talk is available only inside the EV Yatayat Sewa mobile app.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-24">
-      <div className="gradient-primary pt-6 pb-8 px-5 rounded-b-[2rem]">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-lg font-bold text-primary-foreground">Walkie-Talkie</h1>
+    <div className="min-h-screen pb-28">
+      {/* Header */}
+      <div className="bg-gradient-to-b from-primary to-primary/90 text-primary-foreground pt-6 pb-10 px-5 rounded-b-[2rem] shadow-lg">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
+            <Radio className="h-7 w-7" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Walkie-Talkie</h1>
+            <p className="text-primary-foreground/85 text-sm">Push to talk in your channels</p>
+          </div>
         </div>
-        <p className="text-primary-foreground/80 text-sm">Push to talk in a group</p>
       </div>
 
-      <div className="px-5 -mt-4 space-y-4">
+      <div className="px-5 -mt-6 space-y-5">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
         ) : (
           <>
-            <div className="bg-card rounded-xl shadow p-4">
-              <label className="text-sm font-medium text-foreground block mb-2">Group</label>
+            {/* Channel card */}
+            <div className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+              <label className="text-sm font-semibold text-foreground block mb-3">Channel</label>
               <select
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 value={selectedGroupId}
                 onChange={(e) => setSelectedGroupId(e.target.value)}
-                disabled={status === "connected"}
+                disabled={isConnected}
               >
-                <option value="">Select group</option>
+                <option value="">Select channel</option>
                 {groups.map((g) => (
                   <option key={g.id} value={String(g.id)}>
-                    {g.name} ({g.member_count} members)
+                    {g.name} · {g.member_count} members
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="bg-card rounded-xl shadow p-4 flex items-center justify-between">
-              <span className="text-sm font-medium">Status</span>
+            {/* Status card */}
+            <div className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">Status</span>
               <span
-                className={`text-sm font-medium ${
-                  status === "connected"
-                    ? "text-green-600"
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${
+                  isConnected
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
                     : status === "error"
-                      ? "text-destructive"
-                      : "text-muted-foreground"
+                      ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                      : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
                 }`}
               >
-                {status === "connected" ? "Connected" : status === "error" ? statusMessage || "Error" : "Disconnected"}
+                <StatusIcon className="h-4 w-4" />
+                {isConnected ? "Live" : status === "error" ? statusMessage || "Error" : "Offline"}
               </span>
             </div>
 
+            {/* Connect / Disconnect */}
             <div className="flex gap-3">
-              {status !== "connected" ? (
+              {!isConnected ? (
                 <button
                   type="button"
                   onClick={handleConnect}
                   disabled={groups.length === 0 || !token}
-                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-medium disabled:opacity-50"
+                  className="flex-1 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/25 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                 >
+                  <Wifi className="h-5 w-5" />
                   Connect
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleDisconnect}
-                  className="flex-1 py-3 rounded-xl border border-input bg-background font-medium"
+                  className="flex-1 py-4 rounded-2xl border-2 border-input bg-card font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center justify-center gap-2"
                 >
+                  <WifiOff className="h-5 w-5" />
                   Disconnect
                 </button>
               )}
             </div>
 
-            {status === "connected" && (
-              <div className="bg-card rounded-xl shadow p-6 flex flex-col items-center">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Hold the button to talk in <strong>{groups.find((g) => String(g.id) === selectedGroupId)?.name ?? selectedGroupId}</strong>
+            {/* PTT area */}
+            {isConnected && (
+              <div className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center">
+                <p className="text-sm text-muted-foreground mb-6 text-center">
+                  Hold to talk in <strong className="text-foreground">{selectedGroup?.name ?? "channel"}</strong>
                 </p>
                 <button
                   ref={pttButtonRef}
                   type="button"
-                  className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center touch-manipulation select-none"
+                  className="h-28 w-28 rounded-full bg-primary text-primary-foreground flex items-center justify-center touch-manipulation select-none shadow-xl shadow-primary/30 hover:shadow-2xl active:scale-95 transition-transform"
                   onMouseDown={handlePttDown}
                   onMouseUp={handlePttUp}
                   onMouseLeave={handlePttUp}
                 >
-                  <Mic className={`w-10 h-10 ${pttActive ? "scale-110" : ""}`} />
+                  <Mic className={`h-12 w-12 ${pttActive ? "scale-110" : ""} transition-transform`} />
                 </button>
-                <span className="text-xs text-muted-foreground mt-2">
+                <span className="text-sm font-medium text-muted-foreground mt-4">
                   {pttActive ? "Speaking…" : "Hold to talk"}
                 </span>
               </div>

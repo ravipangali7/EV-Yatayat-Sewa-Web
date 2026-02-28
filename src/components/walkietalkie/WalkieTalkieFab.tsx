@@ -2,16 +2,25 @@ import { Radio } from "lucide-react";
 import { useWalkieTalkie } from "@/contexts/WalkieTalkieContext";
 
 export function WalkieTalkieFab() {
-  const { openDrawer } = useWalkieTalkie();
+  const { openDrawer, status } = useWalkieTalkie();
+  const isLive = status === "connected";
 
   return (
     <button
       type="button"
       onClick={openDrawer}
-      className="fixed bottom-6 right-6 z-[9999] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      className="fixed bottom-6 right-6 z-[9999] flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/25 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background active:scale-100"
       aria-label="Open Walkie-Talkie"
     >
-      <Radio className="h-7 w-7" />
+      <span className="relative flex items-center justify-center">
+        <Radio className="h-8 w-8" />
+        {isLive && (
+          <span
+            className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-background animate-pulse"
+            aria-hidden
+          />
+        )}
+      </span>
     </button>
   );
 }
