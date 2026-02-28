@@ -1,9 +1,12 @@
 /**
  * Browser microphone capture for PTT: getUserMedia + AudioContext -> PCM 16-bit 16kHz mono (base64).
  * Must be started from a user gesture so the browser can prompt for mic permission.
+ * Batches ~20ms of audio per chunk for clearer streaming.
  */
 
 const TARGET_SAMPLE_RATE = 16000;
+/** Send chunks of this many samples at 16kHz (~20ms) for stable playback. */
+const BATCH_SAMPLES_16K = 320;
 
 function floatTo16BitPcm(float32Array: Float32Array): Uint8Array {
   const len = float32Array.length;
@@ -95,17 +98,29 @@ export function startPttCapture(
 
         const source = ctx.createMediaStreamSource(stream);
         const workletNode = new AudioWorkletNode(ctx, "ptt-pcm-processor");
-        workletNode.port.onmessage = (e: MessageEvent<{ samples: ArrayBuffer }>) => {
-          const samples = new Float32Array(e.data.samples);
-          const resampled = resampleTo16k(samples, inputSampleRate);
+        const batch: number[] = [];
+        const flushBatch = (float32Samples: Float32Array) => {
+          const resampled = resampleTo16k(float32Samples, inputSampleRate);
           const pcm = floatTo16BitPcm(resampled);
           const base64 = arrayBufferToBase64(pcm.buffer);
           onChunk(base64);
+        };
+        workletNode.port.onmessage = (e: MessageEvent<{ samples: ArrayBuffer }>) => {
+          const samples = new Float32Array(e.data.samples);
+          const resampled = resampleTo16k(samples, inputSampleRate);
+          for (let i = 0; i < resampled.length; i++) batch.push(resampled[i]);
+          while (batch.length >= BATCH_SAMPLES_16K) {
+            const chunk = batch.splice(0, BATCH_SAMPLES_16K);
+            flushBatch(new Float32Array(chunk));
+          }
         };
         source.connect(workletNode);
 
         const stop = () => {
           try {
+            if (batch.length > 0) {
+              flushBatch(new Float32Array(batch.splice(0, batch.length)));
+            }
             workletNode.disconnect();
             source.disconnect();
             stream.getTracks().forEach((t) => t.stop());
