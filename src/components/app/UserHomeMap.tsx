@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { GoogleMap, Marker, Circle } from "@react-google-maps/api";
 import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
 import {
@@ -15,8 +15,11 @@ import { toast } from "sonner";
 import { DirectBookFlow } from "./DirectBookFlow";
 
 const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
-const RADIUS_KM = 10;
-const RADIUS_METERS = RADIUS_KM * 1000;
+/** Map fits to this radius (visible area 10 km). */
+const MAP_FIT_RADIUS_KM = 10;
+const MAP_FIT_RADIUS_METERS = MAP_FIT_RADIUS_KM * 1000;
+/** Fetch vehicles up to 200 km (e.g. Nepal radius); bookable when 5 km < distance <= 200 km. */
+const FETCH_RADIUS_KM = 200;
 
 const containerStyle = { width: "100%", height: "280px" };
 
@@ -32,13 +35,15 @@ export function UserHomeMap() {
     ? { lat: userPosition.lat, lng: userPosition.lng }
     : DEFAULT_CENTER;
 
+  const mapRef = useRef<google.maps.Map | null>(null);
+
   const fetchNearby = useCallback(async (lat: number, lng: number) => {
     setLoading(true);
     try {
       const res = await vehicleApi.nearby({
         latitude: lat,
         longitude: lng,
-        radius_km: RADIUS_KM,
+        radius_km: FETCH_RADIUS_KM,
       });
       setNearbyVehicles(res.results ?? []);
     } catch {
@@ -48,6 +53,30 @@ export function UserHomeMap() {
       setLoading(false);
     }
   }, []);
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+    if (userPosition) {
+      const center = new google.maps.LatLng(userPosition.lat, userPosition.lng);
+      const bounds = new google.maps.Circle({ center, radius: MAP_FIT_RADIUS_METERS }).getBounds();
+      if (bounds) map.fitBounds(bounds);
+    }
+  }, [userPosition]);
+
+  const onMapUnmount = useCallback(() => {
+    mapRef.current = null;
+  }, []);
+
+  /** Fit map bounds to 10 km around user so initial view shows only 10 km (markers up to 200 km still rendered). */
+  useEffect(() => {
+    if (!userPosition || !mapRef.current) return;
+    const center = new google.maps.LatLng(userPosition.lat, userPosition.lng);
+    const bounds = new google.maps.Circle({
+      center,
+      radius: MAP_FIT_RADIUS_METERS,
+    }).getBounds();
+    if (bounds) mapRef.current.fitBounds(bounds);
+  }, [userPosition]);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -99,6 +128,8 @@ export function UserHomeMap() {
             mapContainerStyle={containerStyle}
             center={center}
             zoom={12}
+            onLoad={onMapLoad}
+            onUnmount={onMapUnmount}
             options={{
               clickableIcons: false,
               zoomControl: true,
@@ -110,7 +141,7 @@ export function UserHomeMap() {
               <>
                 <Circle
                   center={userPosition}
-                  radius={RADIUS_METERS}
+                  radius={MAP_FIT_RADIUS_METERS}
                   options={{
                     strokeColor: "#22c55e",
                     strokeOpacity: 0.6,
@@ -182,7 +213,7 @@ export function UserHomeMap() {
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {selectedVehicle.distance_km} km away
-                {selectedVehicle.can_book ? " · Within 5 km, bookable" : " · Too far to book"}
+                {selectedVehicle.can_book ? " · Bookable (5–200 km, active route)" : " · Not bookable"}
               </p>
               {selectedVehicle.can_book ? (
                 <Button
@@ -192,7 +223,7 @@ export function UserHomeMap() {
                   Book seat
                 </Button>
               ) : (
-                <p className="text-xs text-amber-600">Only vehicles within 5 km with an active trip can be booked.</p>
+                <p className="text-xs text-amber-600">Only vehicles with active trip, between 5 km and 200 km away, can be booked.</p>
               )}
             </div>
           )}
