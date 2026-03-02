@@ -14,6 +14,7 @@ import { Link } from "react-router-dom";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
 import TransferModal from "@/components/app/TransferModal";
+import { UserHomeMap } from "@/components/app/UserHomeMap";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -150,6 +151,8 @@ export default function UserHome() {
           onSuccess={refreshWallet}
           currentUserId={user?.id}
         />
+
+        <UserHomeMap />
 
         <div>
           <div className="flex gap-2 mb-3 p-1 rounded-xl bg-muted/30 border border-border/50">

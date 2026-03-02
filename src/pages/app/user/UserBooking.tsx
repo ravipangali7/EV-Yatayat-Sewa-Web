@@ -14,6 +14,8 @@ import { SeatLayoutVisualizer, type SeatPosition } from "@/components/vehicles/S
 import { vehicleScheduleApi, type SchedulePlace, type VehicleScheduleExpandedRecord } from "@/modules/vehicle-schedules/services/vehicleScheduleApi";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { vehicleTicketBookingApi, type SeatEntry, type VehicleTicketBookingRecord } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
+import { seatBookingApi } from "@/modules/seat-bookings/services/seatBookingApi";
+import type { SeatBooking } from "@/types";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { paymentApi } from "@/modules/payments/services/paymentApi";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,8 +49,13 @@ export default function UserBooking() {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const [tab, setTab] = useState<BookingTab>(tabParam === "my-booking" ? "my-booking" : "book");
+  const [myBookingFilter, setMyBookingFilter] = useState<"short-trip" | "ticket">(
+    searchParams.get("filter") === "ticket" ? "ticket" : "short-trip"
+  );
   const [myBookings, setMyBookings] = useState<VehicleTicketBookingRecord[]>([]);
+  const [mySeatBookings, setMySeatBookings] = useState<SeatBooking[]>([]);
   const [myBookingsLoading, setMyBookingsLoading] = useState(false);
+  const [mySeatBookingsLoading, setMySeatBookingsLoading] = useState(false);
   const [startPlaces, setStartPlaces] = useState<SchedulePlace[]>([]);
   const [endPlaces, setEndPlaces] = useState<SchedulePlace[]>([]);
   const [fromPlaceId, setFromPlaceId] = useState("");
@@ -81,6 +88,23 @@ export default function UserBooking() {
         .finally(() => setMyBookingsLoading(false));
     }
   }, [tab, user?.id]);
+
+  useEffect(() => {
+    if (tab === "my-booking" && user?.id) {
+      setMySeatBookingsLoading(true);
+      seatBookingApi.list({ user: user.id, per_page: 50 })
+        .then((res) => setMySeatBookings(res.results ?? []))
+        .catch(() => setMySeatBookings([]))
+        .finally(() => setMySeatBookingsLoading(false));
+    }
+  }, [tab, user?.id]);
+
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam === "ticket" || filterParam === "short-trip") {
+      setMyBookingFilter(filterParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     vehicleScheduleApi.startPlaces()
@@ -333,64 +357,123 @@ export default function UserBooking() {
 
       {tab === "my-booking" && (
         <div className="space-y-3">
-          {myBookingsLoading ? (
-            <div className="flex justify-center py-10">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-            </div>
-          ) : myBookings.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                <Calendar size={24} className="text-muted-foreground" />
-              </div>
-              <p className="text-sm text-muted-foreground">No bookings yet. Book a ride!</p>
-            </div>
-          ) : (
-            myBookings.map((b) => {
-              const sd = b.schedule_details;
-              return (
-                <div
-                  key={b.id}
-                  className={`bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-l-4 p-4 hover:shadow-md transition-all ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
-                >
-                  <div className="flex justify-between items-start gap-3">
-                    <div className="flex-1 min-w-0">
+          <div className="flex gap-2 p-1 rounded-xl bg-muted/30 border border-border/50">
+            <button
+              type="button"
+              onClick={() => setMyBookingFilter("short-trip")}
+              className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all ${
+                myBookingFilter === "short-trip" ? "bg-white dark:bg-card shadow-sm text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Short trip
+            </button>
+            <button
+              type="button"
+              onClick={() => setMyBookingFilter("ticket")}
+              className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all ${
+                myBookingFilter === "ticket" ? "bg-white dark:bg-card shadow-sm text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Ticket booking
+            </button>
+          </div>
+
+          {myBookingFilter === "short-trip" && (
+            <div className="space-y-2">
+              {mySeatBookingsLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+                </div>
+              ) : mySeatBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No short trip bookings yet.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Book from the map on the home page.</p>
+                </div>
+              ) : (
+                mySeatBookings.map((b) => {
+                  const seatLabel = b.vehicle_seat_details ? `${b.vehicle_seat_details.side}${b.vehicle_seat_details.number}` : b.vehicle_seat ?? "—";
+                  const checkInDate = b.check_in_datetime ? new Date(b.check_in_datetime).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "—";
+                  return (
+                    <div
+                      key={b.id}
+                      className={`bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-l-4 p-4 hover:shadow-md transition-all ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
+                    >
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-sm">PNR: {b.pnr}</p>
+                        <p className="font-bold text-sm">{b.vehicle_details?.name ?? "Vehicle"} · Seat {seatLabel}</p>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${b.is_paid ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
                           {b.is_paid ? "Paid" : "Unpaid"}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {sd?.start_point_name ?? ""} → {sd?.end_point_name ?? ""}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{sd?.date ?? ""} {sd?.time ?? ""}</p>
-                      <p className="text-xs mt-1">{b.name} · <strong>Rs. {b.price}</strong></p>
+                      <p className="text-xs text-muted-foreground">{checkInDate}</p>
+                      {b.check_in_address && <p className="text-xs text-muted-foreground truncate">{b.check_in_address}</p>}
+                      {b.destination_place_details && <p className="text-xs text-muted-foreground">→ {b.destination_place_details.name}</p>}
+                      <p className="text-xs mt-1"><strong>Rs. {b.trip_amount ?? "—"}</strong></p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="shrink-0 rounded-xl h-9"
-                      onClick={async () => {
-                        try {
-                          const blob = await vehicleTicketBookingApi.getTicketPdfBlob(b.id);
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = `ticket-${b.pnr}.pdf`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                          toast.success("Download started");
-                        } catch {
-                          toast.error("Failed to download ticket");
-                        }
-                      }}
-                    >
-                      <FileDown size={14} className="mr-1" /> PDF
-                    </Button>
-                  </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {myBookingFilter === "ticket" && (
+            <div className="space-y-2">
+              {myBookingsLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
                 </div>
-              );
-            })
+              ) : myBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No ticket bookings yet. Book a ride!</p>
+                </div>
+              ) : (
+                myBookings.map((b) => {
+                  const sd = b.schedule_details;
+                  return (
+                    <div
+                      key={b.id}
+                      className={`bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-l-4 p-4 hover:shadow-md transition-all ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-bold text-sm">PNR: {b.pnr}</p>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${b.is_paid ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+                              {b.is_paid ? "Paid" : "Unpaid"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {sd?.start_point_name ?? ""} → {sd?.end_point_name ?? ""}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{sd?.date ?? ""} {sd?.time ?? ""}</p>
+                          <p className="text-xs mt-1">{b.name} · <strong>Rs. {b.price}</strong></p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0 rounded-xl h-9"
+                          onClick={async () => {
+                            try {
+                              const blob = await vehicleTicketBookingApi.getTicketPdfBlob(b.id);
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `ticket-${b.pnr}.pdf`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                              toast.success("Download started");
+                            } catch {
+                              toast.error("Failed to download ticket");
+                            }
+                          }}
+                        >
+                          <FileDown size={14} className="mr-1" /> PDF
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           )}
         </div>
       )}

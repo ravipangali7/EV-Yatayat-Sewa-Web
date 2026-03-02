@@ -1,5 +1,5 @@
 import { api, PaginatedResponse, ListParams } from '@/lib/api';
-import { Vehicle, VehicleSeat, VehicleImage } from '@/types';
+import { Vehicle, VehicleSeat, VehicleImage, VehicleNearby } from '@/types';
 
 export const vehicleApi = {
   // List vehicles with pagination and filters
@@ -27,6 +27,21 @@ export const vehicleApi = {
   getMyActiveVehicle: async (): Promise<Vehicle | null> => {
     const res = await api.get<{ vehicle: Vehicle | null }>('vehicles/my-active-vehicle/');
     return res.vehicle ?? null;
+  },
+
+  // Nearby vehicles with last location within radius (for map). Includes can_book.
+  nearby: async (params: {
+    latitude: number;
+    longitude: number;
+    radius_km?: number;
+    bookable_only?: boolean;
+  }): Promise<{ results: VehicleNearby[]; count: number }> => {
+    const q = new URLSearchParams();
+    q.set('latitude', String(params.latitude));
+    q.set('longitude', String(params.longitude));
+    if (params.radius_km != null) q.set('radius_km', String(params.radius_km));
+    if (params.bookable_only) q.set('bookable_only', 'true');
+    return api.get<{ results: VehicleNearby[]; count: number }>(`vehicles/nearby/?${q.toString()}`);
   },
 
   // Connect to vehicle (set current user as active driver)

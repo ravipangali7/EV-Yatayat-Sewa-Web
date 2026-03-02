@@ -170,6 +170,14 @@ export interface Vehicle {
   updated_at: string;
 }
 
+export interface VehicleNearby extends Vehicle {
+  last_latitude: string;
+  last_longitude: string;
+  last_location_at: string | null;
+  distance_km: number;
+  can_book: boolean;
+}
+
 export interface SeatBooking {
   id: string;
   user?: string;
@@ -198,6 +206,8 @@ export interface SeatBooking {
   trip_duration?: number;
   trip_amount?: number;
   is_paid: boolean;
+  destination_place?: string | null;
+  destination_place_details?: Place | null;
   created_at: string;
   updated_at: string;
 }
