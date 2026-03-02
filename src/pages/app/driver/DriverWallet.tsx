@@ -48,7 +48,7 @@ export default function DriverWallet() {
       <AppBar title="Wallet" />
       <div className="px-5 pt-4 pb-24">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6">
-        <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} />
+        <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" />
         <div className="mt-4 flex gap-2">
           {toPay > 0 && (
             <Button asChild variant="default" size="sm" className="flex-1 rounded-xl">

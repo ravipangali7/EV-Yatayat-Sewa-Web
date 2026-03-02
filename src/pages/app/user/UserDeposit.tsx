@@ -17,7 +17,6 @@ export default function UserDeposit() {
   const [balance, setBalance] = useState(0);
   const [amount, setAmount] = useState("");
   const [remarks, setRemarks] = useState("");
-  const [particulars, setParticulars] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -43,7 +42,6 @@ export default function UserDeposit() {
         amount: num,
         purpose: "wallet_deposit",
         remarks: remarks.trim() || undefined,
-        particulars: particulars.trim() || undefined,
       });
       const gatewayUrl = formData.gateway_url;
       const form = document.createElement("form");
@@ -99,16 +97,6 @@ export default function UserDeposit() {
             placeholder="Remarks"
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
-            className="h-12 rounded-xl"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Particulars (optional)</label>
-          <Input
-            type="text"
-            placeholder="Particulars"
-            value={particulars}
-            onChange={(e) => setParticulars(e.target.value)}
             className="h-12 rounded-xl"
           />
         </div>

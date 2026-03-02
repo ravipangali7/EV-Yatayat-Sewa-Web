@@ -1,17 +1,30 @@
-import { Wallet, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Wallet, ArrowDownLeft, ArrowUpRight, Plus } from "lucide-react";
 
 interface WalletCardProps {
   balance: number;
   toReceive: number;
   toPay: number;
+  addFundLink?: string;
 }
 
-const WalletCard = ({ balance, toReceive, toPay }: WalletCardProps) => {
+const WalletCard = ({ balance, toReceive, toPay, addFundLink }: WalletCardProps) => {
   return (
     <div className="gradient-wallet rounded-2xl p-5 text-primary-foreground">
-      <div className="flex items-center gap-2 mb-4">
-        <Wallet size={18} />
-        <span className="text-sm font-medium opacity-90">Wallet Balance</span>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <Wallet size={18} />
+          <span className="text-sm font-medium opacity-90">Wallet Balance</span>
+        </div>
+        {addFundLink && (
+          <Link
+            to={addFundLink}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-primary-foreground/20 hover:bg-primary-foreground/30 transition-colors shrink-0"
+          >
+            <Plus size={14} />
+            Add Fund
+          </Link>
+        )}
       </div>
       <p className="text-3xl font-bold mb-6">
         Rs. {balance.toLocaleString()}

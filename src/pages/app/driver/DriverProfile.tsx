@@ -40,7 +40,7 @@ export default function DriverProfile() {
   const menuItems: { icon: typeof Edit; label: string; to?: string; onClick?: () => void }[] = [
     { icon: Edit, label: "Edit Profile", onClick: () => setShowEditModal(true) },
     { icon: Lock, label: "Change Password", onClick: () => setShowPasswordModal(true) },
-    { icon: CreditCard, label: "Deposit", to: "/app/driver/wallet" },
+    { icon: CreditCard, label: "Deposit", to: "/app/driver/deposit" },
     { icon: Wallet, label: "Wallet", to: "/app/driver/wallet" },
     { icon: Send, label: "Transfer", to: "/app/driver/wallet" },
     { icon: Clock, label: "Trip History", to: "/app/driver/trip-history" },

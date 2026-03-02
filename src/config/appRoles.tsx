@@ -73,6 +73,7 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
       walkietalkie: WalkieTalkie,
       wallet: DriverWallet,
       profile: DriverProfile,
+      deposit: UserDeposit,
       "trip-history": DriverTripHistory,
       "trip-history/:id": DriverTripHistoryDetail,
       "seat-booking": DriverSeatBooking,

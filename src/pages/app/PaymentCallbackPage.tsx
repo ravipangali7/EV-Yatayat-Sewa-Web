@@ -6,7 +6,7 @@ import type { PaymentTransaction } from "@/types/payment";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { resolveAppRole } from "@/config/appRoles";
+import { resolveAppRole, getHomePathForUser } from "@/config/appRoles";
 
 export default function PaymentCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -54,15 +54,34 @@ export default function PaymentCallbackPage() {
   const returnTo = searchParams.get("return_to") || "";
   const role = resolveAppRole(user);
   const basePath = role === "driver" ? "/app/driver" : role === "ticket_dealer" ? "/app/ticket-dealer" : "/app/user";
+  const homePath = getHomePathForUser(user);
   const goWallet = () => navigate(`${basePath}/wallet`);
   const goCard = () => navigate(`${basePath}/card`);
   const goBooking = () => navigate(`${basePath}/booking?tab=my-booking`);
   const goDeposit = () => navigate(`${basePath}/deposit`);
   const goPayDue = () => navigate(`${basePath}/pay-due`);
 
+  const handleBack = () => {
+    if (loading) {
+      navigate(homePath);
+      return;
+    }
+    navigate(homePath, {
+      state: {
+        paymentCallback: {
+          success: !error && !!payment,
+          payment: payment ?? null,
+          error: error ?? null,
+          txnId: txnId ?? null,
+          returnTo,
+        },
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen">
-      <AppBar title="Payment" showBack onBack={() => navigate(-1)} />
+      <AppBar title="Payment" showBack onBack={handleBack} />
       <div className="px-5 pt-4">
         {loading && (
           <div className="flex flex-col items-center justify-center py-12">

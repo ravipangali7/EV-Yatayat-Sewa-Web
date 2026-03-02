@@ -18,8 +18,8 @@ export default function AppBar({ title, showBack, onBack, right, className = "" 
     <header
       className={
         "sticky top-0 z-40 flex items-center justify-between px-4 py-3 " +
-        "backdrop-blur-xl bg-primary/80 border-b border-primary-foreground/20 " +
-        "text-primary-foreground " +
+        "backdrop-blur-xl bg-white dark:bg-card border-b border-border " +
+        "text-foreground shadow-sm " +
         className
       }
     >
@@ -28,7 +28,7 @@ export default function AppBar({ title, showBack, onBack, right, className = "" 
           <button
             type="button"
             onClick={handleBack}
-            className="p-1.5 -ml-1 rounded-lg hover:bg-primary-foreground/20 transition-colors shrink-0"
+            className="p-1.5 -ml-1 rounded-lg hover:bg-muted transition-colors shrink-0 text-foreground"
             aria-label="Back"
           >
             <ChevronLeft size={24} />
