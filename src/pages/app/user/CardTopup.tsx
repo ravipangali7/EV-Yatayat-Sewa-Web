@@ -193,7 +193,7 @@ export default function CardTopup() {
           </div>
         )}
 
-        <div className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-5 shadow-sm space-y-3">
+        <div className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 p-5 shadow-md space-y-3">
           <p className="text-sm font-semibold">Search by card number</p>
           <div className="flex gap-2">
             <Input
@@ -209,7 +209,7 @@ export default function CardTopup() {
         </div>
 
         {card && (
-          <div className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-5 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 p-5 shadow-md space-y-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Selected Card</p>
             <CardDisplay card={card} selected />
             <div>

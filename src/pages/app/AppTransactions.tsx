@@ -133,7 +133,7 @@ export default function AppTransactions() {
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white dark:bg-card/80 rounded-xl p-3.5 border border-border/50 hover:border-border hover:shadow-sm transition-all flex items-center gap-3"
+                    className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl p-3.5 border border-border/50 hover:border-primary/20 hover:shadow-md transition-all flex items-center gap-3"
                   >
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isCredit ? "icon-emerald" : "icon-rose"}`}>
                       <Receipt size={16} />

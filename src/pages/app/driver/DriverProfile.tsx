@@ -93,7 +93,7 @@ export default function DriverProfile() {
         <div className="space-y-2">
           {menuItemDefs.map((item) => {
             const content = (
-              <div className="flex items-center gap-3 p-3.5 bg-white dark:bg-card/80 rounded-xl border border-border/50 hover:border-border hover:shadow-sm transition-all">
+              <div className="flex items-center gap-3 p-3.5 bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 hover:border-primary/20 hover:shadow-md transition-all">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.iconClass}`}>
                   <item.icon size={16} />
                 </div>

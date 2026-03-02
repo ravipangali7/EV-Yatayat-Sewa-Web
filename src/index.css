@@ -214,6 +214,11 @@
     @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-md;
   }
 
+  /* Wallet/summary-style card with primary accent (border + shadow) */
+  .app-highlight-card {
+    @apply rounded-2xl overflow-hidden border border-border/60 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 border-l-4 border-l-primary;
+  }
+
   .profile-blur-card {
     @apply bg-card/70 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg p-6;
   }

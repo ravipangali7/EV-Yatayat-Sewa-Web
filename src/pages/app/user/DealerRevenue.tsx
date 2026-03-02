@@ -29,21 +29,21 @@ export default function DealerRevenue() {
       <AppBar title="Revenue" />
       <div className="px-5 pt-5 pb-24 space-y-5">
         <div className="grid grid-cols-3 gap-3">
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-4 shadow-sm">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 p-4 shadow-md hover:shadow-lg transition-shadow">
             <div className="w-8 h-8 rounded-xl icon-emerald flex items-center justify-center mb-2">
               <DollarSign size={14} />
             </div>
             <p className="text-xs text-muted-foreground">Total Sales</p>
             <p className="text-base font-bold">Rs. {totalAmount.toLocaleString()}</p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-4 shadow-sm">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 p-4 shadow-md hover:shadow-lg transition-shadow">
             <div className="w-8 h-8 rounded-xl icon-primary flex items-center justify-center mb-2">
               <TrendingUp size={14} />
             </div>
             <p className="text-xs text-muted-foreground">Commission ({commissionPct}%)</p>
             <p className="text-base font-bold text-primary">Rs. {totalCommission.toFixed(0)}</p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-4 shadow-sm">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 p-4 shadow-md hover:shadow-lg transition-shadow">
             <div className="w-8 h-8 rounded-xl icon-blue flex items-center justify-center mb-2">
               <TicketCheck size={14} />
             </div>
@@ -72,7 +72,7 @@ export default function DealerRevenue() {
               const amt = toNumber(b.price, 0);
               const commission = (amt * commissionPct) / 100;
               return (
-                <div key={b.id} className="bg-white dark:bg-card/80 rounded-xl border border-border/50 border-l-4 border-l-primary p-4">
+                <div key={b.id} className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 border-l-4 border-l-primary p-4 hover:shadow-md transition-all">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm">PNR: {b.pnr}</p>

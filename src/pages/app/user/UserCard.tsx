@@ -80,7 +80,7 @@ export default function UserCard() {
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl bg-white dark:bg-card/80 border border-border/50 p-10 text-center shadow-sm">
+          <div className="rounded-2xl bg-white dark:bg-card/80 backdrop-blur-xl border border-border/50 p-10 text-center shadow-md">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <CreditCard size={28} className="text-muted-foreground" />
             </div>

@@ -88,7 +88,7 @@ export default function UserWallet() {
           </div>
           <div className="space-y-2">
             {transactions.slice(0, 15).map((t) => (
-              <div key={t.id} className="bg-white dark:bg-card/80 rounded-xl p-3 border border-border/50">
+              <div key={t.id} className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl p-3 border border-border/50 hover:shadow-md hover:border-primary/20 transition-all">
                 <TransactionCard transaction={t} />
               </div>
             ))}

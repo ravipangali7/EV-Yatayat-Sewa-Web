@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Calendar, Search, Users, Clock, ArrowRight, Car, X, FileDown } from "lucide-react";
+import { MapPin, Calendar, Search, Users, Clock, ArrowRight, Car, X, FileDown, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -350,7 +350,7 @@ export default function UserBooking() {
               return (
                 <div
                   key={b.id}
-                  className={`bg-white dark:bg-card/80 rounded-2xl border border-l-4 p-4 ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
+                  className={`bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-l-4 p-4 hover:shadow-md transition-all ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
                 >
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
@@ -398,7 +398,7 @@ export default function UserBooking() {
       {tab === "book" && (
         <>
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Plan your journey</p>
-      <form onSubmit={handleSearch} className="space-y-3 mb-5 bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-4 shadow-sm">
+      <form onSubmit={handleSearch} className="space-y-3 mb-5 bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 p-4 shadow-md">
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="text-xs text-muted-foreground">From</label>
@@ -598,13 +598,13 @@ export default function UserBooking() {
 
       {/* Pay from wallet confirmation dialog */}
       <Dialog open={showPayConfirm} onOpenChange={setShowPayConfirm}>
-        <DialogContent className="max-w-[340px] rounded-2xl">
+        <DialogContent className="max-w-[340px] rounded-2xl bg-card/95 backdrop-blur-xl border-border shadow-xl">
           <DialogHeader>
             <DialogTitle>Pay from wallet?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">You are paying Rs. {totalAmount.toLocaleString()} from your wallet. Continue?</p>
           <div className="flex gap-2 pt-2">
-            <Button className="flex-1" onClick={handleConfirmPayFromWallet} disabled={checkoutSubmitting}>
+            <Button className="flex-1 gradient-wallet text-primary-foreground" onClick={handleConfirmPayFromWallet} disabled={checkoutSubmitting}>
               {checkoutSubmitting ? "Paying..." : "Pay"}
             </Button>
             <Button variant="outline" className="flex-1" onClick={() => setShowPayConfirm(false)}>Cancel</Button>
@@ -619,14 +619,17 @@ export default function UserBooking() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed inset-0 z-50 bg-background overflow-y-auto px-5 pt-6 pb-24"
+            className="fixed inset-0 z-50 bg-background overflow-y-auto"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">{checkoutStep === "confirm" ? "Confirm & Pay" : "Complete Booking"}</h2>
-              <Button variant="ghost" size="icon" onClick={handleCheckoutCancel}>
-                <X size={20} />
-              </Button>
+            <div className="bg-white dark:bg-card border-b border-border shadow-sm sticky top-0 z-10">
+              <div className="flex items-center justify-between px-5 py-4 border-l-4 border-l-primary">
+                <h2 className="text-lg font-bold tracking-tight">{checkoutStep === "confirm" ? "Confirm & Pay" : "Complete Booking"}</h2>
+                <Button variant="ghost" size="icon" onClick={handleCheckoutCancel}>
+                  <X size={20} />
+                </Button>
+              </div>
             </div>
+            <div className="px-5 pt-5 pb-24">
             {checkoutStep === "form" && (
               <>
                 {checkoutSchedule.route_details && (
@@ -676,9 +679,14 @@ export default function UserBooking() {
               </>
             )}
             {checkoutStep === "confirm" && (
-              <div className="space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-6"
+              >
                 {checkoutSchedule.route_details && (
-                  <div className="app-surface rounded-xl p-4 border border-border space-y-1">
+                  <div className="rounded-2xl overflow-hidden border border-border/60 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 border-l-4 border-l-primary p-4 space-y-1">
                     <p className="font-medium">{checkoutSchedule.route_details.start_point.name} → {checkoutSchedule.route_details.end_point.name}</p>
                     <p className="text-sm text-muted-foreground">{checkoutSchedule.date} {checkoutSchedule.time}</p>
                     <p className="text-sm">Seats: {checkoutSelectedSeats.map((s) => `${s.side}${s.number}`).join(", ")}</p>
@@ -695,7 +703,8 @@ export default function UserBooking() {
                     {user ? (
                       <>
                         {(checkoutWalletBalance ?? 0) >= totalAmount && (
-                          <Button className="flex-1" onClick={handlePayFromWallet} disabled={checkoutSubmitting}>
+                          <Button className="flex-1 gradient-wallet text-primary-foreground shadow-md shadow-primary/20 hover:opacity-90" onClick={handlePayFromWallet} disabled={checkoutSubmitting}>
+                            <Wallet size={18} className="mr-2 shrink-0" />
                             Pay from wallet
                           </Button>
                         )}
@@ -750,8 +759,9 @@ export default function UserBooking() {
                     <p className="text-xs text-muted-foreground text-center">Insufficient wallet? Recharge or use Direct Pay (ConnectIPS).</p>
                   )}
                 </div>
-              </div>
+              </motion.div>
             )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

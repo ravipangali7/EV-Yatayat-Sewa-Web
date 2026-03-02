@@ -23,6 +23,7 @@ import { transactionToAppTransaction } from "@/lib/transactionMap";
 import type { AppTransaction } from "@/components/app/TransactionCard";
 import { toNumber } from "@/lib/utils";
 import { resolveAppRole, getAppRoleConfig } from "@/config/appRoles";
+import { iconColorClasses } from "@/lib/appHomeStyles";
 
 const userGridCards = [
   { label: "Book Trip", icon: CalendarDays, to: "booking", gradient: true },
@@ -109,10 +110,10 @@ export default function UserHome() {
       <div className="px-5 pt-5 pb-24 space-y-5 bg-background">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</p>
         <div className="grid grid-cols-4 gap-3">
-          {gridCards.map((item) => {
+          {gridCards.map((item, idx) => {
             const Icon = item.icon;
             const key = "to" in item ? item.to + item.label : item.label;
-            const iconClass = "gradient" in item && item.gradient ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" : "bg-primary/10 text-primary";
+            const iconClass = "gradient" in item && item.gradient ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" : iconColorClasses[idx % iconColorClasses.length];
             if ("action" in item && item.action === "transfer") {
               return (
                 <button
