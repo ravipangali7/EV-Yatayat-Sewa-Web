@@ -70,44 +70,44 @@ export default function UserDeposit() {
   };
 
   return (
-    <div className="min-h-screen">
-      <AppBar title="Deposit" showBack onBack={() => navigate(-1)} />
-      <div className="px-5 pt-4">
-      <div className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6">
-        <p className="text-sm text-muted-foreground">Current balance</p>
-        <p className="text-2xl font-bold">Rs. {balance.toLocaleString()}</p>
-      </div>
-      <form onSubmit={handleDeposit} className="space-y-4">
-        <div>
-          <label className="text-sm font-medium mb-1 block">Amount (Rs.) — min {MIN_AMOUNT_NPR}</label>
-          <Input
-            type="number"
-            min={MIN_AMOUNT_NPR}
-            step="1"
-            placeholder="Enter amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="h-12 rounded-xl"
-          />
+    <div className="min-h-screen bg-background">
+      <AppBar title="Add Fund" showBack onBack={() => navigate(-1)} />
+      <div className="px-5 pt-4 pb-24 space-y-5">
+        <div className="rounded-2xl border border-border/60 border-l-4 border-l-emerald-500 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-md p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Wallet Balance</p>
+          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">Rs. {balance.toLocaleString()}</p>
         </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Remarks (optional)</label>
-          <Input
-            type="text"
-            placeholder="Remarks"
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            className="h-12 rounded-xl"
-          />
-        </div>
-        <Button type="submit" className="w-full h-12 rounded-xl" disabled={submitting}>
-          {submitting ? "Redirecting to payment..." : "Proceed to Payment"}
-        </Button>
-      </form>
-      <p className="text-xs text-muted-foreground mt-2">You will be redirected to ConnectIPS to complete the payment.</p>
-      <Button variant="outline" className="w-full mt-4 rounded-xl" onClick={() => navigate(-1)}>
-        Back
-      </Button>
+        <form onSubmit={handleDeposit} className="space-y-4 bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-5 shadow-sm">
+          <div>
+            <label className="text-sm font-semibold mb-1.5 block">Amount (Rs.)</label>
+            <div className="relative">
+              <Input
+                type="number"
+                min={MIN_AMOUNT_NPR}
+                step="1"
+                placeholder={`Min Rs. ${MIN_AMOUNT_NPR}`}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-12 rounded-xl pr-16 text-base"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded-lg">NPR</span>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-semibold mb-1.5 block">Remarks <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <Input
+              type="text"
+              placeholder="e.g. Monthly deposit"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              className="h-12 rounded-xl"
+            />
+          </div>
+          <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold" disabled={submitting}>
+            {submitting ? "Redirecting..." : "Proceed to Payment"}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">You will be redirected to NCHL ConnectIPS</p>
+        </form>
       </div>
     </div>
   );

@@ -166,63 +166,68 @@ export default function CardTopup() {
   };
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <AppBar title="Card Topup" showBack onBack={() => navigate(-1)} />
-      <div className="px-5 pt-4">
-      <p className="text-sm text-muted-foreground mb-4">Wallet balance: Rs. {walletBalance.toLocaleString()}</p>
+      <div className="px-5 pt-4 space-y-5">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Wallet Balance</p>
+          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+            Rs. {walletBalance.toLocaleString()}
+          </span>
+        </div>
 
-      {myCards.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold mb-2">Select your card</h3>
-          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
-            {myCards.map((c) => (
-              <div key={c.id} className="snap-center shrink-0">
-                <CardDisplay
-                  card={c}
-                  selected={card?.id === c.id}
-                  onSelect={() => selectMyCard(c)}
-                />
-              </div>
-            ))}
+        {myCards.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Your Cards</p>
+            <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+              {myCards.map((c) => (
+                <div key={c.id} className="snap-center shrink-0">
+                  <CardDisplay
+                    card={c}
+                    selected={card?.id === c.id}
+                    onSelect={() => selectMyCard(c)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-5 shadow-sm space-y-3">
+          <p className="text-sm font-semibold">Search by card number</p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter card number"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(e.target.value)}
+              className="flex-1 h-12 rounded-xl"
+            />
+            <Button onClick={handleSearchCard} disabled={searching} className="rounded-xl h-12 px-4">
+              <Search size={18} className="mr-1" /> {searching ? "..." : "Search"}
+            </Button>
           </div>
         </div>
-      )}
 
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold mb-2">Or search by card number</h3>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Enter card number"
-            value={cardNumber}
-            onChange={(e) => setCardNumber(e.target.value)}
-            className="flex-1 h-12 rounded-xl"
-          />
-          <Button onClick={handleSearchCard} disabled={searching} className="rounded-xl h-12 px-4">
-            <Search size={18} className="mr-1" /> {searching ? "..." : "Search"}
-          </Button>
-        </div>
-      </div>
-
-      {card && (
-        <>
-          <div className="mb-4">
-            <p className="text-xs text-muted-foreground mb-2">Selected card</p>
+        {card && (
+          <div className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-5 shadow-sm space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Selected Card</p>
             <CardDisplay card={card} selected />
-          </div>
-          <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">Amount (Rs.)</label>
-              <Input
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder="Enter amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="h-12 rounded-xl"
-              />
+              <label className="text-sm font-semibold mb-1.5 block">Amount (Rs.)</label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="Enter amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="h-12 rounded-xl pr-16"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded-lg">NPR</span>
+              </div>
               {validAmount && walletBalance < numAmount && (
-                <p className="text-xs text-muted-foreground mt-1">Insufficient wallet balance. Use Direct Pay (ConnectIPS) or recharge wallet first.</p>
+                <p className="text-xs text-muted-foreground mt-1">Insufficient wallet balance. Use ConnectIPS or recharge wallet first.</p>
               )}
               {validAmount && numAmount > 0 && numAmount < MIN_NCHL && (
                 <p className="text-xs text-muted-foreground mt-1">ConnectIPS requires minimum Rs. {MIN_NCHL}.</p>
@@ -230,11 +235,11 @@ export default function CardTopup() {
             </div>
             {canPayFromWallet && (
               <Button
-                className="w-full h-12 rounded-xl"
+                className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
                 disabled={submitting}
                 onClick={() => setConfirmOpen(true)}
               >
-                Pay from wallet
+                Pay from Wallet
               </Button>
             )}
             {canDirectPay && (
@@ -244,43 +249,41 @@ export default function CardTopup() {
                 disabled={submitting}
                 onClick={handlePayWithConnectIPS}
               >
-                {submitting ? "Redirecting..." : "Pay with ConnectIPS (Direct Pay)"}
+                {submitting ? "Redirecting..." : "Pay via ConnectIPS"}
               </Button>
             )}
             {validAmount && !canPayFromWallet && !canDirectPay && (
-              <p className="text-xs text-muted-foreground">Enter at least Rs. {MIN_NCHL} for Direct Pay, or recharge wallet to pay from wallet.</p>
+              <p className="text-xs text-muted-foreground">Enter at least Rs. {MIN_NCHL} for ConnectIPS, or recharge wallet.</p>
             )}
           </div>
-        </>
-      )}
+        )}
 
-      {!card && myCards.length === 0 && (
-        <p className="text-sm text-muted-foreground">Search a card by number to top up.</p>
-      )}
+        {!card && myCards.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">Search a card by number to top up.</p>
+        )}
 
-      {/* Confirm dialog */}
-      <div
-        className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm ${confirmOpen ? "" : "hidden"}`}
-        onClick={() => !submitting && setConfirmOpen(false)}
-      >
         <div
-          className="bg-background rounded-2xl p-6 w-full max-w-sm shadow-xl border border-border"
-          onClick={(e) => e.stopPropagation()}
+          className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm ${confirmOpen ? "" : "hidden"}`}
+          onClick={() => !submitting && setConfirmOpen(false)}
         >
-          <h3 className="font-bold text-lg mb-2">Confirm topup</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Pay Rs. {numAmount.toLocaleString()} from wallet to card?
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button className="flex-1" onClick={handleConfirmTopup} disabled={submitting}>
-              {submitting ? "Processing..." : "Pay"}
-            </Button>
+          <div
+            className="bg-background rounded-2xl p-6 w-full max-w-sm shadow-xl border border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-lg mb-2">Confirm Topup</h3>
+            <p className="text-sm text-muted-foreground mb-5">
+              Pay <strong>Rs. {numAmount.toLocaleString()}</strong> from wallet to card?
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setConfirmOpen(false)} disabled={submitting}>
+                Cancel
+              </Button>
+              <Button className="flex-1 h-11 rounded-xl" onClick={handleConfirmTopup} disabled={submitting}>
+                {submitting ? "Processing..." : "Confirm"}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </div>
   );

@@ -307,15 +307,15 @@ export default function UserBooking() {
   const toOptions = endPlaces.map((p) => ({ id: p.id, name: p.name, code: p.code }));
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <AppBar title="Book a Ride" />
       <div className="px-5 pt-4">
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-1 p-1 bg-muted/70 rounded-2xl mb-4">
         <button
           type="button"
           onClick={() => setTab("book")}
-          className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${
-            tab === "book" ? "bg-primary text-primary-foreground" : "app-surface border border-border"
+          className={`flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+            tab === "book" ? "bg-white dark:bg-card shadow-sm text-foreground" : "text-muted-foreground"
           }`}
         >
           Book
@@ -323,41 +323,53 @@ export default function UserBooking() {
         <button
           type="button"
           onClick={() => setTab("my-booking")}
-          className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${
-            tab === "my-booking" ? "bg-primary text-primary-foreground" : "app-surface border border-border"
+          className={`flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+            tab === "my-booking" ? "bg-white dark:bg-card shadow-sm text-foreground" : "text-muted-foreground"
           }`}
         >
-          My Booking
+          My Bookings
         </button>
       </div>
 
       {tab === "my-booking" && (
         <div className="space-y-3">
           {myBookingsLoading ? (
-            <p className="text-sm text-muted-foreground py-4">Loading...</p>
+            <div className="flex justify-center py-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+            </div>
           ) : myBookings.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">No bookings yet. Book a ride from the Book tab.</p>
+            <div className="text-center py-12">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                <Calendar size={24} className="text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">No bookings yet. Book a ride!</p>
+            </div>
           ) : (
             myBookings.map((b) => {
               const sd = b.schedule_details;
               return (
                 <div
                   key={b.id}
-                  className="app-surface border border-border rounded-2xl p-4 space-y-2"
+                  className={`bg-white dark:bg-card/80 rounded-2xl border border-l-4 p-4 ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-bold text-sm">PNR: {b.pnr}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {sd?.start_point_name ?? ""} → {sd?.end_point_name ?? ""} | {sd?.date ?? ""} {sd?.time ?? ""}
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-bold text-sm">PNR: {b.pnr}</p>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${b.is_paid ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+                          {b.is_paid ? "Paid" : "Unpaid"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {sd?.start_point_name ?? ""} → {sd?.end_point_name ?? ""}
                       </p>
-                      <p className="text-xs mt-1">{b.name} · Rs. {b.price}</p>
-                      <p className="text-xs text-muted-foreground">{b.is_paid ? "Paid" : "Unpaid"}</p>
+                      <p className="text-xs text-muted-foreground">{sd?.date ?? ""} {sd?.time ?? ""}</p>
+                      <p className="text-xs mt-1">{b.name} · <strong>Rs. {b.price}</strong></p>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="shrink-0"
+                      className="shrink-0 rounded-xl h-9"
                       onClick={async () => {
                         try {
                           const blob = await vehicleTicketBookingApi.getTicketPdfBlob(b.id);
@@ -385,8 +397,8 @@ export default function UserBooking() {
 
       {tab === "book" && (
         <>
-      <p className="text-sm text-muted-foreground mb-3">From & to</p>
-      <form onSubmit={handleSearch} className="space-y-3 mb-6">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Plan your journey</p>
+      <form onSubmit={handleSearch} className="space-y-3 mb-5 bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-4 shadow-sm">
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="text-xs text-muted-foreground">From</label>
@@ -442,7 +454,7 @@ export default function UserBooking() {
               type="button"
               onClick={() => setDate(todayStr())}
               className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${
-                date === todayStr() ? "bg-primary text-primary-foreground" : "app-glass border border-border"
+                date === todayStr() ? "bg-primary text-primary-foreground" : "bg-muted/50 border border-border/50"
               }`}
             >
               Today
@@ -451,7 +463,7 @@ export default function UserBooking() {
               type="button"
               onClick={() => setDate(tomorrowStr())}
               className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${
-                date === tomorrowStr() ? "bg-primary text-primary-foreground" : "app-glass border border-border"
+                date === tomorrowStr() ? "bg-primary text-primary-foreground" : "bg-muted/50 border border-border/50"
               }`}
             >
               Tomorrow
@@ -475,7 +487,7 @@ export default function UserBooking() {
       <AnimatePresence>
         {searched && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-            <h3 className="text-sm font-bold">{results.length} Vehicles Available</h3>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{results.length} vehicles available</p>
             {results.map((result) => {
               const rd = result.route_details;
               const vd = result.vehicle_details;
@@ -485,7 +497,7 @@ export default function UserBooking() {
                   key={result.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="app-surface border border-border rounded-2xl p-4 space-y-3 cursor-pointer"
+                  className="bg-white dark:bg-card/80 border border-border/50 rounded-2xl p-4 space-y-3 cursor-pointer hover:border-border hover:shadow-sm transition-all"
                   onClick={() => handleOpenDetail(result)}
                 >
                   <div className="flex items-center gap-3">

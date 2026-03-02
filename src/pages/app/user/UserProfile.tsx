@@ -10,6 +10,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import AppBar from "@/components/app/AppBar";
 
+const menuItems: { icon: typeof Edit; label: string; iconClass: string; to?: string; onClick?: string }[] = [
+  { icon: Edit, label: "Edit Profile", iconClass: "icon-violet", onClick: "edit" },
+  { icon: Lock, label: "Change Password", iconClass: "icon-amber", onClick: "password" },
+  { icon: PlusCircle, label: "Deposit", iconClass: "icon-emerald", to: "/app/user/deposit" },
+  { icon: Wallet, label: "Wallet", iconClass: "icon-blue", to: "/app/user/wallet" },
+  { icon: Send, label: "Transfer", iconClass: "icon-cyan", to: "/app/user/wallet" },
+  { icon: CreditCard, label: "Topup Card", iconClass: "icon-rose", to: "/app/user/card/topup" },
+  { icon: CreditCard, label: "Card", iconClass: "icon-indigo", to: "/app/user/card" },
+  { icon: CalendarDays, label: "My Bookings", iconClass: "icon-orange", to: "/app/user/booking" },
+  { icon: Receipt, label: "Transactions", iconClass: "icon-muted", to: "/app/user/transactions" },
+];
+
 export default function UserProfile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -20,18 +32,6 @@ export default function UserProfile() {
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
 
-  const menuItems: { icon: typeof Edit; label: string; to?: string; onClick?: () => void }[] = [
-    { icon: Edit, label: "Edit Profile", onClick: () => setShowEditModal(true) },
-    { icon: Lock, label: "Change Password", onClick: () => setShowPasswordModal(true) },
-    { icon: PlusCircle, label: "Deposit", to: "/app/user/deposit" },
-    { icon: Wallet, label: "Wallet", to: "/app/user/wallet" },
-    { icon: Send, label: "Transfer", to: "/app/user/wallet" },
-    { icon: CreditCard, label: "Topup Card", to: "/app/user/card/topup" },
-    { icon: CreditCard, label: "Card", to: "/app/user/card" },
-    { icon: CalendarDays, label: "My Bookings", to: "/app/user/booking" },
-    { icon: Receipt, label: "Transactions", to: "/app/user/transactions" },
-  ];
-
   const handleLogout = () => {
     setShowLogoutConfirm(false);
     logout();
@@ -39,85 +39,94 @@ export default function UserProfile() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <AppBar title="Profile" />
-      <div className="px-5 pt-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <div className="profile-blur-card flex flex-col items-center">
-          <div className="relative mb-3">
-            <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center backdrop-blur">
-              <User size={36} className="text-primary-foreground" />
-            </div>
-            <button type="button" className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center border-2 border-background">
-              <Camera size={12} className="text-primary-foreground" />
-            </button>
-          </div>
-          <h2 className="font-bold text-lg">{user?.name ?? (name || "Passenger")}</h2>
-          <p className="text-sm text-muted-foreground">{user?.phone ?? phone}</p>
-          <span className="mt-1 text-[10px] px-3 py-1 rounded-full bg-accent text-accent-foreground font-medium">Passenger</span>
-        </div>
-      </motion.div>
-
-      <div className="space-y-2">
-        {menuItems.map((item) => {
-          const content = (
-            <div className="flex items-center gap-3 p-3.5 app-glass-card rounded-xl border border-border/50">
-              <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
-                <item.icon size={16} className="text-accent-foreground" />
+      <div className="px-5 pt-6 pb-24">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+          <div className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-md p-6 flex flex-col items-center">
+            <div className="relative mb-3">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center shadow-lg shadow-primary/20">
+                <User size={32} className="text-primary-foreground" />
               </div>
-              <span className="flex-1 text-sm font-medium">{item.label}</span>
-              <ChevronRight size={16} className="text-muted-foreground" />
+              <button type="button" className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-sm">
+                <Camera size={12} className="text-primary-foreground" />
+              </button>
             </div>
-          );
-          if (item.to) {
-            return <Link key={item.label} to={item.to}>{content}</Link>;
-          }
-          return (
-            <button key={item.label} type="button" onClick={item.onClick} className="w-full text-left">
-              {content}
-            </button>
-          );
-        })}
-      </div>
-
-      <Button variant="outline" onClick={() => setShowLogoutConfirm(true)} className="w-full mt-6 h-12 rounded-xl text-destructive border-destructive/30">
-        <LogOut size={16} className="mr-2" /> Logout
-      </Button>
-
-      <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <DialogContent className="max-w-[340px] rounded-2xl">
-          <DialogHeader><DialogTitle>Logout</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Are you sure you want to logout?</p>
-          <div className="flex gap-2 pt-4">
-            <Button variant="outline" className="flex-1" onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
-            <Button className="flex-1 text-destructive border-destructive/30" onClick={handleLogout}>Logout</Button>
+            <h2 className="font-bold text-lg">{user?.name ?? (name || "Passenger")}</h2>
+            <p className="text-sm text-muted-foreground">{user?.phone ?? phone}</p>
+            <span className="mt-2 text-[11px] px-3 py-1 rounded-full bg-primary/10 text-primary font-semibold border border-primary/20">Passenger</span>
           </div>
-        </DialogContent>
-      </Dialog>
+        </motion.div>
 
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-[380px] rounded-2xl">
-          <DialogHeader><DialogTitle className="text-base">Edit Profile</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="h-11 rounded-xl" />
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" className="h-11 rounded-xl" />
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="h-11 rounded-xl" />
-            <Button className="w-full h-11 rounded-xl" onClick={() => { setShowEditModal(false); toast.success("Profile updated!"); }}>Save</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        <div className="space-y-2">
+          {menuItems.map((item) => {
+            const content = (
+              <div className="flex items-center gap-3 p-3.5 bg-white dark:bg-card/80 rounded-xl border border-border/50 hover:border-border hover:shadow-sm transition-all">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.iconClass}`}>
+                  <item.icon size={16} />
+                </div>
+                <span className="flex-1 text-sm font-medium">{item.label}</span>
+                <ChevronRight size={16} className="text-muted-foreground" />
+              </div>
+            );
+            if (item.to) {
+              return <Link key={item.label} to={item.to}>{content}</Link>;
+            }
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => item.onClick === "edit" ? setShowEditModal(true) : setShowPasswordModal(true)}
+                className="w-full text-left"
+              >
+                {content}
+              </button>
+            );
+          })}
+        </div>
 
-      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
-        <DialogContent className="max-w-[380px] rounded-2xl">
-          <DialogHeader><DialogTitle className="text-base">Change Password</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <PasswordInput placeholder="Current Password" className="h-11 rounded-xl" />
-            <PasswordInput placeholder="New Password" className="h-11 rounded-xl" />
-            <PasswordInput placeholder="Confirm Password" className="h-11 rounded-xl" />
-            <Button className="w-full h-11 rounded-xl" onClick={() => { setShowPasswordModal(false); toast.success("Password changed!"); }}>Update</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        <Button
+          variant="outline"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="w-full mt-6 h-12 rounded-xl text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+        >
+          <LogOut size={16} className="mr-2" /> Logout
+        </Button>
+
+        <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+          <DialogContent className="max-w-[340px] rounded-2xl">
+            <DialogHeader><DialogTitle>Logout</DialogTitle></DialogHeader>
+            <p className="text-sm text-muted-foreground">Are you sure you want to logout?</p>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
+              <Button variant="destructive" className="flex-1" onClick={handleLogout}>Logout</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="max-w-[380px] rounded-2xl">
+            <DialogHeader><DialogTitle className="text-base">Edit Profile</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="h-11 rounded-xl" />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" className="h-11 rounded-xl" />
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="h-11 rounded-xl" />
+              <Button className="w-full h-11 rounded-xl" onClick={() => { setShowEditModal(false); toast.success("Profile updated!"); }}>Save</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+          <DialogContent className="max-w-[380px] rounded-2xl">
+            <DialogHeader><DialogTitle className="text-base">Change Password</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <PasswordInput placeholder="Current Password" className="h-11 rounded-xl" />
+              <PasswordInput placeholder="New Password" className="h-11 rounded-xl" />
+              <PasswordInput placeholder="Confirm Password" className="h-11 rounded-xl" />
+              <Button className="w-full h-11 rounded-xl" onClick={() => { setShowPasswordModal(false); toast.success("Password changed!"); }}>Update</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

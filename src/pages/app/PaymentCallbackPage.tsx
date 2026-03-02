@@ -80,77 +80,77 @@ export default function PaymentCallbackPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <AppBar title="Payment" showBack onBack={handleBack} />
-      <div className="px-5 pt-4">
+      <div className="px-5 pt-6 pb-24">
         {loading && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Validating payment...</p>
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+            <p className="text-base font-semibold">Validating payment...</p>
+            <p className="text-sm text-muted-foreground mt-1">Please wait</p>
           </div>
         )}
 
         {!loading && error && (
-          <div className="app-surface rounded-2xl p-6 border border-border text-center">
-            <XCircle className="h-14 w-14 text-destructive mx-auto mb-3" />
-            <h2 className="text-lg font-bold mb-2">Payment failed</h2>
-            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <div className="rounded-2xl border border-rose-200 dark:border-rose-800 border-l-4 border-l-rose-500 bg-white dark:bg-card/80 p-6 text-center shadow-md">
+            <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
+              <XCircle className="h-9 w-9 text-rose-500" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Payment Failed</h2>
+            <p className="text-sm text-muted-foreground mb-3">{error}</p>
             {payment && (
-              <p className="text-xs text-muted-foreground mb-4">
+              <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2 mb-4 inline-block">
                 Ref: {payment.reference_id} · Rs. {payment.amount}
               </p>
             )}
-            <div className="flex flex-wrap gap-2 justify-center">
-              {returnTo === "pay_due" && (
-                <Button variant="outline" onClick={goPayDue}>
-                  Try again (Pay Due)
-                </Button>
+            <div className="flex flex-wrap gap-2 justify-center mt-2">
+              {returnTo === "pay_due" ? (
+                <Button onClick={goPayDue} className="rounded-xl h-11">Try again</Button>
+              ) : (
+                <Button onClick={goDeposit} className="rounded-xl h-11">Try again</Button>
               )}
-              {returnTo !== "pay_due" && (
-                <Button variant="outline" onClick={goDeposit}>
-                  Try again (Deposit)
-                </Button>
-              )}
-              <Button onClick={goWallet}>My Wallet</Button>
+              <Button variant="outline" onClick={goWallet} className="rounded-xl h-11">My Wallet</Button>
             </div>
           </div>
         )}
 
         {!loading && !error && payment && (
-          <div className="app-surface rounded-2xl p-6 border border-border text-center">
-            <CheckCircle className="h-14 w-14 text-green-600 dark:text-green-400 mx-auto mb-3" />
-            <h2 className="text-lg font-bold mb-2">Payment successful</h2>
-            <p className="text-sm text-muted-foreground mb-1">
-              Amount: Rs. {Number(payment.amount).toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              Ref: {payment.reference_id}
-            </p>
+          <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800 border-l-4 border-l-emerald-500 bg-white dark:bg-card/80 p-6 text-center shadow-md">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-9 w-9 text-emerald-500" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Payment Successful!</h2>
+            <div className="bg-muted rounded-xl px-4 py-3 mb-4 text-left space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">Amount</span>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Rs. {Number(payment.amount).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">Reference</span>
+                <span className="text-xs font-medium">{payment.reference_id}</span>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2 justify-center">
-              <Button onClick={goWallet}>My Wallet</Button>
+              <Button onClick={goWallet} className="rounded-xl h-11">My Wallet</Button>
               {(returnTo === "pay_due" || payment.purpose === "pay_due") && (
-                <Button variant="outline" onClick={goPayDue}>
-                  Back to Pay Due
-                </Button>
+                <Button variant="outline" onClick={goPayDue} className="rounded-xl h-11">Pay Due</Button>
               )}
               {(returnTo === "card_topup" || payment.purpose === "card_topup") && (
-                <Button variant="outline" onClick={goCard}>
-                  My Card
-                </Button>
+                <Button variant="outline" onClick={goCard} className="rounded-xl h-11">My Card</Button>
               )}
               {(returnTo === "booking" || payment.purpose === "vehicle_ticket_booking") && (
-                <Button variant="outline" onClick={goBooking}>
-                  My Booking
-                </Button>
+                <Button variant="outline" onClick={goBooking} className="rounded-xl h-11">My Booking</Button>
               )}
             </div>
           </div>
         )}
 
         {!loading && !txnId && (
-          <div className="app-surface rounded-2xl p-6 border border-border text-center">
-            <p className="text-muted-foreground mb-4">No transaction ID in URL.</p>
-            <Button onClick={goWallet}>My Wallet</Button>
+          <div className="rounded-2xl bg-white dark:bg-card/80 border border-border/50 p-6 text-center shadow-sm">
+            <p className="text-muted-foreground mb-4">No transaction ID found.</p>
+            <Button onClick={goWallet} className="rounded-xl h-11">My Wallet</Button>
           </div>
         )}
       </div>

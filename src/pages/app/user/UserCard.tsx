@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CreditCard, Plus } from "lucide-react";
+import { CreditCard, PlusCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cardApi } from "@/modules/cards/services/cardApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -29,7 +29,7 @@ export default function UserCard() {
           const txRes = await transactionApi.list({ card: card.id, per_page: 10 });
           allTx.push(...txRes.results.map(transactionToAppTransaction));
         }
-        allTx.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        allTx.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setCardTransactions(allTx.slice(0, 20));
       } catch {
         setCards([]);
@@ -40,52 +40,76 @@ export default function UserCard() {
   }, [user?.id]);
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <AppBar title="My Card" />
-      <div className="px-5 pt-4">
-        <h2 className="text-lg font-bold mb-4">My Card</h2>
+      <div className="px-5 pt-4 space-y-5">
         {cards.length > 0 ? (
           <div className="space-y-4">
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-              {cards.map((card) => (
-                <motion.div
-                  key={card.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="gradient-primary rounded-2xl p-5 min-w-[280px] snap-center text-primary-foreground shadow-lg"
-                >
-                  <CreditCard size={24} className="mb-4 opacity-80" />
-                  <p className="text-sm opacity-80">Card number</p>
-                  <p className="font-mono text-lg font-bold tracking-wider">{card.card_number}</p>
-                  <p className="mt-4 text-sm opacity-80">Balance</p>
-                  <p className="text-xl font-bold">Rs. {card.balance.toLocaleString()}</p>
-                </motion.div>
-              ))}
+              {cards.map((card) => {
+                const last4 = card.card_number.slice(-4);
+                const masked = card.card_number.length > 4 ? "•••• •••• •••• " + last4 : card.card_number;
+                return (
+                  <motion.div
+                    key={card.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-gradient-to-br from-primary via-primary/80 to-emerald-600 rounded-2xl p-5 min-w-[280px] snap-center text-primary-foreground shadow-xl shadow-primary/20 flex flex-col gap-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <CreditCard size={26} className="opacity-90" />
+                      <span className="text-xs font-semibold opacity-80 bg-white/20 px-2 py-1 rounded-lg">NFC</span>
+                    </div>
+                    <div className="mt-2">
+                      <p className="font-mono text-sm tracking-[0.25em] opacity-90">{masked}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs opacity-70 mb-0.5">Balance</p>
+                      <p className="text-2xl font-bold">Rs. {card.balance.toLocaleString()}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
-            <Button
-              className="w-full h-12 rounded-xl font-semibold"
+            <button
+              type="button"
               onClick={() => navigate("/app/user/card/topup")}
+              className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold text-sm hover:bg-emerald-500/20 transition-colors"
             >
-              <Plus size={18} className="mr-2" /> Topup
-            </Button>
+              <PlusCircle size={18} /> Topup Card
+            </button>
           </div>
         ) : (
-          <div className="app-surface rounded-2xl p-8 border border-border text-center">
-            <CreditCard size={48} className="mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No cards linked yet</p>
+          <div className="rounded-2xl bg-white dark:bg-card/80 border border-border/50 p-10 text-center shadow-sm">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <CreditCard size={28} className="text-muted-foreground" />
+            </div>
+            <p className="font-semibold mb-1">No cards linked</p>
+            <p className="text-sm text-muted-foreground">Your NFC cards will appear here</p>
           </div>
         )}
-        <div className="mt-6">
-          <h3 className="font-bold text-sm mb-3">Card transaction history</h3>
-          <div className="space-y-2">
-            {cardTransactions.map((t) => (
-              <TransactionCard key={t.id} transaction={t} />
-            ))}
-            {cardTransactions.length === 0 && cards.length > 0 && (
-              <p className="text-sm text-muted-foreground py-4">No card transactions yet</p>
-            )}
+
+        {(cards.length > 0 || cardTransactions.length > 0) && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Card Transactions</p>
+            <div className="space-y-2">
+              {cardTransactions.map((t) => (
+                <div key={t.id} className="bg-white dark:bg-card/80 rounded-xl p-3 border border-border/50">
+                  <TransactionCard transaction={t} />
+                </div>
+              ))}
+              {cardTransactions.length === 0 && (
+                <p className="text-sm text-muted-foreground py-4 text-center">No card transactions yet</p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {cards.length === 0 && (
+          <Button className="w-full h-12 rounded-xl" onClick={() => navigate("/app/user/card/topup")}>
+            <PlusCircle size={18} className="mr-2" /> Topup Card by Number
+          </Button>
+        )}
       </div>
     </div>
   );

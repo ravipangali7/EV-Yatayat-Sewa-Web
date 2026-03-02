@@ -75,72 +75,84 @@ export default function AppTransactions() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <AppBar title="Transactions" showBack />
       <div className="px-5 pt-4 pb-24">
         <div className="space-y-3 mb-4">
           <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder="Search transactions..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-11 rounded-xl border-border/50"
+              className="pl-9 h-11 rounded-xl bg-white dark:bg-card/80 border-border/50"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Date:</span>
             {(["7", "30", "custom", "all"] as const).map((preset) => (
-              <Button
+              <button
                 key={preset}
                 type="button"
-                variant={datePreset === preset ? "default" : "outline"}
-                size="sm"
-                className="rounded-xl h-8"
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  datePreset === preset
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
+                }`}
                 onClick={() => setDatePreset(preset)}
               >
-                {preset === "7" ? "7 days" : preset === "30" ? "30 days" : preset === "custom" ? "Custom" : "All"}
-              </Button>
+                {preset === "7" ? "7 days" : preset === "30" ? "30 days" : preset === "custom" ? "Custom" : "All time"}
+              </button>
             ))}
             {datePreset === "custom" && (
-              <div className="flex items-center gap-1">
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-32 h-8 text-xs rounded-lg" />
+              <div className="flex items-center gap-1 w-full">
+                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1 h-8 text-xs rounded-lg" />
                 <span className="text-muted-foreground">–</span>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-32 h-8 text-xs rounded-lg" />
+                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1 h-8 text-xs rounded-lg" />
               </div>
             )}
           </div>
         </div>
 
         {loading ? (
-          <p className="text-sm text-muted-foreground py-8">Loading...</p>
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+          </div>
         ) : transactions.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8">No transactions found.</p>
+          <div className="text-center py-12">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+              <Receipt size={24} className="text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">No transactions found</p>
+          </div>
         ) : (
           <div className="space-y-2">
-            {transactions.map((t) => (
-              <Link key={t.id} to={`${basePath}/transactions/${t.id}`} className="block">
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="app-glass-card rounded-xl p-4 border border-border/50 flex items-center gap-3"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shrink-0">
-                    <Receipt size={20} className="text-accent-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{t.remarks ?? (t.type === "add" ? "Credit" : "Debit")}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.type === "add" ? "+" : "-"} Rs. {Number(t.amount).toLocaleString()} · {formatDate(t.created_at)}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Status: {t.status} · Balance after: Rs. {Number(t.balance_after).toLocaleString()}
-                    </p>
-                  </div>
-                  <ChevronRight size={18} className="text-muted-foreground shrink-0" />
-                </motion.div>
-              </Link>
-            ))}
+            {transactions.map((t) => {
+              const isCredit = t.type === "add";
+              return (
+                <Link key={t.id} to={`${basePath}/transactions/${t.id}`} className="block">
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white dark:bg-card/80 rounded-xl p-3.5 border border-border/50 hover:border-border hover:shadow-sm transition-all flex items-center gap-3"
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isCredit ? "icon-emerald" : "icon-rose"}`}>
+                      <Receipt size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{t.remarks ?? (isCredit ? "Credit" : "Debit")}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(t.created_at)}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`text-sm font-bold ${isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                        {isCredit ? "+" : "-"}Rs. {Number(t.amount).toLocaleString()}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">{t.status}</p>
+                    </div>
+                    <ChevronRight size={14} className="text-muted-foreground shrink-0" />
+                  </motion.div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

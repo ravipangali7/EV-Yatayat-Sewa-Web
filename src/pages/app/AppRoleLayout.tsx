@@ -1,6 +1,5 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWalkieTalkie } from "@/contexts/WalkieTalkieContext";
 import AppLayout from "@/components/app/AppLayout";
 import BottomNav from "@/components/app/BottomNav";
 import {
@@ -35,7 +34,6 @@ interface PaymentCallbackState {
 
 export default function AppRoleLayout({ role }: AppRoleLayoutProps) {
   const { user } = useAuth();
-  const { groups } = useWalkieTalkie();
   const navigate = useNavigate();
   const location = useLocation();
   const config = getAppRoleConfig(role);
@@ -44,10 +42,7 @@ export default function AppRoleLayout({ role }: AppRoleLayoutProps) {
 
   const userAppRole = resolveAppRole(user);
   const isWrongRole = userAppRole !== null && userAppRole !== role;
-  const canUseWalkieTalkie = !!user?.is_driver || groups.length > 0;
-  const visibleNavItems = config.navItems.filter(
-    (item) => item.path !== "walkietalkie" || canUseWalkieTalkie
-  );
+  const visibleNavItems = config.navItems;
 
   useEffect(() => {
     if (isWrongRole && userAppRole) {

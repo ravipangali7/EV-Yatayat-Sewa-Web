@@ -87,40 +87,44 @@ export default function UserHome() {
   }, [refreshWallet]);
 
   return (
-    <div className="min-h-screen">
-      <div className="gradient-primary pt-6 pb-8 px-5 rounded-b-[2rem]">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-background">
+      {/* White header with green accent - modern */}
+      <div className="bg-white dark:bg-card border-b border-border shadow-sm">
+        <div className="px-5 pt-5 pb-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-5">
             <div>
-              <p className="text-primary-foreground/80 text-xs">Welcome back</p>
-              <h2 className="text-lg font-bold text-primary-foreground">{user?.name ?? "Passenger"}</h2>
+              <p className="text-muted-foreground text-xs font-medium">Welcome back</p>
+              <h2 className="text-xl font-bold text-foreground tracking-tight">{user?.name ?? "Passenger"}</h2>
             </div>
-            <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">{user?.name?.charAt(0) ?? "P"}</span>
+            <div className="w-11 h-11 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center ring-2 ring-primary/5">
+              <span className="text-sm font-bold text-primary">{user?.name?.charAt(0) ?? "P"}</span>
             </div>
-          </div>
-          <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} />
-        </motion.div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl overflow-hidden border border-border/60 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 border-l-4 border-l-primary">
+            <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink={`${basePath}/deposit`} />
+          </motion.div>
+        </div>
       </div>
 
-      <div className="px-5 pt-5 pb-24 space-y-5">
+      <div className="px-5 pt-5 pb-24 space-y-5 bg-background">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</p>
         <div className="grid grid-cols-4 gap-3">
           {gridCards.map((item) => {
             const Icon = item.icon;
             const key = "to" in item ? item.to + item.label : item.label;
-            const iconClass = "gradient" in item && item.gradient ? "gradient-primary text-primary-foreground" : "bg-accent text-accent-foreground";
+            const iconClass = "gradient" in item && item.gradient ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" : "bg-primary/10 text-primary";
             if ("action" in item && item.action === "transfer") {
               return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setShowTransferModal(true)}
-                  className="app-glass-card flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md transition-shadow"
+                  className="bg-white dark:bg-card/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md hover:border-primary/20 transition-all"
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
                     <Icon size={20} />
                   </div>
-                  <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
+                  <span className="text-[11px] font-medium text-center leading-tight text-foreground">{item.label}</span>
                 </button>
               );
             }
@@ -129,12 +133,12 @@ export default function UserHome() {
               <Link
                 key={key}
                 to={to}
-                className="app-glass-card flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-card/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md hover:border-primary/20 transition-all"
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
                   <Icon size={20} />
                 </div>
-                <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
+                <span className="text-[11px] font-medium text-center leading-tight text-foreground">{item.label}</span>
               </Link>
             );
           })}
@@ -147,12 +151,12 @@ export default function UserHome() {
         />
 
         <div>
-          <div className="flex gap-2 mb-3">
+          <div className="flex gap-2 mb-3 p-1 rounded-xl bg-muted/30 border border-border/50">
             <button
               type="button"
               onClick={() => setHomeTab("bookings")}
-              className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${
-                homeTab === "bookings" ? "bg-primary text-primary-foreground" : "app-glass border border-border"
+              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                homeTab === "bookings" ? "bg-white dark:bg-card shadow-sm text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               My Bookings
@@ -160,8 +164,8 @@ export default function UserHome() {
             <button
               type="button"
               onClick={() => setHomeTab("transactions")}
-              className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${
-                homeTab === "transactions" ? "bg-primary text-primary-foreground" : "app-glass border border-border"
+              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                homeTab === "transactions" ? "bg-white dark:bg-card shadow-sm text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Transactions
@@ -178,7 +182,7 @@ export default function UserHome() {
                     <Link
                       key={b.id}
                       to={`${basePath}/booking`}
-                      className="block app-glass-card rounded-2xl p-4 border border-border/50"
+                      className="block bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl p-4 border border-border/50 hover:border-primary/20 transition-colors"
                     >
                       <p className="font-bold text-sm">PNR: {b.pnr}</p>
                       <p className="text-xs text-muted-foreground">
@@ -197,7 +201,9 @@ export default function UserHome() {
                 <p className="text-sm text-muted-foreground py-4">No transactions yet</p>
               ) : (
                 transactions.slice(0, 10).map((t) => (
-                  <TransactionCard key={t.id} transaction={t} />
+                  <div key={t.id} className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-xl p-3 border border-border/50">
+                    <TransactionCard transaction={t} />
+                  </div>
                 ))
               )}
             </div>

@@ -50,46 +50,53 @@ export default function AppResetPassword() {
   if (resetToken === null) {
     return (
       <AppLayout>
-        <div className="min-h-screen flex items-center justify-center">Loading...</div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+        </div>
       </AppLayout>
     );
   }
 
   return (
     <AppLayout>
-      <div className="min-h-screen flex flex-col px-6">
-        <div className="pt-12 pb-6">
-          <Link to="/app/login" className="inline-flex items-center gap-1 text-sm text-muted-foreground mb-6">
-            <ArrowLeft size={16} /> Back to Login
-          </Link>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center mb-4">
-              <ShieldCheck size={24} className="text-accent-foreground" />
+      <div className="min-h-screen flex flex-col bg-background">
+        <div className="bg-gradient-to-br from-primary via-primary/90 to-emerald-600 pt-14 pb-12 px-6 rounded-b-3xl shadow-xl shadow-primary/20">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
+              <ShieldCheck size={22} className="text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-bold">Reset Password</h1>
-            <p className="text-sm text-muted-foreground mt-1">Create a new secure password</p>
+            <h1 className="text-xl font-bold text-primary-foreground">Reset Password</h1>
+            <p className="text-primary-foreground/75 text-xs mt-1">Set your new secure password</p>
           </motion.div>
         </div>
 
-        <form onSubmit={handleReset} className="space-y-4">
-          <PasswordInput
-            leftIcon={<Lock size={16} />}
-            placeholder="New Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="h-12 rounded-xl"
-          />
-          <PasswordInput
-            leftIcon={<Lock size={16} />}
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="h-12 rounded-xl"
-          />
-          <Button type="submit" className="w-full h-12 rounded-xl font-semibold" disabled={isLoading}>
-            {isLoading ? "Resetting..." : "Reset Password"}
-          </Button>
-        </form>
+        <div className="flex-1 px-6 pt-8">
+          <div className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl shadow-black/5 p-6 mb-5">
+            <form onSubmit={handleReset} className="space-y-4">
+              <PasswordInput
+                leftIcon={<Lock size={16} />}
+                placeholder="New Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-12 rounded-xl"
+              />
+              <PasswordInput
+                leftIcon={<Lock size={16} />}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="h-12 rounded-xl"
+              />
+              <Button type="submit" className="w-full h-12 rounded-xl font-semibold" disabled={isLoading}>
+                {isLoading ? "Resetting..." : "Reset Password"}
+              </Button>
+            </form>
+          </div>
+
+          <Link to="/app/login" className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+            <ArrowLeft size={14} /> Back to Login
+          </Link>
+        </div>
       </div>
     </AppLayout>
   );

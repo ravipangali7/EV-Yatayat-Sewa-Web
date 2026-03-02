@@ -17,29 +17,29 @@ const TransactionCard = ({ transaction }: TransactionCardProps) => {
   const isCredit = transaction.type === "credit";
 
   return (
-    <div className="flex items-center gap-3 p-3 app-surface rounded-xl">
+    <div className="flex items-center gap-3">
       <div
-        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-          isCredit ? "bg-accent" : "bg-destructive/10"
+        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+          isCredit ? "icon-emerald" : "icon-rose"
         }`}
       >
         {isCredit ? (
-          <ArrowDownLeft size={18} className="text-accent-foreground" />
+          <ArrowDownLeft size={16} />
         ) : (
-          <ArrowUpRight size={18} className="text-destructive" />
+          <ArrowUpRight size={16} />
         )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold truncate">{transaction.title}</p>
-        <p className="text-xs text-muted-foreground">{transaction.subtitle}</p>
+        <p className="text-xs text-muted-foreground truncate">{transaction.subtitle}</p>
       </div>
-      <div className="text-right">
+      <div className="text-right shrink-0">
         <p
           className={`text-sm font-bold ${
-            isCredit ? "text-primary" : "text-destructive"
+            isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
           }`}
         >
-          {isCredit ? "+" : "-"} Rs. {transaction.amount}
+          {isCredit ? "+" : "-"} Rs. {transaction.amount.toLocaleString()}
         </p>
         <p className="text-[10px] text-muted-foreground">{transaction.date}</p>
       </div>

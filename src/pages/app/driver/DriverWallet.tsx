@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Send, Receipt } from "lucide-react";
+import { Send, Receipt, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
 import TransferModal from "@/components/app/TransferModal";
 import AppBar from "@/components/app/AppBar";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -44,53 +43,64 @@ export default function DriverWallet() {
   }, [refreshWallet]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <AppBar title="Wallet" />
-      <div className="px-5 pt-4 pb-24">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="app-glass-card rounded-2xl p-5 border border-border/50 mb-6">
-        <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" />
-        <div className="mt-4 flex gap-2">
+      <div className="px-5 pt-4 pb-24 space-y-5">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl overflow-hidden border border-border/60 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 border-l-4 border-l-primary"
+        >
+          <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" />
+        </motion.div>
+
+        <div className="flex gap-3">
           {toPay > 0 && (
-            <Button asChild variant="default" size="sm" className="flex-1 rounded-xl">
-              <Link to="/app/driver/pay-due">
-                <Receipt size={16} className="mr-2" />
-                Pay Due
-              </Link>
-            </Button>
+            <Link
+              to="/app/driver/pay-due"
+              className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-semibold text-sm hover:bg-rose-500/20 transition-colors"
+            >
+              <Receipt size={16} />
+              Pay Due
+            </Link>
           )}
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            className={toPay > 0 ? "flex-1 rounded-xl" : "w-full rounded-xl"}
             onClick={() => setShowTransferModal(true)}
+            className={`${toPay > 0 ? "flex-1" : "w-full"} flex items-center justify-center gap-2 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-semibold text-sm hover:bg-blue-500/20 transition-colors`}
           >
-            <Send size={16} className="mr-2" />
+            <Send size={16} />
             Transfer
-          </Button>
+          </button>
         </div>
-      </motion.div>
 
-      <TransferModal
-        open={showTransferModal}
-        onClose={() => setShowTransferModal(false)}
-        onSuccess={refreshWallet}
-        currentUserId={user?.id}
-      />
+        <TransferModal
+          open={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+          onSuccess={refreshWallet}
+          currentUserId={user?.id}
+        />
 
-      <div className="mt-6">
-        <h3 className="font-bold text-sm mb-3">Transaction History</h3>
-        <div className="space-y-2">
-          {transactions.map((t) => (
-            <div key={t.id} className="app-glass-card rounded-xl p-3 border border-border/50">
-              <TransactionCard transaction={t} />
-            </div>
-          ))}
-          {transactions.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4">No transactions yet</p>
-          )}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transaction History</p>
+            <Link to="/app/driver/transactions" className="flex items-center gap-1 text-xs text-primary font-medium">
+              View all <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {transactions.map((t) => (
+              <div key={t.id} className="bg-white dark:bg-card/80 rounded-xl p-3 border border-border/50">
+                <TransactionCard transaction={t} />
+              </div>
+            ))}
+            {transactions.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">No transactions yet</p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );

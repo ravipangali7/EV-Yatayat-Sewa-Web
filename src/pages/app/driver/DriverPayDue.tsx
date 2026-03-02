@@ -75,43 +75,42 @@ export default function DriverPayDue() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <AppBar title="Pay Due" showBack />
       <div className="px-5 pt-6 pb-24">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="app-glass-card rounded-2xl p-6 border border-border/50 mb-6"
+          className="rounded-2xl border border-rose-200 dark:border-rose-800 border-l-4 border-l-rose-500 bg-rose-50/50 dark:bg-rose-950/10 p-6 mb-6"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center">
-              <Receipt size={24} className="text-accent-foreground" />
+            <div className="w-12 h-12 rounded-xl icon-rose flex items-center justify-center">
+              <Receipt size={22} />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Amount due</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outstanding Due</p>
               {loading ? (
-                <p className="text-xl font-bold">...</p>
+                <p className="text-2xl font-bold">...</p>
               ) : (
-                <p className="text-2xl font-bold">Rs. {toPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                <p className="text-3xl font-bold text-rose-600 dark:text-rose-400">Rs. {toPay.toLocaleString()}</p>
               )}
             </div>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Pay your dues via NCHL ConnectIPS. On success, the amount will be deducted from your due balance.
+          <p className="text-sm text-muted-foreground mb-5">
+            Pay your outstanding dues via NCHL ConnectIPS. The amount will be deducted from your due balance upon success.
           </p>
           {toPay >= MIN_AMOUNT_NPR ? (
             <Button
               type="button"
-              className="w-full rounded-xl"
-              size="lg"
+              className="w-full h-12 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-base font-semibold"
               disabled={submitting || loading}
               onClick={handlePay}
             >
               <CreditCard size={18} className="mr-2" />
-              {submitting ? "Redirecting to payment..." : "Pay"}
+              {submitting ? "Redirecting..." : "Pay Now"}
             </Button>
           ) : (
-            <Button asChild variant="outline" className="w-full rounded-xl" size="lg">
+            <Button asChild variant="outline" className="w-full h-12 rounded-xl" size="lg">
               <Link to="/app/driver/wallet">Go to Wallet</Link>
             </Button>
           )}

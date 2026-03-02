@@ -243,10 +243,10 @@ export function WalkieTalkieDrawer() {
 
         {/* Voice messages - compact so 5-10 visible at once */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2 shrink-0">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0">
             Voice messages
           </p>
-          <div className="flex-1 overflow-auto px-3 pb-2 space-y-1.5 min-h-0">
+          <div className="flex-1 overflow-auto px-2 pb-2 space-y-1 min-h-0">
             {displayRecordings.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-6 text-center">
                 <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-3 mb-2">
@@ -276,10 +276,10 @@ export function WalkieTalkieDrawer() {
           </div>
         </div>
 
-        {/* PTT area - Hold to talk is primary; no floating FAB when drawer open */}
-        <div className="shrink-0 p-4 pt-3 bg-gradient-to-t from-slate-100 to-transparent dark:from-slate-900/80">
+        {/* PTT area - small Hold to talk button */}
+        <div className="shrink-0 p-3 pt-2 bg-gradient-to-t from-slate-100 to-transparent dark:from-slate-900/80">
           {speakingUser && (
-            <div className="flex items-center gap-2 mb-2 px-2.5 py-1.5 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+            <div className="flex items-center gap-2 mb-1.5 px-2 py-1 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
               <span className="text-xs font-medium">
                 {speakingUser.name || `User ${speakingUser.userId}`} is speaking…
@@ -290,22 +290,22 @@ export function WalkieTalkieDrawer() {
             ref={pttButtonRef}
             type="button"
             aria-disabled={!isConnected || !selectedGroupId}
-            className={`w-full touch-manipulation select-none rounded-2xl py-4 flex flex-col items-center justify-center gap-1.5 transition-all shadow-lg border-2 border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] outline-none ${!isConnected || !selectedGroupId ? "opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800" : "cursor-pointer"}`}
+            className={`w-full touch-manipulation select-none rounded-xl py-2.5 flex flex-row items-center justify-center gap-2 transition-all shadow border border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] outline-none ${!isConnected || !selectedGroupId ? "opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800" : "cursor-pointer"}`}
             style={{ touchAction: "none" }}
             onMouseDown={() => isConnected && selectedGroupId && pttStart(selectedGroupId)}
             onMouseUp={() => selectedGroupId && pttEnd(selectedGroupId)}
             onMouseLeave={() => selectedGroupId && pttEnd(selectedGroupId)}
           >
             <span
-              className={`flex h-12 w-12 items-center justify-center rounded-full bg-white/20 transition-transform ${
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 transition-transform ${
                 pttActive ? "scale-110" : ""
               }`}
             >
-              <Mic className="h-6 w-6" />
+              <Mic className="h-4 w-4" />
             </span>
-            <span className="text-sm font-semibold">{pttActive ? "Speaking…" : "Hold to talk"}</span>
+            <span className="text-xs font-semibold">{pttActive ? "Speaking…" : "Hold to talk"}</span>
             {(selectedGroup || selectedDriver) && (
-              <span className="text-xs opacity-90">
+              <span className="text-[10px] opacity-90 truncate max-w-[100px]">
                 in {selectedGroup?.name ?? selectedDriver?.name ?? "channel"}
               </span>
             )}
@@ -357,38 +357,38 @@ function VoiceMessageRow({
   const progressPercent = displayDuration > 0 ? (displayCurrent / displayDuration) * 100 : 0;
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-card p-2 shadow-sm hover:shadow transition-shadow">
-      <Avatar className="h-8 w-8 shrink-0 ring-1 ring-slate-100 dark:ring-slate-800">
+    <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-card py-1.5 px-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+      <Avatar className="h-7 w-7 shrink-0">
         {rec.user_avatar ? (
           <AvatarImage src={rec.user_avatar} alt={name} />
         ) : null}
-        <AvatarFallback className="text-[10px] font-medium bg-primary/10 text-primary">
+        <AvatarFallback className="text-[9px] font-medium bg-primary/10 text-primary">
           {initials}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-1">
-          <p className="text-xs font-semibold truncate text-foreground">{name}</p>
-          <span className="text-[10px] text-muted-foreground shrink-0">
-            {format(new Date(rec.started_at), "MMM d, HH:mm")}
+        <div className="flex items-center justify-between gap-1 mb-0.5">
+          <p className="text-[11px] font-semibold truncate text-foreground leading-tight">{name}</p>
+          <span className="text-[9px] text-muted-foreground shrink-0">
+            {format(new Date(rec.started_at), "d MMM HH:mm")}
           </span>
         </div>
-        <div className="flex items-center gap-2 mt-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 py-1.5 px-2">
+        <div className="flex items-center gap-1.5 rounded bg-slate-100 dark:bg-slate-800/80 py-1 px-1.5">
           <button
             type="button"
-            className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             onClick={isPlaying ? onPause : onPlay}
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {isPlaying ? (
-              <Pause className="h-3 w-3" />
+              <Pause className="h-2.5 w-2.5" />
             ) : (
-              <Play className="h-3 w-3 ml-0.5" />
+              <Play className="h-2.5 w-2.5 ml-0.5" />
             )}
           </button>
-          <div className="flex-1 min-w-0 min-h-[6px]">
+          <div className="flex-1 min-w-0">
             <div
-              className="h-1 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
+              className="h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
               role="progressbar"
               aria-valuenow={isActive ? displayCurrent : undefined}
               aria-valuemin={0}
@@ -400,7 +400,7 @@ function VoiceMessageRow({
               />
             </div>
           </div>
-          <span className="text-[10px] font-medium tabular-nums text-muted-foreground shrink-0 w-9 text-right">
+          <span className="text-[9px] font-medium tabular-nums text-muted-foreground shrink-0 w-8 text-right">
             {isActive
               ? `${formatTime(displayCurrent)}/${formatTime(displayDuration)}`
               : formatTime(displayDuration)}

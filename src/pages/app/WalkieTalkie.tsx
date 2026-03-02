@@ -157,32 +157,44 @@ export default function WalkieTalkie() {
   }
 
   return (
-    <div className="min-h-screen pb-28">
-      {/* Header */}
-      <div className="bg-gradient-to-b from-primary to-primary/90 text-primary-foreground pt-6 pb-10 px-5 rounded-b-[2rem] shadow-lg">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-            <Radio className="h-7 w-7" />
+    <div className="min-h-screen bg-background pb-28">
+      <div className="bg-gradient-to-b from-primary to-primary/90 text-primary-foreground pt-safe-top pt-6 pb-8 px-5 rounded-b-3xl shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20">
+              <Radio className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Walkie-Talkie</h1>
+              <p className="text-primary-foreground/80 text-xs">Push to talk</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">Walkie-Talkie</h1>
-            <p className="text-primary-foreground/85 text-sm">Push to talk in your channels</p>
-          </div>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+              isConnected
+                ? "bg-emerald-500/20 text-emerald-100"
+                : status === "error"
+                  ? "bg-red-500/20 text-red-100"
+                  : "bg-white/20 text-primary-foreground/80"
+            }`}
+          >
+            <StatusIcon className="h-3 w-3" />
+            {isConnected ? "Live" : status === "error" ? "Error" : "Offline"}
+          </span>
         </div>
       </div>
 
-      <div className="px-5 -mt-6 space-y-5">
+      <div className="px-5 pt-5 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
         ) : (
           <>
-            {/* Channel card */}
-            <div className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-              <label className="text-sm font-semibold text-foreground block mb-3">Channel</label>
+            <div className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 shadow-sm p-4">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2">Channel</label>
               <select
-                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="w-full rounded-xl border border-input bg-background px-4 h-11 text-sm font-medium focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 value={selectedGroupId}
                 onChange={(e) => setSelectedGroupId(e.target.value)}
                 disabled={isConnected}
@@ -196,65 +208,46 @@ export default function WalkieTalkie() {
               </select>
             </div>
 
-            {/* Status card */}
-            <div className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 flex items-center justify-between">
-              <span className="text-sm font-semibold text-foreground">Status</span>
-              <span
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${
-                  isConnected
-                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                    : status === "error"
-                      ? "bg-red-500/15 text-red-600 dark:text-red-400"
-                      : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
-                }`}
-              >
-                <StatusIcon className="h-4 w-4" />
-                {isConnected ? "Live" : status === "error" ? statusMessage || "Error" : "Offline"}
-              </span>
-            </div>
-
-            {/* Connect / Disconnect */}
             <div className="flex gap-3">
               {!isConnected ? (
                 <button
                   type="button"
                   onClick={handleConnect}
                   disabled={groups.length === 0 || !token}
-                  className="flex-1 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/25 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                  className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                 >
-                  <Wifi className="h-5 w-5" />
+                  <Wifi className="h-4 w-4" />
                   Connect
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleDisconnect}
-                  className="flex-1 py-4 rounded-2xl border-2 border-input bg-card font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center justify-center gap-2"
+                  className="flex-1 h-12 rounded-xl border border-border bg-white dark:bg-card font-semibold hover:bg-muted flex items-center justify-center gap-2 text-sm"
                 >
-                  <WifiOff className="h-5 w-5" />
+                  <WifiOff className="h-4 w-4" />
                   Disconnect
                 </button>
               )}
             </div>
 
-            {/* PTT area */}
             {isConnected && (
-              <div className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center">
-                <p className="text-sm text-muted-foreground mb-6 text-center">
-                  Hold to talk in <strong className="text-foreground">{selectedGroup?.name ?? "channel"}</strong>
+              <div className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 shadow-sm p-6 flex flex-col items-center">
+                <p className="text-sm text-muted-foreground mb-5 text-center">
+                  Talking in <strong className="text-foreground">{selectedGroup?.name ?? "channel"}</strong>
                 </p>
                 <button
                   ref={pttButtonRef}
                   type="button"
-                  className="h-28 w-28 rounded-full bg-primary text-primary-foreground flex items-center justify-center touch-manipulation select-none shadow-xl shadow-primary/30 hover:shadow-2xl active:scale-95 transition-transform outline-none"
+                  className={`h-24 w-24 rounded-full flex items-center justify-center touch-manipulation select-none shadow-lg active:scale-95 transition-all outline-none ${pttActive ? "bg-rose-500 shadow-rose-500/30 scale-105" : "bg-primary shadow-primary/25"} text-primary-foreground`}
                   style={{ touchAction: "none" }}
                   onMouseDown={handlePttDown}
                   onMouseUp={handlePttUp}
                   onMouseLeave={handlePttUp}
                 >
-                  <Mic className={`h-12 w-12 ${pttActive ? "scale-110" : ""} transition-transform`} />
+                  <Mic className={`h-9 w-9 ${pttActive ? "scale-110" : ""} transition-transform`} />
                 </button>
-                <span className="text-sm font-medium text-muted-foreground mt-4">
+                <span className="text-sm font-semibold mt-4 text-foreground">
                   {pttActive ? "Speaking…" : "Hold to talk"}
                 </span>
               </div>

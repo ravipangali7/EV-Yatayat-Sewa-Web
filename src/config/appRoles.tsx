@@ -63,7 +63,6 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     navItems: [
       { label: "Home", path: "home", icon: "home" },
       { label: "Vehicle", path: "vehicle", icon: "car" },
-      { label: "Walkie-Talkie", path: "walkietalkie", icon: "radio" },
       { label: "Wallet", path: "wallet", icon: "wallet" },
       { label: "Profile", path: "profile", icon: "user" },
     ],
@@ -89,7 +88,6 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     navItems: [
       { label: "Home", path: "home", icon: "home" },
       { label: "Booking", path: "booking", icon: "calendar" },
-      { label: "Walkie-Talkie", path: "walkietalkie", icon: "radio" },
       { label: "Wallet", path: "wallet", icon: "wallet" },
       { label: "Card", path: "card", icon: "card" },
       { label: "Profile", path: "profile", icon: "user" },
@@ -113,7 +111,6 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     navItems: [
       { label: "Home", path: "home", icon: "home" },
       { label: "Book", path: "booking", icon: "calendar" },
-      { label: "Walkie-Talkie", path: "walkietalkie", icon: "radio" },
       { label: "Wallet", path: "wallet", icon: "wallet" },
       { label: "Profile", path: "profile", icon: "user" },
     ],
