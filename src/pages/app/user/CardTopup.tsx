@@ -233,27 +233,28 @@ export default function CardTopup() {
                 <p className="text-xs text-muted-foreground mt-1">ConnectIPS requires minimum Rs. {MIN_NCHL}.</p>
               )}
             </div>
-            {canPayFromWallet && (
+            <div className="flex flex-col gap-3">
               <Button
-                className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                disabled={submitting}
+                className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60"
+                disabled={submitting || !canPayFromWallet}
                 onClick={() => setConfirmOpen(true)}
               >
                 Pay from Wallet
               </Button>
-            )}
-            {canDirectPay && (
               <Button
-                variant={canPayFromWallet ? "outline" : "default"}
+                variant="outline"
                 className="w-full h-12 rounded-xl"
-                disabled={submitting}
+                disabled={submitting || !canDirectPay}
                 onClick={handlePayWithConnectIPS}
               >
-                {submitting ? "Redirecting..." : "Pay via ConnectIPS"}
+                {submitting ? "Redirecting..." : "Pay from e/banking"}
               </Button>
-            )}
+              <Button variant="outline" className="w-full h-12 rounded-xl" onClick={() => navigate(-1)}>
+                Cancel
+              </Button>
+            </div>
             {validAmount && !canPayFromWallet && !canDirectPay && (
-              <p className="text-xs text-muted-foreground">Enter at least Rs. {MIN_NCHL} for ConnectIPS, or recharge wallet.</p>
+              <p className="text-xs text-muted-foreground">Enter at least Rs. {MIN_NCHL} for e/banking, or recharge wallet.</p>
             )}
           </div>
         )}

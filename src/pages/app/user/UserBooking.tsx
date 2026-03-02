@@ -698,33 +698,38 @@ export default function UserBooking() {
                   </div>
                 )}
                 <div className="flex flex-col gap-3">
-                  <div className="flex gap-3">
-                    <Button variant="outline" className="flex-1" onClick={handleCheckoutCancel}>Cancel</Button>
-                    {user ? (
-                      <>
-                        {(checkoutWalletBalance ?? 0) >= totalAmount && (
-                          <Button className="flex-1 gradient-wallet text-primary-foreground shadow-md shadow-primary/20 hover:opacity-90" onClick={handlePayFromWallet} disabled={checkoutSubmitting}>
-                            <Wallet size={18} className="mr-2 shrink-0" />
-                            Pay from wallet
-                          </Button>
-                        )}
-                        {totalAmount >= 10 && (
-                          <Button
-                            variant={(checkoutWalletBalance ?? 0) >= totalAmount ? "outline" : "default"}
-                            className="flex-1"
-                            onClick={handlePayWithConnectIPS}
-                            disabled={checkoutSubmitting}
-                          >
-                            {checkoutSubmitting ? "Redirecting..." : "Pay with ConnectIPS (Direct Pay)"}
-                          </Button>
-                        )}
-                        {totalAmount < 10 && (checkoutWalletBalance ?? 0) < totalAmount && (
-                          <p className="text-xs text-muted-foreground flex-1 self-center">Min Rs. 10 for ConnectIPS. Recharge wallet to pay.</p>
-                        )}
-                      </>
-                    ) : (
+                  {user ? (
+                    <>
                       <Button
-                        className="flex-1"
+                        className="w-full h-12 rounded-xl gradient-wallet text-primary-foreground shadow-md shadow-primary/20 hover:opacity-90 disabled:opacity-60"
+                        onClick={handlePayFromWallet}
+                        disabled={checkoutSubmitting || (checkoutWalletBalance ?? 0) < totalAmount}
+                      >
+                        <Wallet size={18} className="mr-2 shrink-0" />
+                        Pay from Wallet
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full h-12 rounded-xl"
+                        onClick={handlePayWithConnectIPS}
+                        disabled={checkoutSubmitting || totalAmount < 10}
+                      >
+                        {checkoutSubmitting ? "Redirecting..." : "Pay from e/banking"}
+                      </Button>
+                      <Button variant="outline" className="w-full h-12 rounded-xl" onClick={handleCheckoutCancel}>
+                        Cancel
+                      </Button>
+                      {user && (checkoutWalletBalance ?? 0) < totalAmount && totalAmount >= 10 && (
+                        <p className="text-xs text-muted-foreground text-center">Insufficient wallet? Recharge or use e/banking.</p>
+                      )}
+                      {totalAmount < 10 && (checkoutWalletBalance ?? 0) < totalAmount && (
+                        <p className="text-xs text-muted-foreground text-center">Min Rs. 10 for e/banking. Recharge wallet to pay.</p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        className="w-full h-12 rounded-xl"
                         disabled={checkoutSubmitting}
                         onClick={async () => {
                           setCheckoutSubmitting(true);
@@ -753,10 +758,10 @@ export default function UserBooking() {
                       >
                         {checkoutSubmitting ? "Booking..." : "Book as guest"}
                       </Button>
-                    )}
-                  </div>
-                  {user && (checkoutWalletBalance ?? 0) < totalAmount && totalAmount >= 10 && (
-                    <p className="text-xs text-muted-foreground text-center">Insufficient wallet? Recharge or use Direct Pay (ConnectIPS).</p>
+                      <Button variant="outline" className="w-full h-12 rounded-xl" onClick={handleCheckoutCancel}>
+                        Cancel
+                      </Button>
+                    </>
                   )}
                 </div>
               </motion.div>
