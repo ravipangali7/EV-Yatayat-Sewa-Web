@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleMap, Polyline, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
+import { VEHICLE_MARKER_ICON, ROUTE_MARKER_ANCHOR, ROUTE_MARKER_SIZE } from '@/config/mapConstants';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -163,17 +164,14 @@ export default function TripView() {
                     <Polyline path={path} options={{ strokeColor: '#2563eb', strokeWeight: 4, strokeOpacity: 0.8 }} />
                     {startPoint && <Marker position={startPoint} label="S" title="Start" />}
                     {endPoint && endPoint !== startPoint && <Marker position={endPoint} label="E" title="End" />}
-                    {playbackPoint && typeof window !== 'undefined' && window.google?.maps?.SymbolPath && (
+                    {playbackPoint && typeof window !== 'undefined' && window.google?.maps && (
                       <Marker
                         position={playbackPoint}
                         title="Vehicle"
                         icon={{
-                          path: window.google.maps.SymbolPath.CIRCLE,
-                          scale: 10,
-                          fillColor: '#2563eb',
-                          fillOpacity: 1,
-                          strokeColor: '#fff',
-                          strokeWeight: 2,
+                          url: VEHICLE_MARKER_ICON,
+                          scaledSize: new window.google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE),
+                          anchor: new window.google.maps.Point(ROUTE_MARKER_ANCHOR, ROUTE_MARKER_ANCHOR),
                         }}
                       />
                     )}

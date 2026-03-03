@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import type { VehicleNearby } from "@/types";
+import { VEHICLE_MARKER_ICON, ROUTE_MARKER_ANCHOR, ROUTE_MARKER_SIZE } from "@/config/mapConstants";
 import { Car, MapPin, User, Route } from "lucide-react";
 import { toast } from "sonner";
 import { DirectBookFlow } from "./DirectBookFlow";
@@ -167,10 +168,10 @@ export function UserHomeMap() {
                   position={{ lat, lng }}
                   title={v.name}
                   onClick={() => handleMarkerClick(v)}
-                  label={{
-                    text: v.vehicle_no?.slice(-2) ?? "V",
-                    color: v.can_book ? "#166534" : "#6b7280",
-                    fontSize: "11px",
+                  icon={{
+                    url: VEHICLE_MARKER_ICON,
+                    scaledSize: new google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE),
+                    anchor: new google.maps.Point(ROUTE_MARKER_ANCHOR, ROUTE_MARKER_ANCHOR),
                   }}
                 />
               );

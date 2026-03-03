@@ -3,11 +3,14 @@
  * Adjust these in one place to change appearance across all map components.
  */
 
+/** URL for map markers that represent a vehicle (bus). */
+export const VEHICLE_MARKER_ICON = "/icon/bus_marker.png";
+
 export const MARKER_ICONS = {
   start: "/start_point.png",
   stop: "/stop_point.png",
   end: "/end_point.png",
-  current: "/navigation.png",
+  current: VEHICLE_MARKER_ICON,
 } as const;
 
 /** Size in px for route markers (start, stop, end) on the map. */

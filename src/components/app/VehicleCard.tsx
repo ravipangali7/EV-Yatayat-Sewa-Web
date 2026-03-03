@@ -1,4 +1,4 @@
-import { Car, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
 
 export interface VehicleInfo {
   id: string;
@@ -19,7 +19,7 @@ const VehicleCard = ({ vehicle, compact = false }: VehicleCardProps) => {
     <div className="app-surface rounded-2xl p-4 border border-border">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center">
-          <Car size={24} className="text-accent-foreground" />
+          <img src="/icon/bus_status.png" alt="Vehicle" className="w-8 h-8 object-contain" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-sm">{vehicle.name}</h3>
