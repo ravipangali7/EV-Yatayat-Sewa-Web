@@ -56,6 +56,8 @@ export interface Transaction {
 export interface SuperSetting {
   id: string;
   per_km_charge: number;
+  initial_km?: number | null;
+  initial_km_charge?: number | null;
   gps_threshold?: number;
   gps_threshold_second?: number;
   seat_layout?: string[];

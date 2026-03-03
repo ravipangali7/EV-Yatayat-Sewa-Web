@@ -16,6 +16,8 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     per_km_charge: 0,
+    initial_km: undefined as number | undefined,
+    initial_km_charge: undefined as number | undefined,
     gps_threshold: 5,
     seat_layout: [] as string[],
     stop_point_announcement_header: '',
@@ -36,6 +38,8 @@ export default function Settings() {
           const gps = toNumber(setting.gps_threshold_second ?? setting.gps_threshold, 5);
           setFormData({
             per_km_charge: toNumber(setting.per_km_charge, 0),
+            initial_km: setting.initial_km != null && setting.initial_km !== '' ? toNumber(setting.initial_km, 0) : undefined,
+            initial_km_charge: setting.initial_km_charge != null && setting.initial_km_charge !== '' ? toNumber(setting.initial_km_charge, 0) : undefined,
             gps_threshold: gps,
             seat_layout: layout,
             stop_point_announcement_header: setting.stop_point_announcement_header ?? '',
@@ -69,6 +73,8 @@ export default function Settings() {
     try {
       const payload = {
         per_km_charge: formData.per_km_charge,
+        initial_km: formData.initial_km ?? null,
+        initial_km_charge: formData.initial_km_charge ?? null,
         gps_threshold_second: formData.gps_threshold,
         seat_layout: seatLayout,
         stop_point_announcement_header: formData.stop_point_announcement_header ?? '',
@@ -129,6 +135,32 @@ export default function Settings() {
                 value={formData.per_km_charge}
                 onChange={(e) => setFormData({ ...formData, per_km_charge: parseFloat(e.target.value) || 0 })}
                 required
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="initial_km">Initial KM (km)</Label>
+              <Input
+                id="initial_km"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Optional — flat charge applies up to this distance"
+                value={formData.initial_km ?? ''}
+                onChange={(e) => setFormData({ ...formData, initial_km: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="initial_km_charge">Initial KM Charge (Rs.)</Label>
+              <Input
+                id="initial_km_charge"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Optional — flat charge for first N km"
+                value={formData.initial_km_charge ?? ''}
+                onChange={(e) => setFormData({ ...formData, initial_km_charge: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
                 disabled={loading}
               />
             </div>
@@ -229,6 +261,14 @@ export default function Settings() {
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Per KM Charge</span>
               <span className="font-semibold">Rs. {toNumber(settings?.per_km_charge, 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Initial KM</span>
+              <span className="font-semibold">{settings?.initial_km != null && settings?.initial_km !== '' ? toNumber(settings.initial_km, 0) : '—'}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Initial KM Charge</span>
+              <span className="font-semibold">{settings?.initial_km_charge != null && settings?.initial_km_charge !== '' ? `Rs. ${toNumber(settings.initial_km_charge, 0).toFixed(2)}` : '—'}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">GPS Threshold (seconds)</span>

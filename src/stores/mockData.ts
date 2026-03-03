@@ -99,6 +99,8 @@ export const mockTransactions: Transaction[] = [
 export let mockSettings: SuperSetting | null = {
   id: '1',
   per_km_charge: 2.50,
+  initial_km: 5,
+  initial_km_charge: 20,
   gps_threshold: 5,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
