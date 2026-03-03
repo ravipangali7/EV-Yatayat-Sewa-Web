@@ -11,6 +11,10 @@ import {
   POLYLINE_STROKE_WEIGHT,
   ROUTE_MARKER_ANCHOR,
   ROUTE_MARKER_SIZE,
+  VEHICLE_MARKER_ANCHOR_X,
+  VEHICLE_MARKER_ANCHOR_Y,
+  VEHICLE_MARKER_HEIGHT,
+  VEHICLE_MARKER_WIDTH,
 } from "@/config/mapConstants";
 import { getDirectionsPath } from "@/lib/directions";
 
@@ -195,19 +199,28 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
             }}
           />
         )}
-        {points.map((point, i) => (
-          <Marker
-            key={`${point.type}-${i}-${point.lat}-${point.lng}`}
-            position={{ lat: point.lat, lng: point.lng }}
-            title={point.name}
-            icon={{
-              url: MARKER_ICONS[point.type],
-              scaledSize: new google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE),
-              anchor: new google.maps.Point(ROUTE_MARKER_ANCHOR, ROUTE_MARKER_ANCHOR),
-            }}
-            onClick={() => handleMarkerClick(point)}
-          />
-        ))}
+        {points.map((point, i) => {
+          const isVehicle = point.type === "current";
+          return (
+            <Marker
+              key={`${point.type}-${i}-${point.lat}-${point.lng}`}
+              position={{ lat: point.lat, lng: point.lng }}
+              title={point.name}
+              icon={{
+                url: MARKER_ICONS[point.type],
+                scaledSize: new google.maps.Size(
+                  isVehicle ? VEHICLE_MARKER_WIDTH : ROUTE_MARKER_SIZE,
+                  isVehicle ? VEHICLE_MARKER_HEIGHT : ROUTE_MARKER_SIZE
+                ),
+                anchor: new google.maps.Point(
+                  isVehicle ? VEHICLE_MARKER_ANCHOR_X : ROUTE_MARKER_ANCHOR,
+                  isVehicle ? VEHICLE_MARKER_ANCHOR_Y : ROUTE_MARKER_ANCHOR
+                ),
+              }}
+              onClick={() => handleMarkerClick(point)}
+            />
+          );
+        })}
         {selectedPoint && (
           <InfoWindow
             position={{ lat: selectedPoint.lat, lng: selectedPoint.lng }}

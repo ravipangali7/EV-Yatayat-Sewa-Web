@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react';
 import { GoogleMap, InfoWindow, Marker, Polyline } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
-import { MARKER_ICONS, ROUTE_MARKER_ANCHOR, ROUTE_MARKER_SIZE } from '@/config/mapConstants';
+import {
+  MARKER_ICONS,
+  ROUTE_MARKER_ANCHOR,
+  ROUTE_MARKER_SIZE,
+  VEHICLE_MARKER_ANCHOR_X,
+  VEHICLE_MARKER_ANCHOR_Y,
+  VEHICLE_MARKER_HEIGHT,
+  VEHICLE_MARKER_WIDTH,
+} from '@/config/mapConstants';
 import { Card } from '@/components/ui/card';
 
 interface MarkerData {
@@ -158,10 +166,17 @@ export function MiniMap({
           } else if (marker.type === 'stop' || marker.label === 'stop') {
             iconUrl = MARKER_ICONS.stop;
           }
+          const isVehicle = iconUrl === MARKER_ICONS.current;
           const icon = {
             url: iconUrl,
-            scaledSize: new google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE),
-            anchor: new google.maps.Point(ROUTE_MARKER_ANCHOR, ROUTE_MARKER_ANCHOR),
+            scaledSize: new google.maps.Size(
+              isVehicle ? VEHICLE_MARKER_WIDTH : ROUTE_MARKER_SIZE,
+              isVehicle ? VEHICLE_MARKER_HEIGHT : ROUTE_MARKER_SIZE
+            ),
+            anchor: new google.maps.Point(
+              isVehicle ? VEHICLE_MARKER_ANCHOR_X : ROUTE_MARKER_ANCHOR,
+              isVehicle ? VEHICLE_MARKER_ANCHOR_Y : ROUTE_MARKER_ANCHOR
+            ),
           };
 
           const markerKey = (marker as MarkerData & { routeId?: string }).routeId 
