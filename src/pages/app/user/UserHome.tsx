@@ -28,7 +28,7 @@ import { iconColorClasses } from "@/lib/appHomeStyles";
 
 const userGridCards = [
   { label: "Book Trip", icon: CalendarDays, to: "booking", gradient: true },
-  { label: "My Booking", icon: FileText, to: "booking?tab=my-booking" },
+  { label: "My Booking", icon: FileText, to: "booking?tab=my-booking", iconClass: "bg-primary/15 text-primary" },
   { label: "Deposit", icon: PlusCircle, to: "deposit" },
   { label: "Transfer", icon: Send, action: "transfer" as const },
   { label: "Topup Card", icon: CreditCard, to: "card/topup" },
@@ -39,7 +39,7 @@ const userGridCards = [
 
 const dealerGridCards = [
   { label: "Book Trip", icon: CalendarDays, to: "booking", gradient: true },
-  { label: "Booking", icon: FileText, to: "booking" },
+  { label: "Booking", icon: FileText, to: "booking", iconClass: "bg-primary/15 text-primary" },
   { label: "Deposit", icon: PlusCircle, to: "deposit" },
   { label: "Transfer", icon: Send, action: "transfer" as const },
   { label: "Revenue", icon: TrendingUp, to: "revenue" },
@@ -114,7 +114,12 @@ export default function UserHome() {
           {gridCards.map((item, idx) => {
             const Icon = item.icon;
             const key = "to" in item ? item.to + item.label : item.label;
-            const iconClass = "gradient" in item && item.gradient ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" : iconColorClasses[idx % iconColorClasses.length];
+            const iconClass =
+              "iconClass" in item && item.iconClass
+                ? item.iconClass
+                : "gradient" in item && item.gradient
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  : iconColorClasses[idx % iconColorClasses.length];
             if ("action" in item && item.action === "transfer") {
               return (
                 <button
