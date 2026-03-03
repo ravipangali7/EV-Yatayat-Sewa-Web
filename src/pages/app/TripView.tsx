@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleMap, Polyline, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
-import { VEHICLE_MARKER_ICON, ROUTE_MARKER_ANCHOR, ROUTE_MARKER_SIZE } from '@/config/mapConstants';
+import { VEHICLE_MARKER_ICON, ROUTE_MARKER_ANCHOR, ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE_HEIGHT } from '@/config/mapConstants';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -170,7 +170,7 @@ export default function TripView() {
                         title="Vehicle"
                         icon={{
                           url: VEHICLE_MARKER_ICON,
-                          scaledSize: new window.google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE),
+                          scaledSize: new window.google.maps.Size(ROUTE_MARKER_SIZE, ROUTE_MARKER_SIZE_HEIGHT),
                           anchor: new window.google.maps.Point(ROUTE_MARKER_ANCHOR, ROUTE_MARKER_ANCHOR),
                         }}
                       />

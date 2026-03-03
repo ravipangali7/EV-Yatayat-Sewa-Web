@@ -155,6 +155,14 @@ export function UserHomeMap() {
                   position={userPosition}
                   title="You"
                   zIndex={10}
+                  icon={{
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: "#4285F4",
+                    fillOpacity: 1,
+                    strokeColor: "#ffffff",
+                    strokeWeight: 2,
+                  }}
                 />
               </>
             )}

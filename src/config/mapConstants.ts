@@ -15,6 +15,7 @@ export const MARKER_ICONS = {
 
 /** Size in px for route markers (start, stop, end) on the map. */
 export const ROUTE_MARKER_SIZE = 24;
+export const ROUTE_MARKER_SIZE_HEIGHT = 54;
 /** Anchor offset so the marker tip is at the position (half of ROUTE_MARKER_SIZE for center). */
 export const ROUTE_MARKER_ANCHOR = 12;
 
