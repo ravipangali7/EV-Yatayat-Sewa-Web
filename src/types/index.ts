@@ -60,6 +60,8 @@ export interface SuperSetting {
   gps_threshold_second?: number;
   seat_layout?: string[];
   stop_point_announcement_header?: string;
+  short_trip_min_distance_for_booking?: number;
+  short_trip_max_distance_for_booking?: number;
   created_at: string;
   updated_at: string;
 }

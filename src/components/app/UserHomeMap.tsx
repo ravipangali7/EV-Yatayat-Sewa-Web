@@ -9,7 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
+import { superSettingApi } from "@/modules/settings/services/superSettingApi";
 import type { VehicleNearby } from "@/types";
+import { toNumber } from "@/lib/utils";
 import {
   VEHICLE_MARKER_ICON,
   VEHICLE_MARKER_WIDTH,
@@ -30,6 +32,9 @@ const FETCH_RADIUS_KM = 200;
 
 const containerStyle = { width: "100%", height: "280px" };
 
+const DEFAULT_BOOK_MIN_KM = 5;
+const DEFAULT_BOOK_MAX_KM = 200;
+
 export function UserHomeMap() {
   const { isLoaded } = useGoogleMaps();
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
@@ -37,6 +42,8 @@ export function UserHomeMap() {
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleNearby | null>(null);
   const [showDirectBook, setShowDirectBook] = useState(false);
+  const [bookMinKm, setBookMinKm] = useState(DEFAULT_BOOK_MIN_KM);
+  const [bookMaxKm, setBookMaxKm] = useState(DEFAULT_BOOK_MAX_KM);
 
   const center = userPosition
     ? { lat: userPosition.lat, lng: userPosition.lng }
@@ -102,6 +109,16 @@ export function UserHomeMap() {
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }, [fetchNearby]);
+
+  useEffect(() => {
+    superSettingApi.list({ per_page: 1 }).then((res) => {
+      const setting = res.results?.[0];
+      if (setting) {
+        setBookMinKm(toNumber(setting.short_trip_min_distance_for_booking, DEFAULT_BOOK_MIN_KM));
+        setBookMaxKm(toNumber(setting.short_trip_max_distance_for_booking, DEFAULT_BOOK_MAX_KM));
+      }
+    }).catch(() => {});
+  }, []);
 
   const handleMarkerClick = (v: VehicleNearby) => {
     setSelectedVehicle(v);
@@ -229,7 +246,7 @@ export function UserHomeMap() {
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {selectedVehicle.distance_km} km away
-                {selectedVehicle.can_book ? " · Bookable (5–200 km, active route)" : " · Not bookable"}
+                {selectedVehicle.can_book ? ` · Bookable (${bookMinKm}–${bookMaxKm} km, active route)` : " · Not bookable"}
               </p>
               {selectedVehicle.can_book ? (
                 <Button
@@ -239,7 +256,7 @@ export function UserHomeMap() {
                   Book seat
                 </Button>
               ) : (
-                <p className="text-xs text-amber-600">Only vehicles with active trip, between 5 km and 200 km away, can be booked.</p>
+                <p className="text-xs text-amber-600">Only vehicles with active trip, between {bookMinKm} km and {bookMaxKm} km away, can be booked.</p>
               )}
             </div>
           )}

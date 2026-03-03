@@ -19,6 +19,8 @@ export default function Settings() {
     gps_threshold: 5,
     seat_layout: [] as string[],
     stop_point_announcement_header: '',
+    short_trip_min_distance_for_booking: 5,
+    short_trip_max_distance_for_booking: 200,
   });
   const [seatLayoutRaw, setSeatLayoutRaw] = useState('[]');
 
@@ -37,6 +39,8 @@ export default function Settings() {
             gps_threshold: gps,
             seat_layout: layout,
             stop_point_announcement_header: setting.stop_point_announcement_header ?? '',
+            short_trip_min_distance_for_booking: toNumber(setting.short_trip_min_distance_for_booking, 5),
+            short_trip_max_distance_for_booking: toNumber(setting.short_trip_max_distance_for_booking, 200),
           });
           setSeatLayoutRaw(JSON.stringify(layout));
         } else {
@@ -68,6 +72,8 @@ export default function Settings() {
         gps_threshold_second: formData.gps_threshold,
         seat_layout: seatLayout,
         stop_point_announcement_header: formData.stop_point_announcement_header ?? '',
+        short_trip_min_distance_for_booking: formData.short_trip_min_distance_for_booking,
+        short_trip_max_distance_for_booking: formData.short_trip_max_distance_for_booking,
       };
       if (settings) {
         const updated = await superSettingApi.edit(settings.id, payload);
@@ -134,6 +140,30 @@ export default function Settings() {
                 step="0.01"
                 value={formData.gps_threshold}
                 onChange={(e) => setFormData({ ...formData, gps_threshold: parseFloat(e.target.value) || 5 })}
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="short_trip_min_distance_for_booking">Short trip min distance for booking (km)</Label>
+              <Input
+                id="short_trip_min_distance_for_booking"
+                type="number"
+                step="0.01"
+                min={0}
+                value={formData.short_trip_min_distance_for_booking}
+                onChange={(e) => setFormData({ ...formData, short_trip_min_distance_for_booking: parseFloat(e.target.value) ?? 5 })}
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="short_trip_max_distance_for_booking">Short trip max distance for booking (km)</Label>
+              <Input
+                id="short_trip_max_distance_for_booking"
+                type="number"
+                step="0.01"
+                min={0}
+                value={formData.short_trip_max_distance_for_booking}
+                onChange={(e) => setFormData({ ...formData, short_trip_max_distance_for_booking: parseFloat(e.target.value) ?? 200 })}
                 disabled={loading}
               />
             </div>
@@ -207,6 +237,14 @@ export default function Settings() {
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Stop point announcement header</span>
               <span className="font-semibold">{settings?.stop_point_announcement_header || '—'}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Short trip min distance for booking (km)</span>
+              <span className="font-semibold">{toNumber(settings?.short_trip_min_distance_for_booking, 5)}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Short trip max distance for booking (km)</span>
+              <span className="font-semibold">{toNumber(settings?.short_trip_max_distance_for_booking, 200)}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Seat Layout</span>
