@@ -51,6 +51,7 @@ export function UserHomeMap() {
         latitude: lat,
         longitude: lng,
         radius_km: FETCH_RADIUS_KM,
+        active_trip_only: true,
       });
       setNearbyVehicles(res.results ?? []);
     } catch {
@@ -128,7 +129,7 @@ export function UserHomeMap() {
     <>
       <div className="rounded-2xl overflow-hidden border border-border/50 bg-white dark:bg-card/80 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">
-          Nearby vehicles
+          Nearby vehicles (active trips only)
         </p>
         <div style={containerStyle} className="rounded-xl">
           <GoogleMap

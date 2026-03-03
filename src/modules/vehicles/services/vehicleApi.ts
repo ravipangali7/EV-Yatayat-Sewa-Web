@@ -35,12 +35,14 @@ export const vehicleApi = {
     longitude: number;
     radius_km?: number;
     bookable_only?: boolean;
+    active_trip_only?: boolean;
   }): Promise<{ results: VehicleNearby[]; count: number }> => {
     const q = new URLSearchParams();
     q.set('latitude', String(params.latitude));
     q.set('longitude', String(params.longitude));
     if (params.radius_km != null) q.set('radius_km', String(params.radius_km));
     if (params.bookable_only) q.set('bookable_only', 'true');
+    if (params.active_trip_only) q.set('active_trip_only', 'true');
     return api.get<{ results: VehicleNearby[]; count: number }>(`vehicles/nearby/?${q.toString()}`);
   },
 
