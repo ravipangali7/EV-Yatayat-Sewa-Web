@@ -112,7 +112,7 @@ export function OrderableTable<T extends { id: string | number; order: number }>
   const [items, setItems] = useState(data);
 
   const sensors = useSensors(
-    useSensor(PointerSensor({ activationConstraint: { distance: 8 } })),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
