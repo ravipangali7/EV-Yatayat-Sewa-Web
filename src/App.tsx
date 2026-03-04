@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,75 +13,74 @@ import { WalkieTalkieDrawer } from "@/components/walkietalkie/WalkieTalkieDrawer
 import { useLocation } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 
-// Pages
+// Public pages (eager so public site bundle has no TipTap/DOMPurify)
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import PageBySlug from "./pages/PageBySlug";
 import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
-import Dashboard from "./pages/app/Dashboard";
-import Users from "./pages/app/Users";
-import UserForm from "./pages/app/UserForm";
-import UserView from "./pages/app/UserView";
-import Wallets from "./pages/app/Wallets";
-import WalletForm from "./pages/app/WalletForm";
-import WalletView from "./pages/app/WalletView";
-import Transactions from "./pages/app/Transactions";
-import TransactionForm from "./pages/app/TransactionForm";
-import TransactionView from "./pages/app/TransactionView";
-import Settings from "./pages/app/Settings";
-import Places from "./pages/app/Places";
-import PlaceForm from "./pages/app/PlaceForm";
-import PlaceView from "./pages/app/PlaceView";
-import Routes_ from "./pages/app/Routes";
-import RouteForm from "./pages/app/RouteForm";
-import RouteView from "./pages/app/RouteView";
-import Vehicles from "./pages/app/Vehicles";
-import VehicleForm from "./pages/app/VehicleForm";
-import VehicleView from "./pages/app/VehicleView";
-import SeatBookings from "./pages/app/SeatBookings";
-import SeatBookingForm from "./pages/app/SeatBookingForm";
-import SeatBookingView from "./pages/app/SeatBookingView";
-import Trips from "./pages/app/Trips";
-import TripView from "./pages/app/TripView";
-import Locations from "./pages/app/Locations";
-import VehicleSchedules from "./pages/app/VehicleSchedules";
-import VehicleScheduleForm from "./pages/app/VehicleScheduleForm";
-import VehicleScheduleView from "./pages/app/VehicleScheduleView";
-import VehicleTicketBookings from "./pages/app/VehicleTicketBookings";
-import VehicleTicketBookingForm from "./pages/app/VehicleTicketBookingForm";
-import VehicleTicketBookingView from "./pages/app/VehicleTicketBookingView";
-import Cards from "./pages/app/Cards";
-import CardForm from "./pages/app/CardForm";
-import CardView from "./pages/app/CardView";
-// Website (admin)
-import Sliders from "./pages/app/website/Sliders";
-import SliderForm from "./pages/app/website/SliderForm";
-import CmsPages from "./pages/app/website/CmsPages";
-import CmsPageForm from "./pages/app/website/CmsPageForm";
-import TeamList from "./pages/app/website/TeamList";
-import TeamForm from "./pages/app/website/TeamForm";
-import Testimonials from "./pages/app/website/Testimonials";
-import TestimonialForm from "./pages/app/website/TestimonialForm";
-import Services from "./pages/app/website/Services";
-import ServiceForm from "./pages/app/website/ServiceForm";
-import Faqs from "./pages/app/website/Faqs";
-import FaqForm from "./pages/app/website/FaqForm";
-import ContactMessages from "./pages/app/website/ContactMessages";
-import ContactMessageView from "./pages/app/website/ContactMessageView";
-import ContactMessageEdit from "./pages/app/website/ContactMessageEdit";
-import Blogs from "./pages/app/website/Blogs";
-import BlogForm from "./pages/app/website/BlogForm";
-import SiteSettingForm from "./pages/app/website/SiteSettingForm";
 
-// App (driver/user) pages
-import AppLogin from "./pages/app/AppLogin";
-import AppRegister from "./pages/app/AppRegister";
-import AppForgotPassword from "./pages/app/AppForgotPassword";
-import AppResetPassword from "./pages/app/AppResetPassword";
-import AppRoleLayout from "./pages/app/AppRoleLayout";
-import PaymentCallbackPage from "./pages/app/PaymentCallbackPage";
+// Admin & app pages (lazy to avoid "Class constructor cannot be invoked without 'new'" on public site)
+const Dashboard = lazy(() => import("./pages/app/Dashboard"));
+const Users = lazy(() => import("./pages/app/Users"));
+const UserForm = lazy(() => import("./pages/app/UserForm"));
+const UserView = lazy(() => import("./pages/app/UserView"));
+const Wallets = lazy(() => import("./pages/app/Wallets"));
+const WalletForm = lazy(() => import("./pages/app/WalletForm"));
+const WalletView = lazy(() => import("./pages/app/WalletView"));
+const Transactions = lazy(() => import("./pages/app/Transactions"));
+const TransactionForm = lazy(() => import("./pages/app/TransactionForm"));
+const TransactionView = lazy(() => import("./pages/app/TransactionView"));
+const Settings = lazy(() => import("./pages/app/Settings"));
+const Places = lazy(() => import("./pages/app/Places"));
+const PlaceForm = lazy(() => import("./pages/app/PlaceForm"));
+const PlaceView = lazy(() => import("./pages/app/PlaceView"));
+const Routes_ = lazy(() => import("./pages/app/Routes"));
+const RouteForm = lazy(() => import("./pages/app/RouteForm"));
+const RouteView = lazy(() => import("./pages/app/RouteView"));
+const Vehicles = lazy(() => import("./pages/app/Vehicles"));
+const VehicleForm = lazy(() => import("./pages/app/VehicleForm"));
+const VehicleView = lazy(() => import("./pages/app/VehicleView"));
+const SeatBookings = lazy(() => import("./pages/app/SeatBookings"));
+const SeatBookingForm = lazy(() => import("./pages/app/SeatBookingForm"));
+const SeatBookingView = lazy(() => import("./pages/app/SeatBookingView"));
+const Trips = lazy(() => import("./pages/app/Trips"));
+const TripView = lazy(() => import("./pages/app/TripView"));
+const Locations = lazy(() => import("./pages/app/Locations"));
+const VehicleSchedules = lazy(() => import("./pages/app/VehicleSchedules"));
+const VehicleScheduleForm = lazy(() => import("./pages/app/VehicleScheduleForm"));
+const VehicleScheduleView = lazy(() => import("./pages/app/VehicleScheduleView"));
+const VehicleTicketBookings = lazy(() => import("./pages/app/VehicleTicketBookings"));
+const VehicleTicketBookingForm = lazy(() => import("./pages/app/VehicleTicketBookingForm"));
+const VehicleTicketBookingView = lazy(() => import("./pages/app/VehicleTicketBookingView"));
+const Cards = lazy(() => import("./pages/app/Cards"));
+const CardForm = lazy(() => import("./pages/app/CardForm"));
+const CardView = lazy(() => import("./pages/app/CardView"));
+const Sliders = lazy(() => import("./pages/app/website/Sliders"));
+const SliderForm = lazy(() => import("./pages/app/website/SliderForm"));
+const CmsPages = lazy(() => import("./pages/app/website/CmsPages"));
+const CmsPageForm = lazy(() => import("./pages/app/website/CmsPageForm"));
+const TeamList = lazy(() => import("./pages/app/website/TeamList"));
+const TeamForm = lazy(() => import("./pages/app/website/TeamForm"));
+const Testimonials = lazy(() => import("./pages/app/website/Testimonials"));
+const TestimonialForm = lazy(() => import("./pages/app/website/TestimonialForm"));
+const Services = lazy(() => import("./pages/app/website/Services"));
+const ServiceForm = lazy(() => import("./pages/app/website/ServiceForm"));
+const Faqs = lazy(() => import("./pages/app/website/Faqs"));
+const FaqForm = lazy(() => import("./pages/app/website/FaqForm"));
+const ContactMessages = lazy(() => import("./pages/app/website/ContactMessages"));
+const ContactMessageView = lazy(() => import("./pages/app/website/ContactMessageView"));
+const ContactMessageEdit = lazy(() => import("./pages/app/website/ContactMessageEdit"));
+const Blogs = lazy(() => import("./pages/app/website/Blogs"));
+const BlogForm = lazy(() => import("./pages/app/website/BlogForm"));
+const SiteSettingForm = lazy(() => import("./pages/app/website/SiteSettingForm"));
+const AppLogin = lazy(() => import("./pages/app/AppLogin"));
+const AppRegister = lazy(() => import("./pages/app/AppRegister"));
+const AppForgotPassword = lazy(() => import("./pages/app/AppForgotPassword"));
+const AppResetPassword = lazy(() => import("./pages/app/AppResetPassword"));
+const AppRoleLayout = lazy(() => import("./pages/app/AppRoleLayout"));
+const PaymentCallbackPage = lazy(() => import("./pages/app/PaymentCallbackPage"));
 import { getAppRoles, getAppRoleConfig, getHomePathForUser } from "@/config/appRoles";
 
 const queryClient = new QueryClient();
@@ -160,6 +160,11 @@ function AppRoutes() {
   const { isAuthenticated, user } = useAuth();
 
   return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    }>
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/page/:slug" element={<PageBySlug />} />
@@ -308,6 +313,7 @@ function AppRoutes() {
       
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }
 
