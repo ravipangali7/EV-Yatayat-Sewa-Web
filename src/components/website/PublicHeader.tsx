@@ -25,25 +25,25 @@ export function PublicHeader({
     : '/logo.png';
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b border-primary/20 bg-gradient-to-r from-card to-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center">
           <img src={logoUrl} alt={siteSetting?.name || 'EV Yatayat Sewa'} className="h-10 w-auto object-contain" />
         </Link>
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/" className="text-sm font-medium hover:text-primary">Home</Link>
+          <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Home</Link>
           {aboutSlug && (
-            <Link to={`/page/${aboutSlug}`} className="text-sm font-medium hover:text-primary">About</Link>
+            <Link to={`/page/${aboutSlug}`} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">About</Link>
           )}
-          <a href="#services" className="text-sm font-medium hover:text-primary">Service</a>
-          <Link to="/blog" className="text-sm font-medium hover:text-primary">Blog</Link>
+          <a href="#services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Service</a>
+          <Link to="/blog" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Blog</Link>
           {headerPages.map((p) => (
-            <Link key={p.id} to={`/page/${p.slug}`} className="text-sm font-medium hover:text-primary">
+            <Link key={p.id} to={`/page/${p.slug}`} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               {p.title}
             </Link>
           ))}
-          <a href="#contact" className="text-sm font-medium hover:text-primary">Contact</a>
-          <Link to="/app/login" className="text-sm font-medium hover:text-primary">Login</Link>
+          <a href="#contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Contact</a>
+          <Link to="/app/login" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Login</Link>
         </nav>
         {isLoading ? (
           <Button disabled>Sign In</Button>

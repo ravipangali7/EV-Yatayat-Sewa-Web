@@ -53,13 +53,13 @@ export default function BlogList() {
       <PublicHeader siteSetting={siteSetting} headerPages={headerPages} aboutSlug={aboutSlug} />
 
       <main className="container mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-foreground mb-10">Blog</h1>
+        <h1 className="text-3xl font-bold text-primary mb-10">Blog</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {blogs.map((b) => (
             <Link
               key={b.id}
               to={`/blog/${b.slug}`}
-              className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary/30 transition-colors"
+              className="bg-card rounded-xl overflow-hidden border border-primary/20 shadow-md hover:border-primary/40 hover:shadow-lg transition-all block"
             >
               {b.image && (
                 <img src={imgUrl(b.image)} alt={b.name} className="w-full h-48 object-cover" />
@@ -75,7 +75,7 @@ export default function BlogList() {
         )}
       </main>
 
-      <PublicFooter siteSetting={siteSetting} />
+      <PublicFooter siteSetting={siteSetting} aboutSlug={aboutSlug} />
     </div>
   );
 }

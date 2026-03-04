@@ -65,15 +65,15 @@ export default function BlogPost() {
       <PublicHeader siteSetting={siteSetting} headerPages={headerPages} aboutSlug={aboutSlug} />
 
       <article className="container mx-auto px-4 py-12 max-w-3xl">
-        <Link to="/blog" className="text-sm text-muted-foreground hover:text-primary mb-6 inline-block">← Back to Blog</Link>
-        <h1 className="text-3xl font-bold text-foreground mb-6">{post.name}</h1>
+        <Link to="/blog" className="text-sm text-muted-foreground hover:text-primary mb-6 inline-block transition-colors">← Back to Blog</Link>
+        <h1 className="text-3xl font-bold text-primary mb-6">{post.name}</h1>
         {post.image && (
-          <img src={imgUrl(post.image)} alt={post.name} className="w-full max-h-96 object-cover rounded-lg mb-6" />
+          <img src={imgUrl(post.image)} alt={post.name} className="w-full max-h-96 object-cover rounded-xl shadow-md border border-primary/10 mb-6" />
         )}
         <RichTextDisplay html={post.content} />
       </article>
 
-      <PublicFooter siteSetting={siteSetting} />
+      <PublicFooter siteSetting={siteSetting} aboutSlug={aboutSlug} />
     </div>
   );
 }

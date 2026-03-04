@@ -65,20 +65,20 @@ export default function PageBySlug() {
     <div className="min-h-screen bg-background">
       <PublicHeader siteSetting={siteSetting} headerPages={headerPages} aboutSlug={aboutSlug} />
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
-        <h1 className="text-3xl font-bold text-foreground mb-6">{page.title}</h1>
+      <main className="container mx-auto px-4 py-12 max-w-4xl bg-primary/[0.02] min-h-[60vh]">
+        <h1 className="text-3xl font-bold text-primary mb-6">{page.title}</h1>
         {page.image && (
-          <img src={imgUrl(page.image)} alt={page.title} className="w-full max-h-80 object-cover rounded-lg mb-6" />
+          <img src={imgUrl(page.image)} alt={page.title} className="w-full max-h-80 object-cover rounded-xl shadow-md border border-primary/10 mb-6" />
         )}
         <RichTextDisplay html={page.content} />
 
         {childSections.length > 0 && (
           <div className="mt-12 space-y-12">
             {childSections.map((child) => (
-              <div key={child.id} className="border-t border-border pt-8">
-                <h2 className="text-2xl font-bold text-foreground mb-4">{child.title}</h2>
+              <div key={child.id} className="border-t border-primary/20 pt-8">
+                <h2 className="text-2xl font-bold text-primary mb-4">{child.title}</h2>
                 {child.image && (
-                  <img src={imgUrl(child.image)} alt={child.title} className="w-full max-h-64 object-cover rounded-lg mb-4" />
+                  <img src={imgUrl(child.image)} alt={child.title} className="w-full max-h-64 object-cover rounded-xl shadow-md border border-primary/10 mb-4" />
                 )}
                 <RichTextDisplay html={child.content} />
               </div>
@@ -87,7 +87,7 @@ export default function PageBySlug() {
         )}
       </main>
 
-      <PublicFooter siteSetting={siteSetting} />
+      <PublicFooter siteSetting={siteSetting} aboutSlug={aboutSlug} />
     </div>
   );
 }

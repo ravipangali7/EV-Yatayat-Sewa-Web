@@ -4,6 +4,7 @@ import { websitePublicApi } from '@/modules/website/services/websiteApi';
 import { PublicHeader } from '@/components/website/PublicHeader';
 import { PublicFooter } from '@/components/website/PublicFooter';
 import { RichTextDisplay } from '@/components/common/RichTextDisplay';
+import { excerptFromHtml } from '@/lib/utils';
 import type { Slider, CMSPage, Service, Team, Testimonial, FAQ, Blog, SiteSetting, PublicVehicle } from '@/modules/website/types';
 
 const MEDIA_BASE = 'https://system.evyatayatsewa.com';
@@ -106,7 +107,7 @@ export default function Index() {
                     className="w-full h-full object-cover"
                   />
                 )}
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-center px-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent flex items-center justify-center text-center px-4">
                   <div>
                     <h1 className="text-3xl md:text-5xl font-bold text-white">{sliders[0].title}</h1>
                     {sliders[0].subtitle && (
@@ -122,11 +123,11 @@ export default function Index() {
 
       {/* Stats */}
       {stats.length > 0 && (
-        <section className="py-8 bg-muted/30">
+        <section className="py-8 bg-gradient-to-br from-primary/10 to-transparent">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {stats.map((stat, i) => (
-                <div key={i} className="text-center p-4 rounded-lg bg-card border border-border">
+                <div key={i} className="text-center p-4 rounded-xl bg-card border border-primary/20 shadow-md hover:border-primary/40 transition-colors">
                   {stat.svg && (
                     <div className="inline-block mb-2 [&>svg]:w-10 [&>svg]:h-10" dangerouslySetInnerHTML={{ __html: stat.svg }} />
                   )}
@@ -139,15 +140,26 @@ export default function Index() {
         </section>
       )}
 
-      {/* About (first is_about CMS) */}
+      {/* About (first is_about CMS): text left, image right; excerpt 20 chars + ... */}
       {aboutPage && (
-        <section className="py-16">
-          <div className="container mx-auto px-4 max-w-4xl">
-            <h2 className="text-3xl font-bold text-foreground mb-6">{aboutPage.title}</h2>
-            {aboutPage.image && (
-              <img src={imgUrl(aboutPage.image)} alt={aboutPage.title} className="w-full max-h-64 object-cover rounded-lg mb-6" />
-            )}
-            <RichTextDisplay html={aboutPage.content} />
+        <section className="py-16 bg-primary/5">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div className="order-2 md:order-1">
+                <h2 className="text-3xl font-bold text-foreground mb-4">{aboutPage.title}</h2>
+                <p className="text-muted-foreground mb-4">{excerptFromHtml(aboutPage.content, 20)}</p>
+                {aboutSlug && (
+                  <Link to={`/page/${aboutSlug}`} className="text-primary font-medium hover:underline">
+                    Read more
+                  </Link>
+                )}
+              </div>
+              <div className="order-1 md:order-2">
+                {aboutPage.image && (
+                  <img src={imgUrl(aboutPage.image)} alt={aboutPage.title} className="w-full max-h-80 object-cover rounded-xl shadow-md" />
+                )}
+              </div>
+            </div>
           </div>
         </section>
       )}
@@ -155,10 +167,10 @@ export default function Index() {
       {/* Services */}
       <section id="services" className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-foreground text-center mb-10">Services</h2>
+          <h2 className="text-3xl font-bold text-primary text-center mb-10">Services</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((s) => (
-              <div key={s.id} className="bg-card rounded-xl p-6 border border-border">
+              <div key={s.id} className="bg-card rounded-xl p-6 border border-primary/20 shadow-md hover:border-primary/40 hover:shadow-lg transition-all">
                 {s.svg && (
                   <div className="mb-4 [&>svg]:w-12 [&>svg]:h-12 text-primary" dangerouslySetInnerHTML={{ __html: s.svg }} />
                 )}
@@ -172,12 +184,12 @@ export default function Index() {
 
       {/* Team */}
       {team.length > 0 && (
-        <section className="py-16">
+        <section className="py-16 bg-primary/5">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-foreground text-center mb-10">Our Team</h2>
+            <h2 className="text-3xl font-bold text-primary text-center mb-10">Our Team</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {team.map((t) => (
-                <div key={t.id} className="bg-card rounded-xl p-4 border border-border text-center">
+                <div key={t.id} className="bg-card rounded-xl p-4 border border-primary/20 shadow-md hover:border-primary/40 text-center transition-all">
                   {t.image && (
                     <img src={imgUrl(t.image)} alt={t.name} className="w-24 h-24 rounded-full mx-auto object-cover mb-3" />
                   )}
@@ -194,10 +206,10 @@ export default function Index() {
       {vehicles.length > 0 && (
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-foreground text-center mb-10">Our Vehicles</h2>
+            <h2 className="text-3xl font-bold text-primary text-center mb-10">Our Vehicles</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {vehicles.map((v) => (
-                <div key={v.id} className="bg-card rounded-xl overflow-hidden border border-border">
+                <div key={v.id} className="bg-card rounded-xl overflow-hidden border border-primary/20 shadow-md hover:border-primary/40 transition-all">
                   {v.featured_image && (
                     <img src={v.featured_image} alt={v.name} className="w-full h-48 object-cover" />
                   )}
@@ -215,12 +227,12 @@ export default function Index() {
 
       {/* Testimonials */}
       {testimonials.length > 0 && (
-        <section className="py-16">
+        <section className="py-16 bg-gradient-to-br from-primary/10 to-transparent">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-foreground text-center mb-10">Testimonials</h2>
+            <h2 className="text-3xl font-bold text-primary text-center mb-10">Testimonials</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {testimonials.map((t) => (
-                <div key={t.id} className="bg-card rounded-xl p-6 border border-border">
+                <div key={t.id} className="bg-card rounded-xl p-6 border border-primary/20 shadow-md hover:border-primary/40 transition-all">
                   <p className="text-yellow-500">{'★'.repeat(t.star)}</p>
                   <p className="text-muted-foreground mt-2">{t.message}</p>
                   <div className="mt-4 flex items-center gap-3">
@@ -238,10 +250,10 @@ export default function Index() {
       {blogs.length > 0 && (
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-foreground text-center mb-10">Latest from Blog</h2>
+            <h2 className="text-3xl font-bold text-primary text-center mb-10">Latest from Blog</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {blogs.slice(0, 3).map((b) => (
-                <Link key={b.id} to={`/blog/${b.slug}`} className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary/30 transition-colors">
+                <Link key={b.id} to={`/blog/${b.slug}`} className="bg-card rounded-xl overflow-hidden border border-primary/20 shadow-md hover:border-primary/40 hover:shadow-lg transition-all block">
                   {b.image && <img src={imgUrl(b.image)} alt={b.name} className="w-full h-40 object-cover" />}
                   <div className="p-4">
                     <h3 className="font-semibold text-foreground">{b.name}</h3>
@@ -257,11 +269,11 @@ export default function Index() {
       )}
 
       {/* FAQ | Contact */}
-      <section id="contact" className="py-16">
+      <section id="contact" className="py-16 bg-primary/5">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
             <div>
-              <h2 className="text-2xl font-bold text-foreground mb-6">FAQ</h2>
+              <h2 className="text-2xl font-bold text-primary mb-6">FAQ</h2>
               <div className="space-y-4">
                 {faqs.map((f) => (
                   <div key={f.id} className="border-b border-border pb-4">
@@ -272,7 +284,7 @@ export default function Index() {
               </div>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-foreground mb-6">Contact Us</h2>
+              <h2 className="text-2xl font-bold text-primary mb-6">Contact Us</h2>
               <form onSubmit={handleContactSubmit} className="space-y-4">
                 <input
                   type="text"
@@ -310,7 +322,7 @@ export default function Index() {
         </div>
       </section>
 
-      <PublicFooter siteSetting={siteSetting} />
+      <PublicFooter siteSetting={siteSetting} aboutSlug={aboutSlug} />
     </div>
   );
 }
