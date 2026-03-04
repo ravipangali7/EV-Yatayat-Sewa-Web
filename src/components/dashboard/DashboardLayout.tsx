@@ -15,6 +15,15 @@ import {
   ChevronDown,
   Ticket,
   CreditCard,
+  Globe,
+  FileText,
+  UsersRound,
+  MessageSquare,
+  Wrench,
+  HelpCircle,
+  Mail,
+  BookOpen,
+  Sliders,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,6 +69,20 @@ const navSections: NavSection[] = [
       { label: 'Seat Bookings', path: '/admin/seat-bookings', icon: <Ticket className="w-5 h-5" /> },
     ],
   },
+  {
+    title: 'Website',
+    items: [
+      { label: 'Sliders', path: '/admin/website/sliders', icon: <Sliders className="w-5 h-5" /> },
+      { label: 'CMS Pages', path: '/admin/website/cms-pages', icon: <FileText className="w-5 h-5" /> },
+      { label: 'Team', path: '/admin/website/team', icon: <UsersRound className="w-5 h-5" /> },
+      { label: 'Testimonials', path: '/admin/website/testimonials', icon: <MessageSquare className="w-5 h-5" /> },
+      { label: 'Services', path: '/admin/website/services', icon: <Wrench className="w-5 h-5" /> },
+      { label: 'FAQs', path: '/admin/website/faqs', icon: <HelpCircle className="w-5 h-5" /> },
+      { label: 'Contact Messages', path: '/admin/website/contact-messages', icon: <Mail className="w-5 h-5" /> },
+      { label: 'Blog', path: '/admin/website/blogs', icon: <BookOpen className="w-5 h-5" /> },
+      { label: 'Site Setting', path: '/admin/website/site-setting', icon: <Globe className="w-5 h-5" /> },
+    ],
+  },
 ];
 
 interface DashboardLayoutProps {
@@ -69,7 +92,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<string[]>(['Main', 'Booking']);
+  const [openSections, setOpenSections] = useState<string[]>(['Main', 'Booking', 'Website']);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();

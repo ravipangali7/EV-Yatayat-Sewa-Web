@@ -16,6 +16,9 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import PageBySlug from "./pages/PageBySlug";
+import BlogList from "./pages/BlogList";
+import BlogPost from "./pages/BlogPost";
 import Dashboard from "./pages/app/Dashboard";
 import Users from "./pages/app/Users";
 import UserForm from "./pages/app/UserForm";
@@ -51,6 +54,25 @@ import VehicleTicketBookingView from "./pages/app/VehicleTicketBookingView";
 import Cards from "./pages/app/Cards";
 import CardForm from "./pages/app/CardForm";
 import CardView from "./pages/app/CardView";
+// Website (admin)
+import Sliders from "./pages/app/website/Sliders";
+import SliderForm from "./pages/app/website/SliderForm";
+import CmsPages from "./pages/app/website/CmsPages";
+import CmsPageForm from "./pages/app/website/CmsPageForm";
+import TeamList from "./pages/app/website/TeamList";
+import TeamForm from "./pages/app/website/TeamForm";
+import Testimonials from "./pages/app/website/Testimonials";
+import TestimonialForm from "./pages/app/website/TestimonialForm";
+import Services from "./pages/app/website/Services";
+import ServiceForm from "./pages/app/website/ServiceForm";
+import Faqs from "./pages/app/website/Faqs";
+import FaqForm from "./pages/app/website/FaqForm";
+import ContactMessages from "./pages/app/website/ContactMessages";
+import ContactMessageView from "./pages/app/website/ContactMessageView";
+import ContactMessageEdit from "./pages/app/website/ContactMessageEdit";
+import Blogs from "./pages/app/website/Blogs";
+import BlogForm from "./pages/app/website/BlogForm";
+import SiteSettingForm from "./pages/app/website/SiteSettingForm";
 
 // App (driver/user) pages
 import AppLogin from "./pages/app/AppLogin";
@@ -140,6 +162,9 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/page/:slug" element={<PageBySlug />} />
+      <Route path="/blog" element={<BlogList />} />
+      <Route path="/blog/:slug" element={<BlogPost />} />
       <Route 
         path="/login" 
         element={isAuthenticated && user ? <Navigate to={getHomePathForUser(user)} replace /> : <Login />} 
@@ -216,6 +241,40 @@ function AppRoutes() {
       <Route path="/admin/vehicle-ticket-bookings/add" element={<ProtectedRoute><VehicleTicketBookingForm /></ProtectedRoute>} />
       <Route path="/admin/vehicle-ticket-bookings/:id" element={<ProtectedRoute><VehicleTicketBookingView /></ProtectedRoute>} />
       <Route path="/admin/vehicle-ticket-bookings/:id/edit" element={<ProtectedRoute><VehicleTicketBookingForm /></ProtectedRoute>} />
+
+      {/* Website */}
+      <Route path="/admin/website/sliders" element={<ProtectedRoute><Sliders /></ProtectedRoute>} />
+      <Route path="/admin/website/sliders/add" element={<ProtectedRoute><SliderForm /></ProtectedRoute>} />
+      <Route path="/admin/website/sliders/:id" element={<ProtectedRoute><SliderForm /></ProtectedRoute>} />
+      <Route path="/admin/website/sliders/:id/edit" element={<ProtectedRoute><SliderForm /></ProtectedRoute>} />
+      <Route path="/admin/website/cms-pages" element={<ProtectedRoute><CmsPages /></ProtectedRoute>} />
+      <Route path="/admin/website/cms-pages/add" element={<ProtectedRoute><CmsPageForm /></ProtectedRoute>} />
+      <Route path="/admin/website/cms-pages/:id" element={<ProtectedRoute><CmsPageForm /></ProtectedRoute>} />
+      <Route path="/admin/website/cms-pages/:id/edit" element={<ProtectedRoute><CmsPageForm /></ProtectedRoute>} />
+      <Route path="/admin/website/team" element={<ProtectedRoute><TeamList /></ProtectedRoute>} />
+      <Route path="/admin/website/team/add" element={<ProtectedRoute><TeamForm /></ProtectedRoute>} />
+      <Route path="/admin/website/team/:id" element={<ProtectedRoute><TeamForm /></ProtectedRoute>} />
+      <Route path="/admin/website/team/:id/edit" element={<ProtectedRoute><TeamForm /></ProtectedRoute>} />
+      <Route path="/admin/website/testimonials" element={<ProtectedRoute><Testimonials /></ProtectedRoute>} />
+      <Route path="/admin/website/testimonials/add" element={<ProtectedRoute><TestimonialForm /></ProtectedRoute>} />
+      <Route path="/admin/website/testimonials/:id" element={<ProtectedRoute><TestimonialForm /></ProtectedRoute>} />
+      <Route path="/admin/website/testimonials/:id/edit" element={<ProtectedRoute><TestimonialForm /></ProtectedRoute>} />
+      <Route path="/admin/website/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+      <Route path="/admin/website/services/add" element={<ProtectedRoute><ServiceForm /></ProtectedRoute>} />
+      <Route path="/admin/website/services/:id" element={<ProtectedRoute><ServiceForm /></ProtectedRoute>} />
+      <Route path="/admin/website/services/:id/edit" element={<ProtectedRoute><ServiceForm /></ProtectedRoute>} />
+      <Route path="/admin/website/faqs" element={<ProtectedRoute><Faqs /></ProtectedRoute>} />
+      <Route path="/admin/website/faqs/add" element={<ProtectedRoute><FaqForm /></ProtectedRoute>} />
+      <Route path="/admin/website/faqs/:id" element={<ProtectedRoute><FaqForm /></ProtectedRoute>} />
+      <Route path="/admin/website/faqs/:id/edit" element={<ProtectedRoute><FaqForm /></ProtectedRoute>} />
+      <Route path="/admin/website/contact-messages" element={<ProtectedRoute><ContactMessages /></ProtectedRoute>} />
+      <Route path="/admin/website/contact-messages/:id" element={<ProtectedRoute><ContactMessageView /></ProtectedRoute>} />
+      <Route path="/admin/website/contact-messages/:id/edit" element={<ProtectedRoute><ContactMessageEdit /></ProtectedRoute>} />
+      <Route path="/admin/website/blogs" element={<ProtectedRoute><Blogs /></ProtectedRoute>} />
+      <Route path="/admin/website/blogs/add" element={<ProtectedRoute><BlogForm /></ProtectedRoute>} />
+      <Route path="/admin/website/blogs/:id" element={<ProtectedRoute><BlogForm /></ProtectedRoute>} />
+      <Route path="/admin/website/blogs/:id/edit" element={<ProtectedRoute><BlogForm /></ProtectedRoute>} />
+      <Route path="/admin/website/site-setting" element={<ProtectedRoute><SiteSettingForm /></ProtectedRoute>} />
 
       {/* App (driver/user) auth */}
       <Route path="/app" element={<Navigate to="/app/login" replace />} />
