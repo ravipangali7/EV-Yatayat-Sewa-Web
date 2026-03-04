@@ -20,6 +20,10 @@ import Login from "./pages/Login";
 import PageBySlug from "./pages/PageBySlug";
 import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
+import ServicesPage from "./pages/ServicesPage";
+import ServiceDetailPage from "./pages/ServiceDetailPage";
+import ContactPage from "./pages/ContactPage";
+import WebsiteLayout from "./components/website/WebsiteLayout";
 
 // Admin & app pages (lazy to avoid "Class constructor cannot be invoked without 'new'" on public site)
 const Dashboard = lazy(() => import("./pages/app/Dashboard"));
@@ -166,10 +170,16 @@ function AppRoutes() {
       </div>
     }>
     <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/page/:slug" element={<PageBySlug />} />
-      <Route path="/blog" element={<BlogList />} />
-      <Route path="/blog/:slug" element={<BlogPost />} />
+      {/* Public website — wrapped in WebsiteLayout for shared header/footer/theme */}
+      <Route element={<WebsiteLayout />}>
+        <Route path="/" element={<Index />} />
+        <Route path="/page/:slug" element={<PageBySlug />} />
+        <Route path="/blog" element={<BlogList />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/service/:slug" element={<ServiceDetailPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+      </Route>
       <Route 
         path="/login" 
         element={isAuthenticated && user ? <Navigate to={getHomePathForUser(user)} replace /> : <Login />} 

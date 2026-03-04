@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import { websitePublicApi } from '@/modules/website/services/websiteApi';
-import { PublicHeader } from '@/components/website/PublicHeader';
-import { PublicFooter } from '@/components/website/PublicFooter';
 import { RichTextDisplay } from '@/components/common/RichTextDisplay';
-import type { Blog, CMSPage, SiteSetting } from '@/modules/website/types';
+import type { Blog } from '@/modules/website/types';
 
 const MEDIA_BASE = 'https://system.evyatayatsewa.com';
 
@@ -16,25 +15,14 @@ function imgUrl(path: string | null): string {
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<Blog | null>(null);
-  const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
-  const [headerPages, setHeaderPages] = useState<CMSPage[]>([]);
-  const [aboutSlug, setAboutSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!slug) return;
     (async () => {
       try {
-        const [postRes, settingRes, headerRes, aboutRes] = await Promise.all([
-          websitePublicApi.blogBySlug(slug),
-          websitePublicApi.siteSetting(),
-          websitePublicApi.cmsHeader(),
-          websitePublicApi.cmsAbout(),
-        ]);
+        const postRes = await websitePublicApi.blogBySlug(slug);
         setPost(postRes);
-        setSiteSetting(settingRes && Object.keys(settingRes).length > 0 ? (settingRes as SiteSetting) : null);
-        setHeaderPages(Array.isArray(headerRes) ? headerRes : []);
-        setAboutSlug(aboutRes && typeof aboutRes === 'object' && 'slug' in aboutRes ? (aboutRes as CMSPage).slug : null);
       } catch (e) {
         console.error(e);
       } finally {
@@ -45,35 +33,61 @@ export default function BlogPost() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
       </div>
     );
   }
 
   if (!post) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Post not found.</p>
-        <Link to="/blog" className="ml-2 text-primary">Back to Blog</Link>
+      <div className="section-padding container text-center">
+        <h1 className="text-2xl font-display font-bold">Blog post not found</h1>
+        <Link to="/blog" className="text-primary mt-4 inline-block hover:underline">
+          ← Back to Blog
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader siteSetting={siteSetting} headerPages={headerPages} aboutSlug={aboutSlug} />
+    <div>
+      {/* Page header */}
+      <section className="bg-secondary text-secondary-foreground py-20">
+        <div className="container max-w-3xl">
+          <Link
+            to="/blog"
+            className="flex items-center gap-2 text-sm opacity-70 hover:opacity-100 mb-4 transition"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to Blog
+          </Link>
+          <h1 className="text-3xl md:text-4xl font-display font-bold">{post.name}</h1>
+          <div className="flex items-center gap-2 mt-4 text-sm opacity-70">
+            <Calendar className="h-4 w-4" />
+            <span>
+              {new Date(post.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+        </div>
+      </section>
 
-      <article className="container mx-auto px-4 py-12 max-w-3xl">
-        <Link to="/blog" className="text-sm text-muted-foreground hover:text-primary mb-6 inline-block transition-colors">← Back to Blog</Link>
-        <h1 className="text-3xl font-bold text-primary mb-6">{post.name}</h1>
-        {post.image && (
-          <img src={imgUrl(post.image)} alt={post.name} className="w-full max-h-96 object-cover rounded-xl shadow-md border border-primary/10 mb-6" />
-        )}
-        <RichTextDisplay html={post.content} />
-      </article>
-
-      <PublicFooter siteSetting={siteSetting} aboutSlug={aboutSlug} />
+      {/* Content */}
+      <section className="section-padding">
+        <div className="container max-w-3xl">
+          {post.image && (
+            <img
+              src={imgUrl(post.image)}
+              alt={post.name}
+              className="w-full max-h-96 object-cover rounded-xl shadow-md mb-8"
+            />
+          )}
+          <RichTextDisplay html={post.content} />
+        </div>
+      </section>
     </div>
   );
 }
