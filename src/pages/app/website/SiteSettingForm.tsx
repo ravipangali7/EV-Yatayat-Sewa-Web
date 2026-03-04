@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { siteSettingApi } from '@/modules/website/services/websiteApi';
 import type { SiteSetting, StatItem } from '@/modules/website/types';
 import { toast } from 'sonner';
+import { fileToDataUrl } from '@/lib/imagePreview';
 
 const API_BASE = 'https://system.evyatayatsewa.com';
 
@@ -128,7 +129,8 @@ export default function SiteSettingForm() {
           <Input type="file" accept="image/*" onChange={(e) => {
             const f = e.target.files?.[0];
             setLogoFile(f || null);
-            setLogoPreview(f ? URL.createObjectURL(f) : null);
+            if (f) fileToDataUrl(f).then(setLogoPreview);
+            else setLogoPreview(null);
           }} />
           {logoPreview && <img src={logoPreview} alt="Logo" className="mt-2 h-16 object-contain" />}
         </div>
@@ -137,7 +139,8 @@ export default function SiteSettingForm() {
           <Input type="file" accept="image/*" onChange={(e) => {
             const f = e.target.files?.[0];
             setCoverFile(f || null);
-            setCoverPreview(f ? URL.createObjectURL(f) : null);
+            if (f) fileToDataUrl(f).then(setCoverPreview);
+            else setCoverPreview(null);
           }} />
           {coverPreview && <img src={coverPreview} alt="Cover" className="mt-2 h-24 object-cover rounded" />}
         </div>

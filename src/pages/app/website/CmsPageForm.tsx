@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { RichTextEditor } from '@/components/common/RichTextEditor';
 import { cmsPageApi } from '@/modules/website/services/websiteApi';
 import { toast } from 'sonner';
+import { fileToDataUrl } from '@/lib/imagePreview';
 
 const API_BASE = 'https://system.evyatayatsewa.com';
 
@@ -126,7 +127,8 @@ export default function CmsPageForm() {
             onChange={(e) => {
               const f = e.target.files?.[0];
               setImageFile(f || null);
-              setImagePreview(f ? URL.createObjectURL(f) : null);
+              if (f) fileToDataUrl(f).then(setImagePreview);
+              else setImagePreview(null);
             }}
           />
           {imagePreview && (

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { testimonialApi } from '@/modules/website/services/websiteApi';
 import { toast } from 'sonner';
+import { fileToDataUrl } from '@/lib/imagePreview';
 
 const API_BASE = 'https://system.evyatayatsewa.com';
 
@@ -109,7 +110,8 @@ export default function TestimonialForm() {
             onChange={(e) => {
               const f = e.target.files?.[0];
               setImageFile(f || null);
-              setImagePreview(f ? URL.createObjectURL(f) : null);
+              if (f) fileToDataUrl(f).then(setImagePreview);
+              else setImagePreview(null);
             }}
           />
           {imagePreview && (
