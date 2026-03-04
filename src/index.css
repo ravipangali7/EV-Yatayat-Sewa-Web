@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -117,23 +118,6 @@
     --sidebar-border: 222 47% 12%;
     --sidebar-ring: 142 71% 40%;
   }
-}
-
-/* ─── Public website theme scope ───────────────────────
-   Overrides CSS vars only within .website-theme wrapper,
-   keeping admin/app portal tokens untouched.
-──────────────────────────────────────────────────────── */
-.website-theme {
-  --secondary: 210 60% 20%;
-  --secondary-foreground: 0 0% 100%;
-  --accent: 142 50% 92%;
-  --accent-foreground: 142 60% 25%;
-  --muted: 140 20% 96%;
-  --muted-foreground: 210 10% 45%;
-}
-
-.website-theme .gradient-primary {
-  background-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--secondary)));
 }
 
 @layer base {
@@ -286,11 +270,6 @@
 }
 
 @layer utilities {
-  /* ─── Hub website utilities ──────────────────────── */
-  .section-padding { @apply py-16 md:py-24 px-4; }
-  .text-gradient   { @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary; }
-  .gradient-hero   { background: linear-gradient(135deg, hsl(142 60% 35% / 0.9), hsl(210 60% 20% / 0.95)); }
-
   .scrollbar-thin {
     scrollbar-width: thin;
   }
@@ -420,3 +399,19 @@
 .animate-float-orb-reverse { animation: float-orb-reverse 15s ease-in-out infinite; }
 .animate-float-orb-slow    { animation: float-orb 20s ease-in-out infinite; }
 .animate-pulse-glow        { animation: pulse-glow 3s ease-in-out infinite; }
+
+/* ─── Website (hub design) utility classes ─────────────────────────── */
+/* Using hardcoded HSL values so admin/app CSS variables are unaffected */
+.gradient-primary {
+  background: linear-gradient(to right, hsl(142 60% 35%), hsl(210 60% 20%));
+}
+.gradient-hero {
+  background: linear-gradient(135deg, hsl(142 60% 35% / 0.9), hsl(210 60% 20% / 0.95));
+}
+.text-gradient {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(to right, hsl(142 60% 35%), hsl(210 60% 20%));
+}
+.section-padding {
+  @apply py-16 md:py-24 px-4;
+}

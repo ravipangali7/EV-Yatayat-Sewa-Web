@@ -20,10 +20,11 @@ import Login from "./pages/Login";
 import PageBySlug from "./pages/PageBySlug";
 import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
-import ServicesPage from "./pages/ServicesPage";
-import ServiceDetailPage from "./pages/ServiceDetailPage";
-import ContactPage from "./pages/ContactPage";
-import WebsiteLayout from "./components/website/WebsiteLayout";
+import About from "./pages/About";
+import WebsiteServices from "./pages/Services";
+import ServiceDetail from "./pages/ServiceDetail";
+import Contact from "./pages/Contact";
+import WebsiteLayout from "./components/website/Layout";
 
 // Admin & app pages (lazy to avoid "Class constructor cannot be invoked without 'new'" on public site)
 const Dashboard = lazy(() => import("./pages/app/Dashboard"));
@@ -170,15 +171,17 @@ function AppRoutes() {
       </div>
     }>
     <Routes>
-      {/* Public website — wrapped in WebsiteLayout for shared header/footer/theme */}
+      {/* Website routes — wrapped by new hub design Layout (Header + Footer) */}
       <Route element={<WebsiteLayout />}>
         <Route path="/" element={<Index />} />
-        <Route path="/page/:slug" element={<PageBySlug />} />
-        <Route path="/blog" element={<BlogList />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/services" element={<WebsiteServices />} />
+        <Route path="/service/:slug" element={<ServiceDetail />} />
+        <Route path="/blogs" element={<BlogList />} />
+        <Route path="/blog" element={<Navigate to="/blogs" replace />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/service/:slug" element={<ServiceDetailPage />} />
-        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/page/:slug" element={<PageBySlug />} />
       </Route>
       <Route 
         path="/login" 
