@@ -98,11 +98,6 @@ export interface StatItem {
   value: string;
 }
 
-export interface AboutValueItem {
-  svg?: string;
-  text: string;
-}
-
 export interface SiteSetting {
   id: number;
   logo: string | null;
@@ -120,7 +115,7 @@ export interface SiteSetting {
   about_content?: string;
   mission?: string;
   vision?: string;
-  values?: AboutValueItem[];
+  values?: string;
   created_at: string;
   updated_at: string;
 }

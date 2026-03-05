@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Zap, Battery, Users, Leaf, Target, Eye } from "lucide-react";
+import { Leaf, Target, Eye } from "lucide-react";
 import heroBus from "@/assets/hero-bus.jpg";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
-import type { SiteSetting, AboutValueItem } from "@/modules/website/types";
+import type { SiteSetting } from "@/modules/website/types";
 
 const MEDIA_BASE = "https://system.evyatayatsewa.com";
 function imgUrl(path: string | null): string {
@@ -10,16 +10,9 @@ function imgUrl(path: string | null): string {
   return path.startsWith("http") ? path : `${MEDIA_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { Zap, Battery, Users, Leaf };
-
 const FALLBACK_MISSION = "To revolutionize public transportation in Nepal by providing clean, efficient, and affordable electric bus services that reduce carbon emissions and improve urban air quality.";
 const FALLBACK_VISION = "To become South Asia's leading electric public transport provider, setting the standard for sustainable urban mobility by 2030.";
-const FALLBACK_VALUES = [
-  { icon: Zap, title: "100% Electric", desc: "Zero tailpipe emissions" },
-  { icon: Battery, title: "Fast Charging", desc: "Minimal downtime" },
-  { icon: Users, title: "Expert Team", desc: "Trained professionals" },
-  { icon: Leaf, title: "Eco Friendly", desc: "Sustainable operations" },
-];
+const FALLBACK_VALUES = "100% Electric Fleet • Fast Charging Infra • Trained Drivers • Zero Emissions";
 
 export default function About() {
   const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
@@ -40,7 +33,7 @@ export default function About() {
   const tagline = siteSetting?.tagline?.trim() || "Learn more about EV Yatayat Sewa";
   const missionText = siteSetting?.mission?.trim() || FALLBACK_MISSION;
   const visionText = siteSetting?.vision?.trim() || FALLBACK_VISION;
-  const valuesList = siteSetting?.values?.length ? siteSetting.values : null;
+  const valuesText = siteSetting?.values?.trim() || FALLBACK_VALUES;
 
   return (
     <div>
@@ -58,7 +51,7 @@ export default function About() {
           {siteSetting?.about_content?.trim() && (
             <div className="mb-12 prose prose-sm max-w-none prose-p:mb-2 text-muted-foreground" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
           )}
-          <div className="grid md:grid-cols-2 gap-8 mb-16">
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
             <div className="bg-accent rounded-xl p-8">
               <Target className="h-8 w-8 text-primary mb-4" />
               <h3 className="font-display font-bold text-xl mb-3">Our Mission</h3>
@@ -69,30 +62,11 @@ export default function About() {
               <h3 className="font-display font-bold text-xl mb-3">Our Vision</h3>
               <p className="text-muted-foreground text-sm">{visionText}</p>
             </div>
-          </div>
-
-          <h2 className="text-3xl font-display font-bold text-center mb-8">Why Choose Us?</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {valuesList ? (
-              valuesList.map((item: AboutValueItem, i: number) => {
-                const rawIcon = (item.svg ?? "Zap").toString().trim();
-                const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Zap;
-                return (
-                  <div key={i} className="text-center p-6 rounded-xl border hover:shadow-lg transition">
-                    <Icon className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <h4 className="font-semibold text-sm">{item.text}</h4>
-                  </div>
-                );
-              })
-            ) : (
-              FALLBACK_VALUES.map((item, i) => (
-                <div key={i} className="text-center p-6 rounded-xl border hover:shadow-lg transition">
-                  <item.icon className="h-8 w-8 text-primary mx-auto mb-3" />
-                  <h4 className="font-semibold text-sm">{item.title}</h4>
-                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
-                </div>
-              ))
-            )}
+            <div className="bg-accent rounded-xl p-8">
+              <Leaf className="h-8 w-8 text-primary mb-4" />
+              <h3 className="font-display font-bold text-xl mb-3">Our Values</h3>
+              <p className="text-muted-foreground text-sm whitespace-pre-line">{valuesText}</p>
+            </div>
           </div>
         </div>
       </section>

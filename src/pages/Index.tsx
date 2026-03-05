@@ -153,7 +153,7 @@ export default function Index() {
                 EV Yatayat Sewa is Nepal's pioneering electric bus transportation company. We are committed to providing sustainable, affordable, and comfortable public transportation while significantly reducing carbon emissions in urban areas.
               </p>
             )}
-            {(siteSetting?.mission?.trim() || siteSetting?.vision?.trim()) && (
+            {(siteSetting?.mission?.trim() || siteSetting?.vision?.trim() || siteSetting?.values?.trim()) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 {siteSetting?.mission?.trim() && (
                   <div className="p-3 rounded-lg bg-accent">
@@ -165,6 +165,12 @@ export default function Index() {
                   <div className="p-3 rounded-lg bg-accent">
                     <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Vision</p>
                     <p className="text-sm text-muted-foreground">{siteSetting.vision}</p>
+                  </div>
+                )}
+                {siteSetting?.values?.trim() && (
+                  <div className="p-3 rounded-lg bg-accent sm:col-span-2">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Values</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">{siteSetting.values}</p>
                   </div>
                 )}
               </div>

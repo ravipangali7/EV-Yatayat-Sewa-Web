@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { siteSettingApi } from '@/modules/website/services/websiteApi';
-import type { SiteSetting, StatItem, AboutValueItem } from '@/modules/website/types';
+import type { SiteSetting, StatItem } from '@/modules/website/types';
 import { toast } from 'sonner';
 import { fileToDataUrl } from '@/lib/imagePreview';
 
@@ -31,7 +31,7 @@ export default function SiteSettingForm() {
   const [about_content, setAboutContent] = useState('');
   const [mission, setMission] = useState('');
   const [vision, setVision] = useState('');
-  const [values, setValues] = useState<AboutValueItem[]>([]);
+  const [values, setValues] = useState('');
   const [aboutFile, setAboutFile] = useState<File | null>(null);
   const [aboutPreview, setAboutPreview] = useState<string | null>(null);
 
@@ -60,7 +60,7 @@ export default function SiteSettingForm() {
         setAboutContent(d.about_content ?? '');
         setMission(d.mission ?? '');
         setVision(d.vision ?? '');
-        setValues(Array.isArray(d.values) ? d.values : []);
+        setValues(typeof d.values === 'string' ? d.values : (Array.isArray(d.values) ? (d.values as { text?: string }[]).map((v) => v?.text ?? '').filter(Boolean).join('\n') : ''));
         if (d.about_image) {
           const url = d.about_image.startsWith('http') ? d.about_image : `${API_BASE}${d.about_image.startsWith('/') ? '' : '/'}${d.about_image}`;
           setAboutPreview(url);
@@ -89,7 +89,7 @@ export default function SiteSettingForm() {
       fd.append('about_content', about_content);
       fd.append('mission', mission);
       fd.append('vision', vision);
-      fd.append('values', JSON.stringify(values));
+      fd.append('values', values);
       if (logoFile) fd.append('logo', logoFile);
       if (coverFile) fd.append('cover_image', coverFile);
       if (aboutFile) fd.append('about_image', aboutFile);
@@ -247,15 +247,8 @@ export default function SiteSettingForm() {
           <Textarea value={vision} onChange={(e) => setVision(e.target.value)} rows={2} />
         </div>
         <div>
-          <Label>Values (icon + text for home page boxes)</Label>
-          {values.map((v, i) => (
-            <div key={i} className="border rounded p-3 mb-2 space-y-2">
-              <Input placeholder="Icon (e.g. Zap, Battery, Users, Leaf)" value={v.svg ?? ''} onChange={(e) => setValueAt(i, 'svg', e.target.value)} />
-              <Input placeholder="Text" value={v.text} onChange={(e) => setValueAt(i, 'text', e.target.value)} />
-              <Button type="button" variant="outline" size="sm" onClick={() => removeValue(i)}>Remove</Button>
-            </div>
-          ))}
-          <Button type="button" variant="outline" size="sm" onClick={addValue}>+ Value</Button>
+          <Label>Values</Label>
+          <Textarea value={values} onChange={(e) => setValues(e.target.value)} rows={3} placeholder="Our values (plain text, shown like Mission and Vision)" />
         </div>
         <div className="flex gap-2">
           <Button type="submit">Save</Button>
