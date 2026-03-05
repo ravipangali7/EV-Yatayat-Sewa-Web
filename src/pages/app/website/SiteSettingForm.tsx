@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { IconPicker } from '@/components/common/IconPicker';
+import { suggestIconFromText } from '@/lib/websiteIcons';
 import { siteSettingApi } from '@/modules/website/services/websiteApi';
 import type { SiteSetting, StatItem } from '@/modules/website/types';
 import { toast } from 'sonner';
@@ -211,7 +213,19 @@ export default function SiteSettingForm() {
           {stats.map((s, i) => (
             <div key={i} className="border rounded p-3 mb-2 space-y-2">
               <Input placeholder="Label" value={s.label} onChange={(e) => setStatAt(i, 'label', e.target.value)} />
-              <Textarea placeholder="SVG markup" value={s.svg} onChange={(e) => setStatAt(i, 'svg', e.target.value)} rows={2} />
+              <div>
+                <Label className="text-muted-foreground text-xs">Icon</Label>
+                <IconPicker
+                  value={s.svg}
+                  onChange={(v) => setStatAt(i, 'svg', v)}
+                  placeholder="Select icon..."
+                  suggestedIcon={suggestIconFromText(s.label)}
+                  onApplySuggestion={() => {
+                    const icon = suggestIconFromText(s.label);
+                    if (icon) setStatAt(i, 'svg', icon);
+                  }}
+                />
+              </div>
               <Input placeholder="Value" value={s.value} onChange={(e) => setStatAt(i, 'value', e.target.value)} />
               <Button type="button" variant="outline" size="sm" onClick={() => removeStat(i)}>Remove</Button>
             </div>

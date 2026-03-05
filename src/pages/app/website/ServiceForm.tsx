@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { IconPicker } from '@/components/common/IconPicker';
+import { suggestIconFromText } from '@/lib/websiteIcons';
 import { Switch } from '@/components/ui/switch';
 import { serviceApi } from '@/modules/website/services/websiteApi';
 import { toast } from 'sonner';
@@ -81,8 +83,17 @@ export default function ServiceForm() {
           <Input value={slug} onChange={(e) => setSlug(e.target.value)} required />
         </div>
         <div>
-          <Label>SVG (markup)</Label>
-          <Textarea value={svg} onChange={(e) => setSvg(e.target.value)} rows={4} />
+          <Label>Icon</Label>
+          <IconPicker
+            value={svg}
+            onChange={setSvg}
+            placeholder="Select icon..."
+            suggestedIcon={suggestIconFromText(name)}
+            onApplySuggestion={() => {
+              const icon = suggestIconFromText(name);
+              if (icon) setSvg(icon);
+            }}
+          />
         </div>
         <div>
           <Label>Description</Label>
