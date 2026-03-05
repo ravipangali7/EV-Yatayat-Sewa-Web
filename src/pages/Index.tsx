@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Bus, MapPin, Star, ArrowRight, ChevronRight, Quote, Zap, Battery, Mail, Phone } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { WebsiteIcon } from "@/components/website/WebsiteIcon";
+import { HomePageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import { mockData } from "@/lib/mockData";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle, Blog as BlogType, Slider as SliderType, Service as ServiceType } from "@/modules/website/types";
@@ -18,6 +19,7 @@ function imgUrl(path: string | null): string {
 }
 
 export default function Index() {
+  const [loading, setLoading] = useState(true);
   const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
   const [sliders, setSliders] = useState<SliderType[]>([]);
   const [faqs, setFaqs] = useState<FAQType[]>([]);
@@ -33,6 +35,7 @@ export default function Index() {
   const [contactSuccess, setContactSuccess] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
       websitePublicApi.siteSetting(),
       websitePublicApi.sliders(),
@@ -55,7 +58,8 @@ export default function Index() {
         if (Array.isArray(blogsRes)) setBlogs(blogsRes as BlogType[]);
         if (Array.isArray(servicesRes)) setServices(servicesRes as ServiceType[]);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
@@ -82,6 +86,10 @@ export default function Index() {
 
   const heroSlider = sliders.length > 0 ? sliders[0] : null;
   const statsList = siteSetting?.stats?.stats && Array.isArray(siteSetting.stats.stats) ? siteSetting.stats.stats : mockData.stats;
+
+  if (loading) {
+    return <HomePageSkeleton />;
+  }
 
   return (
     <div>
@@ -364,37 +372,49 @@ export default function Index() {
       </section>
 
       {/* Blog */}
-      <section className="section-padding-lg section-tint-blue">
+      <section className="section-padding-lg section-tint-blue relative">
         <div className="container">
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-14">
             <div>
               <p className="section-eyebrow">Blog</p>
-              <h2 className="text-3xl md:text-4xl font-display font-bold">Latest News & Updates</h2>
+              <span className="block w-12 h-0.5 rounded-full bg-blue-500 mt-2 mb-4" aria-hidden />
+              <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Latest News & Updates</h2>
+              <p className="text-muted-foreground mt-2 text-sm md:text-base">Insights, announcements, and stories from the road.</p>
             </div>
-            <Link to="/blogs" className="hidden md:flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg">
+            <Link
+              to="/blogs"
+              className="inline-flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg shrink-0"
+            >
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {blogs.length === 0 ? (
-              <p className="text-muted-foreground col-span-full text-center py-8">No posts yet.</p>
+              <p className="text-muted-foreground col-span-full text-center py-12">No posts yet.</p>
             ) : (
               blogs.map((b) => {
                 const excerpt = b.content?.replace(/<[^>]+>/g, "").trim().slice(0, 120) || "";
                 const date = b.created_at ? new Date(b.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "";
                 return (
-                  <Link to={`/blog/${b.slug}`} key={b.id} className="website-card bg-card overflow-hidden group">
-                    {b.image ? (
-                      <img src={imgUrl(b.image)} alt={b.name} className="h-40 w-full object-cover" />
-                    ) : (
-                      <div className="h-40 gradient-primary flex items-center justify-center">
-                        <Bus className="h-12 w-12 text-primary-foreground opacity-40" />
-                      </div>
-                    )}
-                    <div className="p-5">
-                      <h4 className="font-semibold mt-3 mb-2 group-hover:text-primary transition-colors line-clamp-2">{b.name}</h4>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{excerpt}{excerpt.length >= 120 ? "…" : ""}</p>
-                      <p className="text-xs text-muted-foreground mt-3">{date}</p>
+                  <Link to={`/blog/${b.slug}`} key={b.id} className="website-card bg-card overflow-hidden group flex flex-col">
+                    <div className="relative h-44 overflow-hidden">
+                      {b.image ? (
+                        <>
+                          <img src={imgUrl(b.image)} alt={b.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden />
+                        </>
+                      ) : (
+                        <div className="h-full gradient-primary flex items-center justify-center">
+                          <Bus className="h-14 w-14 text-primary-foreground opacity-40 group-hover:opacity-60 transition-opacity" />
+                        </div>
+                      )}
+                      <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-lg bg-white/90 dark:bg-card/90 text-xs font-medium text-foreground shadow-soft">
+                        {date}
+                      </span>
+                    </div>
+                    <div className="p-5 flex flex-col flex-1">
+                      <h4 className="font-display font-semibold mb-2 group-hover:text-primary transition-colors line-clamp-2">{b.name}</h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed flex-1">{excerpt}{excerpt.length >= 120 ? "…" : ""}</p>
                     </div>
                   </Link>
                 );
@@ -405,19 +425,29 @@ export default function Index() {
       </section>
 
       {/* FAQ + Contact (dynamic from API) */}
-      <section className="section-padding-lg">
-        <div className="container grid md:grid-cols-2 gap-12">
+      <section className="section-padding-lg section-tint-amber relative">
+        <div className="container grid md:grid-cols-2 gap-12 lg:gap-16">
           <div>
             <p className="section-eyebrow">FAQ</p>
-            <h2 className="text-3xl font-display font-bold mb-6">Frequently Asked Questions</h2>
+            <span className="block w-12 h-0.5 rounded-full bg-amber-500 mb-4" aria-hidden />
+            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight mb-2">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground text-sm mb-8">Quick answers to common questions.</p>
             {faqs.length === 0 ? (
               <p className="text-muted-foreground">No FAQs yet.</p>
             ) : (
-              <Accordion type="single" collapsible className="space-y-2">
+              <Accordion type="single" collapsible className="space-y-3">
                 {faqs.map((f) => (
-                  <AccordionItem key={f.id} value={`faq-${f.id}`} className="border border-border/50 rounded-xl px-4 shadow-soft">
-                    <AccordionTrigger className="text-sm font-medium hover:no-underline">{f.question}</AccordionTrigger>
-                    <AccordionContent className="text-sm text-muted-foreground">{f.answer}</AccordionContent>
+                  <AccordionItem
+                    key={f.id}
+                    value={`faq-${f.id}`}
+                    className="border border-border/50 rounded-2xl px-5 shadow-soft bg-card hover:shadow-card-hover transition-shadow border-l-4 border-l-primary"
+                  >
+                    <AccordionTrigger className="text-sm font-medium hover:no-underline py-4 [&[data-state=open]]:text-primary">
+                      {f.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-sm text-muted-foreground pb-4 leading-relaxed">
+                      {f.answer}
+                    </AccordionContent>
                   </AccordionItem>
                 ))}
               </Accordion>
@@ -425,11 +455,28 @@ export default function Index() {
           </div>
           <div>
             <p className="section-eyebrow">Contact</p>
-            <h2 className="text-3xl font-display font-bold mb-6">Get in Touch</h2>
-            <div className="space-y-4 mb-6 text-sm text-muted-foreground">
-              <p className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0 text-primary" /> {contactAddress}</p>
-              <p className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-primary" /> {contactPhoneDisplay}</p>
-              <p className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-primary" /> {contactEmailDisplay}</p>
+            <span className="block w-12 h-0.5 rounded-full bg-primary mb-4" aria-hidden />
+            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight mb-2">Get in Touch</h2>
+            <p className="text-muted-foreground text-sm mb-6">We&apos;d love to hear from you.</p>
+            <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-soft space-y-4 mb-6">
+              <p className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <MapPin className="h-4 w-4 text-primary" />
+                </span>
+                {contactAddress}
+              </p>
+              <p className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Phone className="h-4 w-4 text-primary" />
+                </span>
+                {contactPhoneDisplay}
+              </p>
+              <p className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Mail className="h-4 w-4 text-primary" />
+                </span>
+                {contactEmailDisplay}
+              </p>
             </div>
             {contactSuccess ? (
               <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center text-sm text-primary font-medium shadow-soft">
@@ -442,7 +489,7 @@ export default function Index() {
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow placeholder:text-muted-foreground/70"
                 />
                 <input
                   placeholder="Phone"
@@ -450,7 +497,7 @@ export default function Index() {
                   value={contactPhone}
                   onChange={(e) => setContactPhone(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow placeholder:text-muted-foreground/70"
                 />
                 <textarea
                   placeholder="Your Message"
@@ -458,7 +505,7 @@ export default function Index() {
                   value={contactMessage}
                   onChange={(e) => setContactMessage(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none resize-none transition-shadow"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none resize-none transition-shadow placeholder:text-muted-foreground/70"
                 />
                 <button
                   type="submit"

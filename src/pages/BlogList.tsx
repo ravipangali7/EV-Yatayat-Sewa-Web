@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Bus, ArrowRight, Search } from "lucide-react";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import { ListPageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import type { Blog } from "@/modules/website/types";
 
 const MEDIA_BASE = "https://system.evyatayatsewa.com";
@@ -11,16 +12,19 @@ function imgUrl(path: string | null): string {
 }
 
 export default function BlogList() {
+  const [loading, setLoading] = useState(true);
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    setLoading(true);
     websitePublicApi
       .blogs()
       .then((res) => {
         if (Array.isArray(res)) setBlogs(res as Blog[]);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const q = searchQuery.trim().toLowerCase();
@@ -31,6 +35,10 @@ export default function BlogList() {
         return nameMatch || contentSnippet.toLowerCase().includes(q);
       })
     : blogs;
+
+  if (loading) {
+    return <ListPageSkeleton cardCount={6} />;
+  }
 
   return (
     <div>

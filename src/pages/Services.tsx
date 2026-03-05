@@ -3,19 +3,23 @@ import { Link } from "react-router-dom";
 import { ChevronRight, Search } from "lucide-react";
 import { WebsiteIcon } from "@/components/website/WebsiteIcon";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import { ListPageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import type { Service } from "@/modules/website/types";
 
 export default function ServicesPage() {
+  const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<Service[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    setLoading(true);
     websitePublicApi
       .services()
       .then((res) => {
         if (Array.isArray(res)) setServices(res as Service[]);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const q = searchQuery.trim().toLowerCase();
@@ -25,6 +29,10 @@ export default function ServicesPage() {
           s.name?.toLowerCase().includes(q) || (s.description ?? "").toLowerCase().includes(q)
       )
     : services;
+
+  if (loading) {
+    return <ListPageSkeleton cardCount={6} />;
+  }
 
   return (
     <div>

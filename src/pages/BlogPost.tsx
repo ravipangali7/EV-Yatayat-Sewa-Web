@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Tag } from "lucide-react";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import { DetailPageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import type { Blog } from "@/modules/website/types";
 
 const MEDIA_BASE = "https://system.evyatayatsewa.com";
@@ -45,11 +46,7 @@ export default function BlogPost() {
   }
 
   if (!blog) {
-    return (
-      <div className="section-padding-lg container text-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   const dateStr = blog.created_at ? new Date(blog.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";

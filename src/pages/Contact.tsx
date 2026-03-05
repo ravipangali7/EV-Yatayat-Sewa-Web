@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import { TwoColumnPageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import type { SiteSetting } from "@/modules/website/types";
 
 const FALLBACK = {
@@ -10,6 +11,7 @@ const FALLBACK = {
 };
 
 export default function Contact() {
+  const [loading, setLoading] = useState(true);
   const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -18,6 +20,7 @@ export default function Contact() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
     websitePublicApi
       .siteSetting()
       .then((data) => {
@@ -25,8 +28,13 @@ export default function Contact() {
           setSiteSetting(data as SiteSetting);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return <TwoColumnPageSkeleton />;
+  }
 
   const address = siteSetting?.address?.trim() || FALLBACK.address;
   const phoneDisplay = Array.isArray(siteSetting?.phones) && siteSetting.phones.length > 0 ? String(siteSetting.phones[0]).trim() : FALLBACK.phone;

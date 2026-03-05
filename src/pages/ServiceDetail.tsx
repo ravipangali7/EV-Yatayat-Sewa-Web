@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { WebsiteIcon } from "@/components/website/WebsiteIcon";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import { DetailPageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import type { Service } from "@/modules/website/types";
 
 export default function ServiceDetail() {
@@ -30,11 +31,7 @@ export default function ServiceDetail() {
   }
 
   if (!service) {
-    return (
-      <div className="section-padding container text-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   const rawIcon = (service.svg ?? "Bus").toString().trim();

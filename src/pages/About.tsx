@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Leaf, Target, Eye } from "lucide-react";
 import heroBus from "@/assets/hero-bus.jpg";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import { TwoColumnPageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import type { SiteSetting } from "@/modules/website/types";
 
 const MEDIA_BASE = "https://system.evyatayatsewa.com";
@@ -15,9 +16,11 @@ const FALLBACK_VISION = "To become South Asia's leading electric public transpor
 const FALLBACK_VALUES = "100% Electric Fleet • Fast Charging Infra • Trained Drivers • Zero Emissions";
 
 export default function About() {
+  const [loading, setLoading] = useState(true);
   const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
 
   useEffect(() => {
+    setLoading(true);
     websitePublicApi
       .siteSetting()
       .then((data) => {
@@ -25,8 +28,13 @@ export default function About() {
           setSiteSetting(data as SiteSetting);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return <TwoColumnPageSkeleton />;
+  }
 
   const heroImage = siteSetting?.about_image ? imgUrl(siteSetting.about_image) : heroBus;
   const heroTitle = siteSetting?.about_title?.trim() || "About Us";

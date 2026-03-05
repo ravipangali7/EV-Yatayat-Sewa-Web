@@ -44,23 +44,26 @@ export function PublicFooter(_props?: PublicFooterProps) {
     : FALLBACK.email;
   const copyrightText = siteSetting?.footer_text?.trim() || FALLBACK.copyright;
 
-  const linkClass = "block text-xs opacity-90 hover:text-primary hover:opacity-100 transition-all duration-200 py-0.5";
+  const linkClass = "block text-xs opacity-90 hover:text-primary hover:opacity-100 transition-all duration-200 py-1";
 
   return (
-    <footer className="text-white bg-gradient-to-b from-[hsl(210_55%_18%)] to-[hsl(210_55%_12%)]">
+    <footer className="text-white bg-gradient-to-b from-[hsl(210_55%_18%)] to-[hsl(210_55%_12%)] relative">
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" aria-hidden />
       <div className="container py-8 md:py-10 px-4">
-        <div className="grid md:grid-cols-4 gap-6 md:gap-8">
-          <div className="space-y-2">
+        <div className="grid md:grid-cols-4 gap-8 md:gap-10">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Bus className="h-5 w-5 text-primary shrink-0" />
+              <span className="flex w-9 h-9 items-center justify-center rounded-lg bg-primary/20">
+                <Bus className="h-5 w-5 text-primary shrink-0" />
+              </span>
               <span className="font-display text-lg font-bold">{brandName}</span>
             </div>
-            <p className="text-xs opacity-80 leading-relaxed max-w-xs">{tagline}</p>
+            <p className="text-xs opacity-85 leading-relaxed max-w-xs">{tagline}</p>
           </div>
 
-          <div className="space-y-2">
-            <h4 className="font-semibold text-foreground text-sm">Quick Links</h4>
-            <div className="flex flex-col space-y-1.5 text-xs opacity-80">
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white text-sm tracking-wide">Quick Links</h4>
+            <div className="flex flex-col space-y-1 text-xs opacity-85">
               <Link to="/about" className={linkClass}>About</Link>
               <Link to="/services" className={linkClass}>Services</Link>
               <Link to="/blogs" className={linkClass}>Blogs</Link>
@@ -68,11 +71,11 @@ export function PublicFooter(_props?: PublicFooterProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h4 className="font-semibold text-foreground text-sm">Services</h4>
-            <div className="flex flex-col space-y-1.5 text-xs opacity-80">
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white text-sm tracking-wide">Services</h4>
+            <div className="flex flex-col space-y-1 text-xs opacity-85">
               {services.length === 0 ? (
-                <span>—</span>
+                <span className="opacity-70">—</span>
               ) : (
                 services.slice(0, 6).map((s) => (
                   <Link key={s.id} to={`/service/${s.slug}`} className={linkClass}>{s.name}</Link>
@@ -81,17 +84,23 @@ export function PublicFooter(_props?: PublicFooterProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h4 className="font-semibold text-foreground text-sm">Contact</h4>
-            <div className="space-y-1.5 text-xs opacity-80">
-              <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 shrink-0 text-primary" /> {address}</p>
-              <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 shrink-0 text-primary" /> {phone}</p>
-              <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 shrink-0 text-primary" /> {email}</p>
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white text-sm tracking-wide">Contact</h4>
+            <div className="space-y-2 text-xs opacity-85">
+              <p className="flex items-center gap-2.5">
+                <MapPin className="h-4 w-4 shrink-0 text-primary" /> {address}
+              </p>
+              <p className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 shrink-0 text-primary" /> {phone}
+              </p>
+              <p className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 shrink-0 text-primary" /> {email}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-white/15 mt-8 pt-4 text-center text-xs opacity-60">
+        <div className="border-t border-white/15 mt-8 pt-5 text-center text-xs opacity-60">
           {copyrightText}
         </div>
       </div>
