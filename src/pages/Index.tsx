@@ -4,7 +4,7 @@ import { Bus, MapPin, Users, Leaf, Star, ArrowRight, Building2, Mountain, Calend
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { mockData } from "@/lib/mockData";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
-import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle } from "@/modules/website/types";
+import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle, Blog as BlogType } from "@/modules/website/types";
 import heroBus from "@/assets/hero-bus.jpg";
 import logo from "@/assets/logo.png";
 
@@ -24,6 +24,7 @@ export default function Index() {
   const [testimonials, setTestimonials] = useState<TestimonialType[]>([]);
   const [team, setTeam] = useState<TeamType[]>([]);
   const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
+  const [blogs, setBlogs] = useState<BlogType[]>([]);
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactMessage, setContactMessage] = useState("");
@@ -37,8 +38,9 @@ export default function Index() {
       websitePublicApi.testimonials(),
       websitePublicApi.team(),
       websitePublicApi.vehicles(),
+      websitePublicApi.blogs(),
     ])
-      .then(([settingRes, faqsRes, testimonialsRes, teamRes, vehiclesRes]) => {
+      .then(([settingRes, faqsRes, testimonialsRes, teamRes, vehiclesRes, blogsRes]) => {
         if (settingRes && typeof settingRes === "object" && "name" in settingRes) {
           setSiteSetting(settingRes as SiteSetting);
         }
@@ -46,6 +48,7 @@ export default function Index() {
         if (Array.isArray(testimonialsRes)) setTestimonials(testimonialsRes as TestimonialType[]);
         if (Array.isArray(teamRes)) setTeam(teamRes as TeamType[]);
         if (Array.isArray(vehiclesRes)) setVehicles(vehiclesRes as PublicVehicle[]);
+        if (Array.isArray(blogsRes)) setBlogs(blogsRes as BlogType[]);
       })
       .catch(() => {});
   }, []);
@@ -283,19 +286,31 @@ export default function Index() {
             </Link>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {mockData.blogs.map((b) => (
-              <Link to={`/blog/${b.slug}`} key={b.slug} className="bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition group">
-                <div className="h-40 gradient-primary flex items-center justify-center">
-                  <Bus className="h-12 w-12 text-primary-foreground opacity-40" />
-                </div>
-                <div className="p-5">
-                  <span className="text-xs font-medium text-primary bg-accent px-2 py-1 rounded">{b.category}</span>
-                  <h4 className="font-semibold mt-3 mb-2 group-hover:text-primary transition line-clamp-2">{b.title}</h4>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{b.excerpt}</p>
-                  <p className="text-xs text-muted-foreground mt-3">{b.date}</p>
-                </div>
-              </Link>
-            ))}
+            {blogs.length === 0 ? (
+              <p className="text-muted-foreground col-span-full text-center py-8">No posts yet.</p>
+            ) : (
+              blogs.map((b) => {
+                const excerpt = b.content?.replace(/<[^>]+>/g, "").trim().slice(0, 120) || "";
+                const date = b.created_at ? new Date(b.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "";
+                return (
+                  <Link to={`/blog/${b.slug}`} key={b.id} className="bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition group">
+                    {b.image ? (
+                      <img src={imgUrl(b.image)} alt={b.name} className="h-40 w-full object-cover" />
+                    ) : (
+                      <div className="h-40 gradient-primary flex items-center justify-center">
+                        <Bus className="h-12 w-12 text-primary-foreground opacity-40" />
+                      </div>
+                    )}
+                    <div className="p-5">
+                      <span className="text-xs font-medium text-primary bg-accent px-2 py-1 rounded">Blog</span>
+                      <h4 className="font-semibold mt-3 mb-2 group-hover:text-primary transition line-clamp-2">{b.name}</h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{excerpt}{excerpt.length >= 120 ? "…" : ""}</p>
+                      <p className="text-xs text-muted-foreground mt-3">{date}</p>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
       </section>
