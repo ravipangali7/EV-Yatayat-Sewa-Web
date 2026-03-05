@@ -239,98 +239,122 @@ export default function Index() {
       </section>
 
       {/* Team */}
-      <section className="section-padding-lg section-tint-violet">
+      <section className="section-padding-lg section-tint-violet relative">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Our Team</p>
-            <h2 className="text-3xl md:text-4xl font-display font-bold">Meet the People Behind the Wheel</h2>
+            <span className="block w-12 h-0.5 rounded-full bg-violet-500 mx-auto my-4" aria-hidden />
+            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Meet the People Behind the Wheel</h2>
+            <p className="text-muted-foreground mt-3 text-sm md:text-base">Dedicated professionals driving sustainable transport forward.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
             {team.length === 0 ? (
-              <p className="text-muted-foreground col-span-full text-center py-8">No team members yet.</p>
+              <p className="text-muted-foreground col-span-full text-center py-12">No team members yet.</p>
             ) : (
-              team.map((t) => (
-                <div key={t.id} className="text-center group">
-                  {t.image ? (
-                    <img src={imgUrl(t.image)} alt={t.name} className="w-24 h-24 mx-auto rounded-full object-cover mb-4 ring-2 ring-transparent group-hover:ring-primary transition-all duration-300" />
-                  ) : (
-                    <div className="w-24 h-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary transition-colors duration-300">
-                      <span className="text-2xl font-display font-bold text-primary group-hover:text-primary-foreground transition-colors">
-                        {t.name.split(" ").map((n) => n[0]).join("")}
-                      </span>
-                    </div>
-                  )}
-                  <h4 className="font-semibold">{t.name}</h4>
-                  <p className="text-sm text-muted-foreground">{t.designation}</p>
-                </div>
-              ))
+              team.map((t, idx) => {
+                const avatarBg = ["bg-primary/15", "bg-violet-500/15", "bg-blue-500/15", "bg-amber-500/15"][idx % 4];
+                return (
+                  <div key={t.id} className="website-card bg-card p-6 text-center group">
+                    {t.image ? (
+                      <div className="relative inline-block mb-4">
+                        <img
+                          src={imgUrl(t.image)}
+                          alt={t.name}
+                          className="w-28 h-28 mx-auto rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-violet-500/50 transition-all duration-300"
+                        />
+                      </div>
+                    ) : (
+                      <div className={`w-28 h-28 mx-auto rounded-2xl ${avatarBg} flex items-center justify-center mb-4 group-hover:bg-violet-500 group-hover:text-primary-foreground transition-all duration-300`}>
+                        <span className="text-2xl font-display font-bold text-violet-600 group-hover:text-white transition-colors">
+                          {t.name.split(" ").map((n) => n[0]).join("")}
+                        </span>
+                      </div>
+                    )}
+                    <h4 className="font-display font-semibold text-foreground mb-1">{t.name}</h4>
+                    <p className="text-sm text-muted-foreground">{t.designation}</p>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
       </section>
 
-      {/* Vehicles */}
-      <section className="section-padding-lg section-tint-amber">
+      {/* Vehicles / Fleet */}
+      <section className="section-padding-lg section-tint-amber relative">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Our Fleet</p>
-            <h2 className="text-3xl md:text-4xl font-display font-bold">Modern Electric Vehicles</h2>
+            <span className="block w-12 h-0.5 rounded-full bg-amber-500 mx-auto my-4" aria-hidden />
+            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Modern Electric Vehicles</h2>
+            <p className="text-muted-foreground mt-3 text-sm md:text-base">Zero-emission buses built for comfort and reliability.</p>
           </div>
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {vehicles.length === 0 ? (
-              <p className="text-muted-foreground col-span-full text-center py-8">No vehicles yet.</p>
+              <p className="text-muted-foreground col-span-full text-center py-12">No vehicles yet.</p>
             ) : (
-              vehicles.map((v) => (
-                <div key={v.id} className="website-card bg-card p-6 text-center">
-                  {v.featured_image ? (
-                    <img src={v.featured_image} alt={v.name} className="h-24 w-full object-cover rounded-xl mx-auto mb-4" />
-                  ) : (
-                    <Bus className="h-12 w-12 text-primary mx-auto mb-4" />
-                  )}
-                  <h4 className="font-display font-semibold mb-1">{v.name}</h4>
-                  <p className="text-xs text-muted-foreground mb-3">{v.vehicle_type}</p>
-                  <div className="flex justify-center gap-2 flex-wrap text-sm">
-                    {v.vehicle_no && <span className="px-3 py-1 rounded-full bg-primary/10 text-primary">{v.vehicle_no}</span>}
-                    {v.description && <span className="px-3 py-1 rounded-full bg-primary/10 text-primary line-clamp-1 max-w-[140px]">{v.description}</span>}
+              vehicles.map((v, idx) => {
+                const accentBg = ["bg-primary/10", "bg-amber-500/10", "bg-primary/10", "bg-amber-500/10"][idx % 4];
+                return (
+                  <div key={v.id} className="website-card bg-card overflow-hidden group">
+                    <div className={`h-32 flex items-center justify-center ${accentBg} group-hover:bg-primary/15 transition-colors duration-300`}>
+                      {v.featured_image ? (
+                        <img src={v.featured_image} alt={v.name} className="h-full w-full object-cover object-center" />
+                      ) : (
+                        <Bus className="h-14 w-14 text-primary/60 group-hover:text-primary transition-colors" />
+                      )}
+                    </div>
+                    <div className="p-5 text-center">
+                      <h4 className="font-display font-semibold text-foreground mb-1">{v.name}</h4>
+                      <p className="text-xs text-muted-foreground mb-3">{v.vehicle_type}</p>
+                      <div className="flex justify-center gap-2 flex-wrap">
+                        {v.vehicle_no && <span className="px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-medium">{v.vehicle_no}</span>}
+                        {v.description && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs line-clamp-1 max-w-[140px]">{v.description}</span>}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
       </section>
 
       {/* Testimonials (dynamic from API) */}
-      <section className="section-padding-lg section-tint-primary">
+      <section className="section-padding-lg section-tint-primary relative">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Testimonials</p>
-            <h2 className="text-3xl md:text-4xl font-display font-bold">What Our Passengers Say</h2>
+            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-4" aria-hidden />
+            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">What Our Passengers Say</h2>
+            <p className="text-muted-foreground mt-3 text-sm md:text-base">Real stories from people who ride with us.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
             {testimonials.length === 0 ? (
-              <p className="text-muted-foreground col-span-full text-center py-8">No testimonials yet.</p>
+              <p className="text-muted-foreground col-span-full text-center py-12">No testimonials yet.</p>
             ) : (
               testimonials.map((t) => (
-                <div key={t.id} className="website-card bg-card p-6 border border-border/50">
-                  <Quote className="h-8 w-8 text-primary/30 mb-4" />
-                  <p className="text-muted-foreground mb-4 italic">"{t.message}"</p>
-                  <div className="flex items-center gap-2">
+                <div key={t.id} className="website-card bg-card p-6 lg:p-7 border-l-4 border-l-primary flex flex-col">
+                  <Quote className="h-10 w-10 text-primary/25 mb-4 shrink-0" aria-hidden />
+                  <p className="text-muted-foreground mb-5 italic leading-relaxed flex-1">"{t.message}"</p>
+                  <div className="flex items-center gap-3 pt-3 border-t border-border/50">
                     {t.image ? (
-                      <img src={imgUrl(t.image)} alt={t.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                      <img src={imgUrl(t.image)} alt={t.name} className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-border/50" />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-display font-bold text-primary">
+                      <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-display font-bold text-primary">
                           {t.name.split(" ").map((n) => n[0]).join("")}
                         </span>
                       </div>
                     )}
-                    <div className="flex">
-                      {Array.from({ length: Math.min(5, Math.max(0, t.star)) }).map((_, j) => (
-                        <Star key={j} className="h-4 w-4 fill-primary text-primary" />
-                      ))}
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-sm text-foreground block truncate">{t.name}</span>
+                      <div className="flex items-center gap-0.5 mt-0.5">
+                        {Array.from({ length: Math.min(5, Math.max(0, t.star)) }).map((_, j) => (
+                          <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
                     </div>
-                    <span className="font-semibold text-sm ml-auto">{t.name}</span>
                   </div>
                 </div>
               ))
