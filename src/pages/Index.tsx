@@ -4,7 +4,7 @@ import { Bus, MapPin, Users, Leaf, Star, ArrowRight, Building2, Mountain, Calend
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { mockData } from "@/lib/mockData";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
-import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle, Blog as BlogType } from "@/modules/website/types";
+import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle, Blog as BlogType, Slider as SliderType } from "@/modules/website/types";
 import heroBus from "@/assets/hero-bus.jpg";
 import logo from "@/assets/logo.png";
 
@@ -20,6 +20,7 @@ function imgUrl(path: string | null): string {
 
 export default function Index() {
   const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
+  const [sliders, setSliders] = useState<SliderType[]>([]);
   const [faqs, setFaqs] = useState<FAQType[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialType[]>([]);
   const [team, setTeam] = useState<TeamType[]>([]);
@@ -34,16 +35,18 @@ export default function Index() {
   useEffect(() => {
     Promise.all([
       websitePublicApi.siteSetting(),
+      websitePublicApi.sliders(),
       websitePublicApi.faqs(),
       websitePublicApi.testimonials(),
       websitePublicApi.team(),
       websitePublicApi.vehicles(),
       websitePublicApi.blogs(),
     ])
-      .then(([settingRes, faqsRes, testimonialsRes, teamRes, vehiclesRes, blogsRes]) => {
+      .then(([settingRes, slidersRes, faqsRes, testimonialsRes, teamRes, vehiclesRes, blogsRes]) => {
         if (settingRes && typeof settingRes === "object" && "name" in settingRes) {
           setSiteSetting(settingRes as SiteSetting);
         }
+        if (Array.isArray(slidersRes)) setSliders(slidersRes as SliderType[]);
         if (Array.isArray(faqsRes)) setFaqs(faqsRes as FAQType[]);
         if (Array.isArray(testimonialsRes)) setTestimonials(testimonialsRes as TestimonialType[]);
         if (Array.isArray(teamRes)) setTeam(teamRes as TeamType[]);
@@ -75,11 +78,18 @@ export default function Index() {
   const contactPhoneDisplay = Array.isArray(siteSetting?.phones) && siteSetting.phones.length > 0 ? String(siteSetting.phones[0]).trim() : CONTACT_FALLBACK.phone;
   const contactEmailDisplay = Array.isArray(siteSetting?.emails) && siteSetting.emails.length > 0 ? String(siteSetting.emails[0]).trim() : CONTACT_FALLBACK.email;
 
+  const heroSlider = sliders.length > 0 ? sliders[0] : null;
+  const statsList = siteSetting?.stats?.stats && Array.isArray(siteSetting.stats.stats) ? siteSetting.stats.stats : mockData.stats;
+
   return (
     <div>
-      {/* Hero */}
+      {/* Hero (dynamic from first slider or static fallback) */}
       <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
-        <img src={heroBus} alt="Electric bus" className="absolute inset-0 w-full h-full object-cover" />
+        {heroSlider?.image ? (
+          <img src={imgUrl(heroSlider.image)} alt={heroSlider.title} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <img src={heroBus} alt="Electric bus" className="absolute inset-0 w-full h-full object-cover" />
+        )}
         <div className="absolute inset-0 gradient-hero" />
         <div className="container relative z-10 text-primary-foreground">
           <div className="max-w-2xl animate-fade-in">
@@ -87,10 +97,10 @@ export default function Index() {
               <img src={logo} alt="Logo" className="h-16 w-auto drop-shadow-lg" />
             </div>
             <h1 className="text-4xl md:text-6xl font-display font-bold leading-tight mb-6">
-              Nepal's Electric<br />Transport Revolution
+              {heroSlider?.title ? <span className="whitespace-pre-line">{heroSlider.title}</span> : <>Nepal's Electric<br />Transport Revolution</>}
             </h1>
-            <p className="text-lg md:text-xl opacity-90 mb-8 max-w-lg">
-              Clean, comfortable, and reliable electric bus services across Nepal. Join the green movement today.
+            <p className="text-lg md:text-xl opacity-90 mb-8 max-w-lg whitespace-pre-line">
+              {heroSlider?.subtitle || "Clean, comfortable, and reliable electric bus services across Nepal. Join the green movement today."}
             </p>
             <div className="flex gap-4 flex-wrap">
               <Link to="/services" className="px-8 py-3 rounded-lg font-semibold bg-primary-foreground text-[hsl(210_60%_20%)] hover:opacity-90 transition flex items-center gap-2">
@@ -104,14 +114,15 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats (dynamic from site setting or mock fallback) */}
       <section className="-mt-16 relative z-10 container">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {mockData.stats.map((s, i) => {
-            const Icon = iconMap[s.icon];
+          {statsList.map((s: { label: string; value: string; icon?: string; svg?: string }, i: number) => {
+            const iconKey = s.svg ?? s.icon ?? "Bus";
+            const Icon = iconMap[iconKey];
             return (
               <div key={i} className="bg-card rounded-xl shadow-lg p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                <Icon className="h-8 w-8 text-primary mx-auto mb-3" />
+                {Icon ? <Icon className="h-8 w-8 text-primary mx-auto mb-3" /> : <Bus className="h-8 w-8 text-primary mx-auto mb-3" />}
                 <p className="text-3xl font-display font-bold text-foreground">{s.value}</p>
                 <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
               </div>
@@ -302,7 +313,6 @@ export default function Index() {
                       </div>
                     )}
                     <div className="p-5">
-                      <span className="text-xs font-medium text-primary bg-accent px-2 py-1 rounded">Blog</span>
                       <h4 className="font-semibold mt-3 mb-2 group-hover:text-primary transition line-clamp-2">{b.name}</h4>
                       <p className="text-sm text-muted-foreground line-clamp-2">{excerpt}{excerpt.length >= 120 ? "…" : ""}</p>
                       <p className="text-xs text-muted-foreground mt-3">{date}</p>
