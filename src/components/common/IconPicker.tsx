@@ -13,8 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ALL_ICONS,
-  LUCIDE_ICONS,
+  buildAllIcons,
   MATERIAL_ICONS,
   FA_ICONS,
   type IconEntry,
@@ -22,6 +21,23 @@ import {
 
 type IconComponentType = React.ComponentType<{ className?: string }>;
 const lucideRecord = LucideIcons as unknown as Record<string, IconComponentType>;
+
+const LUCIDE_NON_ICONS = new Set([
+  "createLucideIcon", "ForwardRef", "default", "LucideIcon", "icons",
+  "Icon", "LucideProps", "defaultProps",
+]);
+
+function getLucideIconNames(): string[] {
+  return Object.keys(lucideRecord).filter(
+    (k) =>
+      /^[A-Z]/.test(k) &&
+      typeof lucideRecord[k] === "function" &&
+      !LUCIDE_NON_ICONS.has(k)
+  );
+}
+
+const ALL_ICONS: IconEntry[] = buildAllIcons(getLucideIconNames());
+const FULL_LUCIDE_ICONS: IconEntry[] = ALL_ICONS.filter((e) => e.library === "lucide");
 
 const ICON_BOX_SIZE = "2.25rem"; // same for all libraries in the grid
 
@@ -216,7 +232,7 @@ export function IconPicker({
           </TabsContent>
           <TabsContent value="lucide" className="mt-3 flex-1 min-h-0">
             <IconGrid
-              icons={LUCIDE_ICONS}
+              icons={FULL_LUCIDE_ICONS}
               searchQuery={search}
               value={value}
               onSelect={handleSelect}

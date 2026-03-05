@@ -4,6 +4,9 @@
  * Backward compat: plain "Bus" is treated as Lucide.
  */
 
+import { MATERIAL_ICON_NAMES } from "./materialIconNames";
+import { FA_ICON_NAMES } from "./faIconNames";
+
 export type IconLibrary = "lucide" | "material" | "fa";
 
 export interface IconEntry {
@@ -13,58 +16,12 @@ export interface IconEntry {
   searchLabel: string;
 }
 
-/** Lucide icons (id = lucide:Name) */
+/** Lucide icons (curated for suggestion / backward compat) */
 const LUCIDE_LIST = [
   "Bus", "MapPin", "Users", "Leaf", "Building2", "Mountain", "CalendarCheck",
   "Plane", "GraduationCap", "Zap", "Battery", "Star", "Mail", "Phone", "Target",
   "Eye", "ArrowRight", "ChevronRight", "Quote",
 ] as const;
-
-/** Material Icons (id = material:icon_name) */
-const MATERIAL_LIST: { id: string; name: string; searchLabel: string }[] = [
-  { id: "material:directions_bus", name: "directions_bus", searchLabel: "bus transport" },
-  { id: "material:place", name: "place", searchLabel: "map location place" },
-  { id: "material:people", name: "people", searchLabel: "users team people" },
-  { id: "material:eco", name: "eco", searchLabel: "leaf green eco" },
-  { id: "material:business", name: "business", searchLabel: "building office" },
-  { id: "material:terrain", name: "terrain", searchLabel: "mountain terrain" },
-  { id: "material:event_available", name: "event_available", searchLabel: "calendar check" },
-  { id: "material:flight_takeoff", name: "flight_takeoff", searchLabel: "plane flight" },
-  { id: "material:school", name: "school", searchLabel: "education school" },
-  { id: "material:bolt", name: "bolt", searchLabel: "electric zap" },
-  { id: "material:battery_charging_full", name: "battery_charging_full", searchLabel: "battery charging" },
-  { id: "material:star", name: "star", searchLabel: "star rating" },
-  { id: "material:mail", name: "mail", searchLabel: "mail email" },
-  { id: "material:phone", name: "phone", searchLabel: "phone call" },
-  { id: "material:gps_fixed", name: "gps_fixed", searchLabel: "target gps" },
-  { id: "material:visibility", name: "visibility", searchLabel: "eye vision" },
-  { id: "material:arrow_forward", name: "arrow_forward", searchLabel: "arrow right" },
-  { id: "material:chevron_right", name: "chevron_right", searchLabel: "chevron" },
-  { id: "material:format_quote", name: "format_quote", searchLabel: "quote" },
-];
-
-/** Font Awesome (id = fa:icon-name), class = fas fa-{name} */
-const FA_LIST: { id: string; name: string; searchLabel: string }[] = [
-  { id: "fa:bus", name: "bus", searchLabel: "bus transport" },
-  { id: "fa:location-dot", name: "location-dot", searchLabel: "map location" },
-  { id: "fa:users", name: "users", searchLabel: "users team" },
-  { id: "fa:leaf", name: "leaf", searchLabel: "leaf green" },
-  { id: "fa:building", name: "building", searchLabel: "building" },
-  { id: "fa:mountain-sun", name: "mountain-sun", searchLabel: "mountain" },
-  { id: "fa:calendar-check", name: "calendar-check", searchLabel: "calendar" },
-  { id: "fa:plane", name: "plane", searchLabel: "plane flight" },
-  { id: "fa:graduation-cap", name: "graduation-cap", searchLabel: "education" },
-  { id: "fa:bolt", name: "bolt", searchLabel: "electric zap" },
-  { id: "fa:battery-full", name: "battery-full", searchLabel: "battery" },
-  { id: "fa:star", name: "star", searchLabel: "star" },
-  { id: "fa:envelope", name: "envelope", searchLabel: "mail email" },
-  { id: "fa:phone", name: "phone", searchLabel: "phone" },
-  { id: "fa:bullseye", name: "bullseye", searchLabel: "target" },
-  { id: "fa:eye", name: "eye", searchLabel: "eye vision" },
-  { id: "fa:arrow-right", name: "arrow-right", searchLabel: "arrow" },
-  { id: "fa:chevron-right", name: "chevron-right", searchLabel: "chevron" },
-  { id: "fa:quote-left", name: "quote-left", searchLabel: "quote" },
-];
 
 const lucideEntries: IconEntry[] = LUCIDE_LIST.map((name) => ({
   id: `lucide:${name}`,
@@ -73,27 +30,41 @@ const lucideEntries: IconEntry[] = LUCIDE_LIST.map((name) => ({
   searchLabel: name,
 }));
 
-const materialEntries: IconEntry[] = MATERIAL_LIST.map(({ id, name, searchLabel }) => ({
-  id,
+/** Full Material Icons list (MaterialIcons-Regular) */
+const materialEntries: IconEntry[] = MATERIAL_ICON_NAMES.map((name) => ({
+  id: `material:${name}`,
   library: "material",
   name,
-  searchLabel,
+  searchLabel: name.replace(/_/g, " "),
 }));
 
-const faEntries: IconEntry[] = FA_LIST.map(({ id, name, searchLabel }) => ({
-  id,
+/** Full Font Awesome 6 Free Solid list */
+const faEntries: IconEntry[] = FA_ICON_NAMES.map((name) => ({
+  id: `fa:${name}`,
   library: "fa",
   name,
-  searchLabel,
+  searchLabel: name.replace(/-/g, " "),
 }));
 
-/** All icons for picker; searchable by searchLabel and name */
-export const ALL_ICONS: IconEntry[] = [...lucideEntries, ...materialEntries, ...faEntries];
+/** Build Lucide entries from icon names (e.g. from package keys). Used by IconPicker for full list. */
+export function buildLucideEntries(names: string[]): IconEntry[] {
+  return names.map((name) => ({
+    id: `lucide:${name}`,
+    library: "lucide" as const,
+    name,
+    searchLabel: name,
+  }));
+}
 
-/** By library for tabbed picker */
+/** By library for tabbed picker (Material and FA are full sets) */
 export const LUCIDE_ICONS: IconEntry[] = lucideEntries;
 export const MATERIAL_ICONS: IconEntry[] = materialEntries;
 export const FA_ICONS: IconEntry[] = faEntries;
+
+/** Build full icon list for picker: pass Lucide icon names from the package. */
+export function buildAllIcons(lucideNames: string[]): IconEntry[] {
+  return [...buildLucideEntries(lucideNames), ...MATERIAL_ICONS, ...FA_ICONS];
+}
 
 /** Lucide-only names (backward compat) */
 export const WEBSITE_ICON_NAMES = LUCIDE_LIST;
