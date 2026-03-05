@@ -55,7 +55,7 @@ export default function BlogPost() {
   return (
     <div>
       <section className="relative min-h-[280px] flex items-end py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210_55%_18%)] to-[hsl(210_55%_12%)]" />
+        <div className="absolute inset-0 gradient-hero" />
         <div className="relative z-10 container px-4 text-primary-foreground w-full">
           <Link to="/blogs" className="inline-flex items-center gap-2 text-sm opacity-90 hover:opacity-100 mb-4 transition-opacity">
             <ArrowLeft className="h-4 w-4" /> Back to Blog

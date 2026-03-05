@@ -61,7 +61,7 @@ export default function Contact() {
   return (
     <div>
       <section className="relative min-h-[280px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210_55%_18%)] to-[hsl(210_55%_12%)]" />
+        <div className="absolute inset-0 gradient-hero" />
         <div className="relative z-10 text-center text-primary-foreground container px-4">
           <p className="section-eyebrow text-primary-foreground/90">Get in touch</p>
           <h1 className="text-4xl md:text-5xl font-display font-bold mt-2">Contact Us</h1>

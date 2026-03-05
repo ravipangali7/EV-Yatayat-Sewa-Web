@@ -47,7 +47,7 @@ export function PublicFooter(_props?: PublicFooterProps) {
   const linkClass = "block text-xs opacity-90 hover:text-primary hover:opacity-100 transition-all duration-200 py-1";
 
   return (
-    <footer className="text-white bg-gradient-to-b from-[hsl(210_55%_18%)] to-[hsl(210_55%_12%)] relative">
+    <footer className="text-white bg-[hsl(220_14%_18%)] relative">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" aria-hidden />
       <div className="container py-8 md:py-10 px-4">
         <div className="grid md:grid-cols-4 gap-8 md:gap-10">

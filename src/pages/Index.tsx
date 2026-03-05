@@ -115,7 +115,7 @@ export default function Index() {
             <div className="flex gap-4 flex-wrap">
               <Link
                 to="/services"
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold bg-primary-foreground text-[hsl(210_60%_20%)] shadow-soft hover:shadow-card-hover hover:scale-[1.02] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold bg-primary-foreground text-foreground shadow-soft hover:shadow-card-hover hover:scale-[1.02] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               >
                 Our Services <ArrowRight className="h-4 w-4" />
               </Link>
@@ -135,7 +135,7 @@ export default function Index() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsList.map((s: { label: string; value: string; icon?: string; svg?: string }, i: number) => {
             const rawIcon = (s.svg ?? s.icon ?? "Bus").toString().trim();
-            const statIconBg = ["bg-primary/15 text-primary", "bg-blue-500/15 text-blue-600", "bg-violet-500/15 text-violet-600", "bg-amber-500/15 text-amber-600"][i % 4];
+            const statIconBg = "bg-primary/15 text-primary";
             return (
               <div key={i} className="bg-card rounded-2xl border border-border/50 shadow-card p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 ${statIconBg}`}>
@@ -180,13 +180,13 @@ export default function Index() {
                   </div>
                 )}
                 {siteSetting?.vision?.trim() && (
-                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-blue-500">
+                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary">
                     <p className="section-eyebrow mb-2">Vision</p>
                     <p className="text-sm text-muted-foreground leading-relaxed">{siteSetting.vision}</p>
                   </div>
                 )}
                 {siteSetting?.values?.trim() && (
-                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-violet-500 sm:col-span-2">
+                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary sm:col-span-2">
                     <p className="section-eyebrow mb-2">Values</p>
                     <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{siteSetting.values}</p>
                   </div>
@@ -195,7 +195,7 @@ export default function Index() {
             )}
           </div>
           <div className="relative">
-            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-primary/20 via-transparent to-blue-500/20 opacity-60 blur-sm" aria-hidden />
+            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/10 opacity-60 blur-sm" aria-hidden />
             <div className="relative rounded-2xl overflow-hidden shadow-card-hover ring-1 ring-black/5">
               <img
                 src={siteSetting?.about_image ? imgUrl(siteSetting.about_image) : heroBus}
@@ -223,14 +223,13 @@ export default function Index() {
             ) : (
               services.map((s, idx) => {
                 const rawIcon = (s.svg ?? "Bus").toString().trim();
-                const iconBg = ["bg-primary/10", "bg-blue-500/10", "bg-violet-500/10"][idx % 3];
                 return (
                   <Link
                     to={`/service/${s.slug}`}
                     key={s.id}
                     className="group website-card bg-card p-6 lg:p-7 flex flex-col"
                   >
-                    <div className={`w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center mb-5 group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300`}>
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                       <WebsiteIcon name={rawIcon} className="h-7 w-7" />
                     </div>
                     <h3 className="font-display font-semibold text-lg mb-2 text-foreground group-hover:text-primary transition-colors">{s.name}</h3>
@@ -251,7 +250,7 @@ export default function Index() {
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Our Team</p>
-            <span className="block w-12 h-0.5 rounded-full bg-violet-500 mx-auto my-4" aria-hidden />
+            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-4" aria-hidden />
             <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Meet the People Behind the Wheel</h2>
             <p className="text-muted-foreground mt-3 text-sm md:text-base">Dedicated professionals driving sustainable transport forward.</p>
           </div>
@@ -260,7 +259,6 @@ export default function Index() {
               <p className="text-muted-foreground col-span-full text-center py-12">No team members yet.</p>
             ) : (
               team.map((t, idx) => {
-                const avatarBg = ["bg-primary/15", "bg-violet-500/15", "bg-blue-500/15", "bg-amber-500/15"][idx % 4];
                 return (
                   <div key={t.id} className="website-card bg-card p-6 text-center group">
                     {t.image ? (
@@ -268,12 +266,12 @@ export default function Index() {
                         <img
                           src={imgUrl(t.image)}
                           alt={t.name}
-                          className="w-28 h-28 mx-auto rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-violet-500/50 transition-all duration-300"
+                          className="w-28 h-28 mx-auto rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-primary/50 transition-all duration-300"
                         />
                       </div>
                     ) : (
-                      <div className={`w-28 h-28 mx-auto rounded-2xl ${avatarBg} flex items-center justify-center mb-4 group-hover:bg-violet-500 group-hover:text-primary-foreground transition-all duration-300`}>
-                        <span className="text-2xl font-display font-bold text-violet-600 group-hover:text-white transition-colors">
+                      <div className="w-28 h-28 mx-auto rounded-2xl bg-primary/15 flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                        <span className="text-2xl font-display font-bold text-primary group-hover:text-white transition-colors">
                           {t.name.split(" ").map((n) => n[0]).join("")}
                         </span>
                       </div>
@@ -293,7 +291,7 @@ export default function Index() {
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Our Fleet</p>
-            <span className="block w-12 h-0.5 rounded-full bg-amber-500 mx-auto my-4" aria-hidden />
+            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-4" aria-hidden />
             <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Modern Electric Vehicles</h2>
             <p className="text-muted-foreground mt-3 text-sm md:text-base">Zero-emission buses built for comfort and reliability.</p>
           </div>
@@ -301,11 +299,9 @@ export default function Index() {
             {vehicles.length === 0 ? (
               <p className="text-muted-foreground col-span-full text-center py-12">No vehicles yet.</p>
             ) : (
-              vehicles.map((v, idx) => {
-                const accentBg = ["bg-primary/10", "bg-amber-500/10", "bg-primary/10", "bg-amber-500/10"][idx % 4];
-                return (
+              vehicles.map((v) => (
                   <div key={v.id} className="website-card bg-card overflow-hidden group">
-                    <div className={`h-32 flex items-center justify-center ${accentBg} group-hover:bg-primary/15 transition-colors duration-300`}>
+                    <div className="h-32 flex items-center justify-center bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
                       {v.featured_image ? (
                         <img src={v.featured_image} alt={v.name} className="h-full w-full object-cover object-center" />
                       ) : (
@@ -316,13 +312,12 @@ export default function Index() {
                       <h4 className="font-display font-semibold text-foreground mb-1">{v.name}</h4>
                       <p className="text-xs text-muted-foreground mb-3">{v.vehicle_type}</p>
                       <div className="flex justify-center gap-2 flex-wrap">
-                        {v.vehicle_no && <span className="px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-medium">{v.vehicle_no}</span>}
+                        {v.vehicle_no && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium">{v.vehicle_no}</span>}
                         {v.description && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs line-clamp-1 max-w-[140px]">{v.description}</span>}
                       </div>
                     </div>
                   </div>
-                );
-              })
+                ))
             )}
           </div>
         </div>
@@ -359,7 +354,7 @@ export default function Index() {
                       <span className="font-semibold text-sm text-foreground block truncate">{t.name}</span>
                       <div className="flex items-center gap-0.5 mt-0.5">
                         {Array.from({ length: Math.min(5, Math.max(0, t.star)) }).map((_, j) => (
-                          <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          <Star key={j} className="h-3.5 w-3.5 fill-primary text-primary" />
                         ))}
                       </div>
                     </div>
@@ -377,7 +372,7 @@ export default function Index() {
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-14">
             <div>
               <p className="section-eyebrow">Blog</p>
-              <span className="block w-12 h-0.5 rounded-full bg-blue-500 mt-2 mb-4" aria-hidden />
+              <span className="block w-12 h-0.5 rounded-full bg-primary mt-2 mb-4" aria-hidden />
               <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Latest News & Updates</h2>
               <p className="text-muted-foreground mt-2 text-sm md:text-base">Insights, announcements, and stories from the road.</p>
             </div>
@@ -429,7 +424,7 @@ export default function Index() {
         <div className="container grid md:grid-cols-2 gap-12 lg:gap-16">
           <div>
             <p className="section-eyebrow">FAQ</p>
-            <span className="block w-12 h-0.5 rounded-full bg-amber-500 mb-4" aria-hidden />
+            <span className="block w-12 h-0.5 rounded-full bg-primary mb-4" aria-hidden />
             <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight mb-2">Frequently Asked Questions</h2>
             <p className="text-muted-foreground text-sm mb-8">Quick answers to common questions.</p>
             {faqs.length === 0 ? (
