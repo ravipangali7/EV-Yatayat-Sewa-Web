@@ -169,23 +169,6 @@ export default function Index() {
                 )}
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
-              {(siteSetting?.values?.length ? siteSetting.values : [
-                { svg: "Zap", text: "100% Electric Fleet" },
-                { svg: "Battery", text: "Fast Charging Infra" },
-                { svg: "Users", text: "Trained Drivers" },
-                { svg: "Leaf", text: "Zero Emissions" },
-              ]).map((item, i) => {
-                const rawIcon = (item.svg ?? "Bus").toString().trim();
-                const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Zap;
-                return (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-accent">
-                    <Icon className="h-5 w-5 text-accent-foreground shrink-0" />
-                    <span className="text-sm font-medium">{item.text}</span>
-                  </div>
-                );
-              })}
-            </div>
           </div>
           <div className="relative">
             <div className="aspect-square rounded-2xl gradient-primary opacity-10 absolute inset-0" />
