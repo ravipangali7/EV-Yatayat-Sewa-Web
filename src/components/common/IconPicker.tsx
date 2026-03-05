@@ -39,9 +39,13 @@ export function IconPicker({
 }: IconPickerProps) {
   const [open, setOpen] = useState(false);
 
-  const IconComponent = value && WEBSITE_ICON_NAMES.includes(value as WebsiteIconName)
-    ? (Icons as Record<string, React.ComponentType<{ className?: string }>)[value]
-    : null;
+  type IconComponentType = React.ComponentType<{ className?: string }>;
+  const iconsRecord = Icons as Record<string, IconComponentType>;
+
+  const IconComponent =
+    value && WEBSITE_ICON_NAMES.includes(value as WebsiteIconName)
+      ? iconsRecord[value]
+      : null;
 
   const showSuggestion =
     suggestedIcon &&
@@ -50,7 +54,7 @@ export function IconPicker({
     onApplySuggestion;
 
   const SuggestedIconComponent = showSuggestion
-    ? (Icons as Record<string, React.ComponentType<{ className?: string }>)[suggestedIcon]
+    ? iconsRecord[suggestedIcon]
     : null;
 
   return (
@@ -103,8 +107,7 @@ export function IconPicker({
             <CommandEmpty>No icon found.</CommandEmpty>
             <CommandGroup>
               {WEBSITE_ICON_NAMES.map((name) => {
-                const Icon =
-                  (Icons as Record<string, React.ComponentType<{ className?: string }>)[name];
+                const Icon = iconsRecord[name];
                 return (
                   <CommandItem
                     key={name}
