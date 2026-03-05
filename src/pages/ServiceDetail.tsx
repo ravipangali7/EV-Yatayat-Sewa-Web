@@ -1,21 +1,45 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Bus, Building2, Mountain, CalendarCheck, Plane, GraduationCap, CheckCircle } from "lucide-react";
-import { mockData } from "@/lib/mockData";
+import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import type { Service } from "@/modules/website/types";
 
-const iconMap: Record<string, any> = { Bus, Building2, Mountain, CalendarCheck, Plane, GraduationCap };
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { Bus, Building2, Mountain, CalendarCheck, Plane, GraduationCap };
 
 export default function ServiceDetail() {
   const { slug } = useParams();
-  const service = mockData.services.find((s) => s.slug === slug);
+  const [services, setServices] = useState<Service[]>([]);
 
-  if (!service) return (
-    <div className="section-padding container text-center">
-      <h1 className="text-2xl font-bold">Service not found</h1>
-      <Link to="/services" className="text-primary mt-4 inline-block">← Back to Services</Link>
-    </div>
-  );
+  useEffect(() => {
+    websitePublicApi
+      .services()
+      .then((res) => {
+        if (Array.isArray(res)) setServices(res as Service[]);
+      })
+      .catch(() => {});
+  }, []);
 
-  const Icon = iconMap[service.icon];
+  const service = slug ? services.find((s) => s.slug === slug) : null;
+
+  if (services.length > 0 && !service) {
+    return (
+      <div className="section-padding container text-center">
+        <h1 className="text-2xl font-bold">Service not found</h1>
+        <Link to="/services" className="text-primary mt-4 inline-block">← Back to Services</Link>
+      </div>
+    );
+  }
+
+  if (!service) {
+    return (
+      <div className="section-padding container text-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  const rawIcon = (service.svg ?? "Bus").toString().trim();
+  const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Bus;
 
   return (
     <div>
@@ -28,13 +52,13 @@ export default function ServiceDetail() {
             <div className="w-16 h-16 rounded-xl bg-white/20 flex items-center justify-center">
               <Icon className="h-8 w-8" />
             </div>
-            <h1 className="text-4xl font-display font-bold">{service.title}</h1>
+            <h1 className="text-4xl font-display font-bold">{service.name}</h1>
           </div>
         </div>
       </section>
       <section className="section-padding">
         <div className="container max-w-3xl">
-          <p className="text-lg text-muted-foreground mb-8">{service.desc}</p>
+          <p className="text-lg text-muted-foreground mb-8">{service.description}</p>
           <h3 className="font-display font-bold text-xl mb-4">Key Features</h3>
           <div className="space-y-3">
             {["Fully air-conditioned electric vehicles", "Real-time GPS tracking", "Professional and trained drivers", "24/7 customer support", "Flexible scheduling options"].map((f, i) => (

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Bus, Mail, Phone, MapPin } from "lucide-react";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
-import type { SiteSetting } from "@/modules/website/types";
+import type { SiteSetting, Service } from "@/modules/website/types";
 
 const FALLBACK = {
   brandName: "EV Yatayat Sewa",
@@ -15,14 +15,15 @@ const FALLBACK = {
 
 export function PublicFooter() {
   const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
 
   useEffect(() => {
-    websitePublicApi
-      .siteSetting()
-      .then((data) => {
-        if (data && typeof data === "object" && "name" in data) {
-          setSiteSetting(data as SiteSetting);
+    Promise.all([websitePublicApi.siteSetting(), websitePublicApi.services()])
+      .then(([settingRes, servicesRes]) => {
+        if (settingRes && typeof settingRes === "object" && "name" in settingRes) {
+          setSiteSetting(settingRes as SiteSetting);
         }
+        if (Array.isArray(servicesRes)) setServices(servicesRes as Service[]);
       })
       .catch(() => {});
   }, []);
@@ -63,9 +64,13 @@ export function PublicFooter() {
           <div>
             <h4 className="font-semibold mb-4">Services</h4>
             <div className="space-y-2 text-sm opacity-80">
-              {["City Transport", "Corporate Shuttle", "Tourism", "Charter"].map((s) => (
-                <p key={s}>{s}</p>
-              ))}
+              {services.length === 0 ? (
+                <p>Services</p>
+              ) : (
+                services.slice(0, 6).map((s) => (
+                  <Link key={s.id} to={`/service/${s.slug}`} className="block hover:text-primary transition">{s.name}</Link>
+                ))
+              )}
             </div>
           </div>
 
