@@ -90,6 +90,11 @@ const faEntries: IconEntry[] = FA_LIST.map(({ id, name, searchLabel }) => ({
 /** All icons for picker; searchable by searchLabel and name */
 export const ALL_ICONS: IconEntry[] = [...lucideEntries, ...materialEntries, ...faEntries];
 
+/** By library for tabbed picker */
+export const LUCIDE_ICONS: IconEntry[] = lucideEntries;
+export const MATERIAL_ICONS: IconEntry[] = materialEntries;
+export const FA_ICONS: IconEntry[] = faEntries;
+
 /** Lucide-only names (backward compat) */
 export const WEBSITE_ICON_NAMES = LUCIDE_LIST;
 export type WebsiteIconName = (typeof WEBSITE_ICON_NAMES)[number];
