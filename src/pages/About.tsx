@@ -46,7 +46,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="section-padding-lg">
+      <section className="section-padding-lg section-tint-primary">
         <div className="container max-w-4xl">
           {siteSetting?.about_content?.trim() && (
             <div className="mb-12 prose prose-sm max-w-none prose-p:mb-2 text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />

@@ -127,9 +127,12 @@ export default function Index() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsList.map((s: { label: string; value: string; icon?: string; svg?: string }, i: number) => {
             const rawIcon = (s.svg ?? s.icon ?? "Bus").toString().trim();
+            const statIconBg = ["bg-primary/15 text-primary", "bg-blue-500/15 text-blue-600", "bg-violet-500/15 text-violet-600", "bg-amber-500/15 text-amber-600"][i % 4];
             return (
               <div key={i} className="bg-card rounded-2xl border border-border/50 shadow-card p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                <WebsiteIcon name={rawIcon} className="h-8 w-8 text-primary mx-auto mb-3" />
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 ${statIconBg}`}>
+                  <WebsiteIcon name={rawIcon} className="h-8 w-8" />
+                </div>
                 <p className="text-3xl font-display font-bold text-foreground">{s.value}</p>
                 <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
               </div>
@@ -139,11 +142,14 @@ export default function Index() {
       </section>
 
       {/* About (dynamic from site setting) */}
-      <section className="section-padding-lg">
-        <div className="container grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <p className="section-eyebrow">About Us</p>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">
+      <section className="section-padding-lg section-tint-primary relative overflow-hidden">
+        <div className="container grid md:grid-cols-2 gap-14 lg:gap-16 items-center">
+          <div className="relative z-10">
+            <div className="flex flex-col">
+              <p className="section-eyebrow">About Us</p>
+              <span className="block w-12 h-0.5 rounded-full bg-primary mb-5" aria-hidden />
+            </div>
+            <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-display font-bold mb-6 leading-tight tracking-tight">
               {siteSetting?.about_title?.trim() ? (
                 <span className="whitespace-pre-line">{siteSetting.about_title}</span>
               ) : (
@@ -151,67 +157,77 @@ export default function Index() {
               )}
             </h2>
             {siteSetting?.about_content?.trim() ? (
-              <div className="text-muted-foreground leading-relaxed mb-6 prose prose-sm max-w-none prose-p:mb-2" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
+              <div className="text-muted-foreground leading-relaxed mb-8 prose prose-sm max-w-none prose-p:mb-3 prose-headings:font-display" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
             ) : (
-              <p className="text-muted-foreground leading-relaxed mb-6">
+              <p className="text-muted-foreground leading-relaxed mb-8 text-base">
                 EV Yatayat Sewa is Nepal's pioneering electric bus transportation company. We are committed to providing sustainable, affordable, and comfortable public transportation while significantly reducing carbon emissions in urban areas.
               </p>
             )}
             {(siteSetting?.mission?.trim() || siteSetting?.vision?.trim() || siteSetting?.values?.trim()) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {siteSetting?.mission?.trim() && (
-                  <div className="p-4 rounded-2xl border border-border/50 bg-muted/50 shadow-soft">
-                    <p className="section-eyebrow mb-1">Mission</p>
-                    <p className="text-sm text-muted-foreground">{siteSetting.mission}</p>
+                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary">
+                    <p className="section-eyebrow mb-2">Mission</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{siteSetting.mission}</p>
                   </div>
                 )}
                 {siteSetting?.vision?.trim() && (
-                  <div className="p-4 rounded-2xl border border-border/50 bg-muted/50 shadow-soft">
-                    <p className="section-eyebrow mb-1">Vision</p>
-                    <p className="text-sm text-muted-foreground">{siteSetting.vision}</p>
+                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-blue-500">
+                    <p className="section-eyebrow mb-2">Vision</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{siteSetting.vision}</p>
                   </div>
                 )}
                 {siteSetting?.values?.trim() && (
-                  <div className="p-4 rounded-2xl border border-border/50 bg-muted/50 shadow-soft sm:col-span-2">
-                    <p className="section-eyebrow mb-1">Values</p>
-                    <p className="text-sm text-muted-foreground whitespace-pre-line">{siteSetting.values}</p>
+                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-violet-500 sm:col-span-2">
+                    <p className="section-eyebrow mb-2">Values</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{siteSetting.values}</p>
                   </div>
                 )}
               </div>
             )}
           </div>
           <div className="relative">
-            <div className="aspect-square rounded-2xl gradient-primary opacity-10 absolute inset-0" />
-            <img
-              src={siteSetting?.about_image ? imgUrl(siteSetting.about_image) : heroBus}
-              alt="About"
-              className="rounded-2xl shadow-card relative z-10 w-full h-80 object-cover border border-border/30"
-            />
+            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-primary/20 via-transparent to-blue-500/20 opacity-60 blur-sm" aria-hidden />
+            <div className="relative rounded-2xl overflow-hidden shadow-card-hover ring-1 ring-black/5">
+              <img
+                src={siteSetting?.about_image ? imgUrl(siteSetting.about_image) : heroBus}
+                alt="About EV Yatayat Sewa"
+                className="w-full h-80 md:h-[22rem] object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" aria-hidden />
+            </div>
           </div>
         </div>
       </section>
 
       {/* Services (dynamic from API) */}
-      <section className="section-padding-lg bg-muted">
+      <section className="section-padding-lg section-tint-blue relative">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Our Services</p>
-            <h2 className="text-3xl md:text-4xl font-display font-bold">Comprehensive EV Transport Solutions</h2>
+            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-4" aria-hidden />
+            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Comprehensive EV Transport Solutions</h2>
+            <p className="text-muted-foreground mt-3 text-sm md:text-base">Clean, reliable electric mobility for cities and beyond.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
             {services.length === 0 ? (
-              <p className="text-muted-foreground col-span-full text-center py-8">No services yet.</p>
+              <p className="text-muted-foreground col-span-full text-center py-12">No services yet.</p>
             ) : (
-              services.map((s) => {
+              services.map((s, idx) => {
                 const rawIcon = (s.svg ?? "Bus").toString().trim();
+                const iconBg = ["bg-primary/10", "bg-blue-500/10", "bg-violet-500/10"][idx % 3];
                 return (
-                  <Link to={`/service/${s.slug}`} key={s.id} className="group website-card bg-card p-6">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
-                      <WebsiteIcon name={rawIcon} className="h-6 w-6" />
+                  <Link
+                    to={`/service/${s.slug}`}
+                    key={s.id}
+                    className="group website-card bg-card p-6 lg:p-7 flex flex-col"
+                  >
+                    <div className={`w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center mb-5 group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300`}>
+                      <WebsiteIcon name={rawIcon} className="h-7 w-7" />
                     </div>
-                    <h3 className="font-display font-semibold text-lg mb-2">{s.name}</h3>
-                    <p className="text-muted-foreground text-sm mb-4">{s.description}</p>
-                    <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all duration-200">
+                    <h3 className="font-display font-semibold text-lg mb-2 text-foreground group-hover:text-primary transition-colors">{s.name}</h3>
+                    <p className="text-muted-foreground text-sm mb-5 flex-1 leading-relaxed">{s.description}</p>
+                    <span className="text-primary text-sm font-medium inline-flex items-center gap-1.5 group-hover:gap-2.5 transition-all duration-200">
                       Learn More <ChevronRight className="h-4 w-4" />
                     </span>
                   </Link>
@@ -223,7 +239,7 @@ export default function Index() {
       </section>
 
       {/* Team */}
-      <section className="section-padding-lg">
+      <section className="section-padding-lg section-tint-violet">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <p className="section-eyebrow">Our Team</p>
@@ -254,7 +270,7 @@ export default function Index() {
       </section>
 
       {/* Vehicles */}
-      <section className="section-padding-lg bg-muted">
+      <section className="section-padding-lg section-tint-amber">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <p className="section-eyebrow">Our Fleet</p>
@@ -285,7 +301,7 @@ export default function Index() {
       </section>
 
       {/* Testimonials (dynamic from API) */}
-      <section className="section-padding-lg">
+      <section className="section-padding-lg section-tint-primary">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <p className="section-eyebrow">Testimonials</p>
@@ -324,7 +340,7 @@ export default function Index() {
       </section>
 
       {/* Blog */}
-      <section className="section-padding-lg bg-muted">
+      <section className="section-padding-lg section-tint-blue">
         <div className="container">
           <div className="flex items-center justify-between mb-12">
             <div>

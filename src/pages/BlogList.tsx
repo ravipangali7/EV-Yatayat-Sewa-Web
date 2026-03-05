@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bus, ArrowRight } from "lucide-react";
+import { Bus, ArrowRight, Search } from "lucide-react";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { Blog } from "@/modules/website/types";
 
@@ -12,6 +12,7 @@ function imgUrl(path: string | null): string {
 
 export default function BlogList() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     websitePublicApi
@@ -21,6 +22,15 @@ export default function BlogList() {
       })
       .catch(() => {});
   }, []);
+
+  const q = searchQuery.trim().toLowerCase();
+  const filteredBlogs = q
+    ? blogs.filter((b) => {
+        const nameMatch = b.name?.toLowerCase().includes(q);
+        const contentSnippet = b.content?.replace(/<[^>]+>/g, "").trim().slice(0, 500) ?? "";
+        return nameMatch || contentSnippet.toLowerCase().includes(q);
+      })
+    : blogs;
 
   return (
     <div>
@@ -32,12 +42,25 @@ export default function BlogList() {
           <p className="mt-2 text-lg opacity-90">Latest news and updates</p>
         </div>
       </section>
-      <section className="section-padding-lg">
-        <div className="container grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="section-padding-lg section-tint-violet">
+        <div className="container">
+          <div className="relative max-w-xl mb-8">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search posts…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow"
+            />
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {blogs.length === 0 ? (
             <p className="text-muted-foreground col-span-full text-center py-12">No posts yet.</p>
+          ) : filteredBlogs.length === 0 ? (
+            <p className="text-muted-foreground col-span-full text-center py-12">No posts match your search.</p>
           ) : (
-            blogs.map((b) => {
+            filteredBlogs.map((b) => {
               const excerpt = b.content?.replace(/<[^>]+>/g, "").trim().slice(0, 120) || "";
               const date = b.created_at ? new Date(b.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "";
               return (
@@ -62,6 +85,7 @@ export default function BlogList() {
               );
             })
           )}
+          </div>
         </div>
       </section>
     </div>

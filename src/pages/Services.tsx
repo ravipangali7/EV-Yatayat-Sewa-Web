@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { WebsiteIcon } from "@/components/website/WebsiteIcon";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { Service } from "@/modules/website/types";
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     websitePublicApi
@@ -16,6 +17,14 @@ export default function ServicesPage() {
       })
       .catch(() => {});
   }, []);
+
+  const q = searchQuery.trim().toLowerCase();
+  const filteredServices = q
+    ? services.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(q) || (s.description ?? "").toLowerCase().includes(q)
+      )
+    : services;
 
   return (
     <div>
@@ -27,12 +36,25 @@ export default function ServicesPage() {
           <p className="mt-2 text-lg opacity-90">Comprehensive electric transport solutions</p>
         </div>
       </section>
-      <section className="section-padding-lg">
-        <div className="container grid md:grid-cols-3 gap-6">
+      <section className="section-padding-lg section-tint-blue">
+        <div className="container">
+          <div className="relative max-w-xl mb-8">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search services…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow"
+            />
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
           {services.length === 0 ? (
             <p className="text-muted-foreground col-span-full text-center py-12">No services yet.</p>
+          ) : filteredServices.length === 0 ? (
+            <p className="text-muted-foreground col-span-full text-center py-12">No services match your search.</p>
           ) : (
-            services.map((s) => {
+            filteredServices.map((s) => {
               const rawIcon = (s.svg ?? "Bus").toString().trim();
               return (
                 <Link to={`/service/${s.slug}`} key={s.id} className="group website-card bg-card p-6">
@@ -48,6 +70,7 @@ export default function ServicesPage() {
               );
             })
           )}
+          </div>
         </div>
       </section>
     </div>

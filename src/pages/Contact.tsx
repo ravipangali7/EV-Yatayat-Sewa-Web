@@ -60,7 +60,7 @@ export default function Contact() {
           <p className="mt-2 text-lg opacity-90">We&apos;d love to hear from you</p>
         </div>
       </section>
-      <section className="section-padding-lg">
+      <section className="section-padding-lg section-tint-amber">
         <div className="container grid md:grid-cols-2 gap-12">
           <div>
             <p className="section-eyebrow">Send a message</p>

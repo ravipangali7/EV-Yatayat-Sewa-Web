@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { WebsiteIcon } from "@/components/website/WebsiteIcon";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { Service } from "@/modules/website/types";
@@ -56,24 +56,46 @@ export default function ServiceDetail() {
         </div>
       </section>
       <section className="section-padding-lg">
-        <div className="container max-w-3xl">
-          <p className="text-lg text-muted-foreground leading-relaxed mb-8">{service.description}</p>
-          <p className="section-eyebrow mb-2">Key Features</p>
-          <h3 className="font-display font-bold text-xl mb-4">What we offer</h3>
-          <div className="space-y-3">
-            {["Fully air-conditioned electric vehicles", "Real-time GPS tracking", "Professional and trained drivers", "24/7 customer support", "Flexible scheduling options"].map((f, i) => (
-              <div key={i} className="flex items-center gap-3 p-4 rounded-2xl border border-border/50 bg-card shadow-soft">
-                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="text-sm">{f}</span>
+        <div className="container">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <p className="text-lg text-muted-foreground leading-relaxed">{service.description}</p>
+            </div>
+            <aside className="lg:col-span-1">
+              <div className="sticky top-24">
+                <h3 className="font-display font-bold text-lg mb-4">Other services</h3>
+                <ul className="space-y-2">
+                  {services
+                    .filter((s) => s.slug !== service.slug)
+                    .slice(0, 6)
+                    .map((s) => {
+                      const iconName = (s.svg ?? "Bus").toString().trim();
+                      return (
+                        <li key={s.id}>
+                          <Link
+                            to={`/service/${s.slug}`}
+                            className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card shadow-soft hover:shadow-card-hover hover:border-primary/20 transition-all"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                              <WebsiteIcon name={iconName} className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-medium text-foreground block">{s.name}</span>
+                              {s.description && (
+                                <span className="text-xs text-muted-foreground line-clamp-2">{s.description}</span>
+                              )}
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                </ul>
+                {services.filter((s) => s.slug !== service.slug).length === 0 && (
+                  <p className="text-sm text-muted-foreground">No other services.</p>
+                )}
               </div>
-            ))}
+            </aside>
           </div>
-          <Link
-            to="/contact"
-            className="inline-flex items-center mt-8 px-8 py-3.5 rounded-full font-semibold gradient-primary text-primary-foreground shadow-soft hover:shadow-card-hover hover:opacity-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            Book This Service
-          </Link>
         </div>
       </section>
     </div>

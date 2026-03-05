@@ -434,6 +434,20 @@
   @apply rounded-2xl border border-border/50 shadow-card transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-card-hover hover:border-primary/20;
 }
 
+/* Section background tints for alternating variety */
+.section-tint-primary {
+  @apply bg-primary/5;
+}
+.section-tint-blue {
+  @apply bg-blue-500/5;
+}
+.section-tint-violet {
+  @apply bg-violet-500/5;
+}
+.section-tint-amber {
+  @apply bg-amber-500/5;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-fade-in-up,
