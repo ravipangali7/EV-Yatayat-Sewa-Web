@@ -439,6 +439,11 @@
   @apply bg-white;
 }
 
+/* Home: a few sections with solid green background and light foreground (use .text-primary-foreground in section content; cards stay white) */
+.section-green {
+  background: linear-gradient(180deg, hsl(142 55% 32%), hsl(142 50% 26%));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-fade-in-up,

@@ -148,45 +148,45 @@ export default function Index() {
         </div>
       </section>
 
-      {/* About (dynamic from site setting) */}
-      <section className="section-padding-lg section-tint-primary relative overflow-hidden">
+      {/* About (dynamic from site setting) — green section, light text */}
+      <section className="section-padding-lg section-green relative overflow-hidden">
         <div className="container grid md:grid-cols-2 gap-14 lg:gap-16 items-center">
-          <div className="relative z-10">
+          <div className="relative z-10 text-primary-foreground">
             <div className="flex flex-col">
               <p className="section-eyebrow">About Us</p>
-              <span className="block w-12 h-0.5 rounded-full bg-primary mb-5" aria-hidden />
+              <span className="block w-12 h-0.5 rounded-full bg-primary-foreground/80 mb-5" aria-hidden />
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-display font-bold mb-6 leading-tight tracking-tight">
               {siteSetting?.about_title?.trim() ? (
                 <span className="whitespace-pre-line">{siteSetting.about_title}</span>
               ) : (
-                <>Driving Nepal Towards a <span className="text-gradient">Greener Future</span></>
+                <>Driving Nepal Towards a <span className="text-primary-foreground">Greener Future</span></>
               )}
             </h2>
             {siteSetting?.about_content?.trim() ? (
-              <div className="text-muted-foreground leading-relaxed mb-8 prose prose-sm max-w-none prose-p:mb-3 prose-headings:font-display" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
+              <div className="text-primary-foreground/90 leading-relaxed mb-8 prose prose-sm max-w-none prose-p:mb-3 prose-headings:font-display prose-headings:text-primary-foreground prose-p:text-primary-foreground/90 prose-a:text-primary-foreground prose-strong:text-primary-foreground" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
             ) : (
-              <p className="text-muted-foreground leading-relaxed mb-8 text-base">
+              <p className="text-primary-foreground/90 leading-relaxed mb-8 text-base">
                 EV Yatayat Sewa is Nepal's pioneering electric bus transportation company. We are committed to providing sustainable, affordable, and comfortable public transportation while significantly reducing carbon emissions in urban areas.
               </p>
             )}
             {(siteSetting?.mission?.trim() || siteSetting?.vision?.trim() || siteSetting?.values?.trim()) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-foreground">
                 {siteSetting?.mission?.trim() && (
                   <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary">
-                    <p className="section-eyebrow mb-2">Mission</p>
+                    <p className="section-eyebrow mb-2 text-foreground">Mission</p>
                     <p className="text-sm text-muted-foreground leading-relaxed">{siteSetting.mission}</p>
                   </div>
                 )}
                 {siteSetting?.vision?.trim() && (
                   <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary">
-                    <p className="section-eyebrow mb-2">Vision</p>
+                    <p className="section-eyebrow mb-2 text-foreground">Vision</p>
                     <p className="text-sm text-muted-foreground leading-relaxed">{siteSetting.vision}</p>
                   </div>
                 )}
                 {siteSetting?.values?.trim() && (
                   <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary sm:col-span-2">
-                    <p className="section-eyebrow mb-2">Values</p>
+                    <p className="section-eyebrow mb-2 text-foreground">Values</p>
                     <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{siteSetting.values}</p>
                   </div>
                 )}
@@ -322,18 +322,18 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Testimonials (dynamic from API) */}
-      <section className="section-padding-lg section-tint-primary relative">
+      {/* Testimonials (dynamic from API) — green section, light text */}
+      <section className="section-padding-lg section-green relative">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-14">
+          <div className="text-center max-w-2xl mx-auto mb-14 text-primary-foreground">
             <p className="section-eyebrow">Testimonials</p>
-            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-4" aria-hidden />
+            <span className="block w-12 h-0.5 rounded-full bg-primary-foreground/80 mx-auto my-4" aria-hidden />
             <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">What Our Passengers Say</h2>
-            <p className="text-muted-foreground mt-3 text-sm md:text-base">Real stories from people who ride with us.</p>
+            <p className="text-primary-foreground/90 mt-3 text-sm md:text-base">Real stories from people who ride with us.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
             {testimonials.length === 0 ? (
-              <p className="text-muted-foreground col-span-full text-center py-12">No testimonials yet.</p>
+              <p className="text-primary-foreground/90 col-span-full text-center py-12">No testimonials yet.</p>
             ) : (
               testimonials.map((t) => (
                 <div key={t.id} className="website-card bg-card p-6 lg:p-7 border-l-4 border-l-primary flex flex-col">
