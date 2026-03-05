@@ -4,7 +4,7 @@ import { Bus, MapPin, Users, Leaf, Star, ArrowRight, Building2, Mountain, Calend
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { mockData } from "@/lib/mockData";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
-import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType } from "@/modules/website/types";
+import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle } from "@/modules/website/types";
 import heroBus from "@/assets/hero-bus.jpg";
 import logo from "@/assets/logo.png";
 
@@ -12,10 +12,18 @@ const iconMap: Record<string, any> = { Bus, MapPin, Users, Leaf, Building2, Moun
 
 const CONTACT_FALLBACK = { address: "Kathmandu, Nepal", phone: "+977-1-4XXXXXX", email: "info@evyatayatsewa.com" };
 
+const MEDIA_BASE = "https://system.evyatayatsewa.com";
+function imgUrl(path: string | null): string {
+  if (!path) return "";
+  return path.startsWith("http") ? path : `${MEDIA_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
 export default function Index() {
   const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
   const [faqs, setFaqs] = useState<FAQType[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialType[]>([]);
+  const [team, setTeam] = useState<TeamType[]>([]);
+  const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactMessage, setContactMessage] = useState("");
@@ -27,13 +35,17 @@ export default function Index() {
       websitePublicApi.siteSetting(),
       websitePublicApi.faqs(),
       websitePublicApi.testimonials(),
+      websitePublicApi.team(),
+      websitePublicApi.vehicles(),
     ])
-      .then(([settingRes, faqsRes, testimonialsRes]) => {
+      .then(([settingRes, faqsRes, testimonialsRes, teamRes, vehiclesRes]) => {
         if (settingRes && typeof settingRes === "object" && "name" in settingRes) {
           setSiteSetting(settingRes as SiteSetting);
         }
         if (Array.isArray(faqsRes)) setFaqs(faqsRes as FAQType[]);
         if (Array.isArray(testimonialsRes)) setTestimonials(testimonialsRes as TestimonialType[]);
+        if (Array.isArray(teamRes)) setTeam(teamRes as TeamType[]);
+        if (Array.isArray(vehiclesRes)) setVehicles(vehiclesRes as PublicVehicle[]);
       })
       .catch(() => {});
   }, []);
@@ -165,17 +177,25 @@ export default function Index() {
             <h2 className="text-3xl md:text-4xl font-display font-bold">Meet the People Behind the Wheel</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {mockData.team.map((t, i) => (
-              <div key={i} className="text-center group">
-                <div className="w-24 h-24 mx-auto rounded-full bg-accent flex items-center justify-center mb-4 group-hover:bg-primary transition-colors">
-                  <span className="text-2xl font-display font-bold text-accent-foreground group-hover:text-primary-foreground transition-colors">
-                    {t.name.split(" ").map(n => n[0]).join("")}
-                  </span>
+            {team.length === 0 ? (
+              <p className="text-muted-foreground col-span-full text-center py-8">No team members yet.</p>
+            ) : (
+              team.map((t) => (
+                <div key={t.id} className="text-center group">
+                  {t.image ? (
+                    <img src={imgUrl(t.image)} alt={t.name} className="w-24 h-24 mx-auto rounded-full object-cover mb-4 group-hover:ring-2 group-hover:ring-primary transition-all" />
+                  ) : (
+                    <div className="w-24 h-24 mx-auto rounded-full bg-accent flex items-center justify-center mb-4 group-hover:bg-primary transition-colors">
+                      <span className="text-2xl font-display font-bold text-accent-foreground group-hover:text-primary-foreground transition-colors">
+                        {t.name.split(" ").map((n) => n[0]).join("")}
+                      </span>
+                    </div>
+                  )}
+                  <h4 className="font-semibold">{t.name}</h4>
+                  <p className="text-sm text-muted-foreground">{t.designation}</p>
                 </div>
-                <h4 className="font-semibold">{t.name}</h4>
-                <p className="text-sm text-muted-foreground">{t.role}</p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -188,17 +208,25 @@ export default function Index() {
             <h2 className="text-3xl md:text-4xl font-display font-bold">Modern Electric Vehicles</h2>
           </div>
           <div className="grid md:grid-cols-4 gap-6">
-            {mockData.vehicles.map((v, i) => (
-              <div key={i} className="bg-card rounded-xl p-6 shadow-sm text-center hover:shadow-lg transition">
-                <Bus className="h-12 w-12 text-primary mx-auto mb-4" />
-                <h4 className="font-display font-semibold mb-1">{v.name}</h4>
-                <p className="text-xs text-muted-foreground mb-3">{v.type}</p>
-                <div className="flex justify-center gap-4 text-sm">
-                  <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground">{v.seats} seats</span>
-                  <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground">{v.range}</span>
+            {vehicles.length === 0 ? (
+              <p className="text-muted-foreground col-span-full text-center py-8">No vehicles yet.</p>
+            ) : (
+              vehicles.map((v) => (
+                <div key={v.id} className="bg-card rounded-xl p-6 shadow-sm text-center hover:shadow-lg transition">
+                  {v.featured_image ? (
+                    <img src={v.featured_image} alt={v.name} className="h-24 w-full object-cover rounded-lg mx-auto mb-4" />
+                  ) : (
+                    <Bus className="h-12 w-12 text-primary mx-auto mb-4" />
+                  )}
+                  <h4 className="font-display font-semibold mb-1">{v.name}</h4>
+                  <p className="text-xs text-muted-foreground mb-3">{v.vehicle_type}</p>
+                  <div className="flex justify-center gap-2 flex-wrap text-sm">
+                    {v.vehicle_no && <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground">{v.vehicle_no}</span>}
+                    {v.description && <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground line-clamp-1 max-w-[140px]">{v.description}</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -219,6 +247,15 @@ export default function Index() {
                   <Quote className="h-8 w-8 text-primary/30 mb-4" />
                   <p className="text-muted-foreground mb-4 italic">"{t.message}"</p>
                   <div className="flex items-center gap-2">
+                    {t.image ? (
+                      <img src={imgUrl(t.image)} alt={t.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center shrink-0">
+                        <span className="text-xs font-display font-bold text-accent-foreground">
+                          {t.name.split(" ").map((n) => n[0]).join("")}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex">
                       {Array.from({ length: Math.min(5, Math.max(0, t.star)) }).map((_, j) => (
                         <Star key={j} className="h-4 w-4 fill-primary text-primary" />
