@@ -134,27 +134,66 @@ export default function Index() {
         </div>
       </section>
 
-      {/* About */}
+      {/* About (dynamic from site setting) */}
       <section className="section-padding">
         <div className="container grid md:grid-cols-2 gap-12 items-center">
           <div>
             <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">About Us</p>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">Driving Nepal Towards a <span className="text-gradient">Greener Future</span></h2>
-            <p className="text-muted-foreground leading-relaxed mb-6">
-              EV Yatayat Sewa is Nepal's pioneering electric bus transportation company. We are committed to providing sustainable, affordable, and comfortable public transportation while significantly reducing carbon emissions in urban areas.
-            </p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">
+              {siteSetting?.about_title?.trim() ? (
+                <span className="whitespace-pre-line">{siteSetting.about_title}</span>
+              ) : (
+                <>Driving Nepal Towards a <span className="text-gradient">Greener Future</span></>
+              )}
+            </h2>
+            {siteSetting?.about_content?.trim() ? (
+              <div className="text-muted-foreground leading-relaxed mb-6 prose prose-sm max-w-none prose-p:mb-2" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
+            ) : (
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                EV Yatayat Sewa is Nepal's pioneering electric bus transportation company. We are committed to providing sustainable, affordable, and comfortable public transportation while significantly reducing carbon emissions in urban areas.
+              </p>
+            )}
+            {(siteSetting?.mission?.trim() || siteSetting?.vision?.trim()) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                {siteSetting?.mission?.trim() && (
+                  <div className="p-3 rounded-lg bg-accent">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Mission</p>
+                    <p className="text-sm text-muted-foreground">{siteSetting.mission}</p>
+                  </div>
+                )}
+                {siteSetting?.vision?.trim() && (
+                  <div className="p-3 rounded-lg bg-accent">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Vision</p>
+                    <p className="text-sm text-muted-foreground">{siteSetting.vision}</p>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
-              {[{ icon: Zap, text: "100% Electric Fleet" }, { icon: Battery, text: "Fast Charging Infra" }, { icon: Users, text: "Trained Drivers" }, { icon: Leaf, text: "Zero Emissions" }].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-accent">
-                  <item.icon className="h-5 w-5 text-accent-foreground" />
-                  <span className="text-sm font-medium">{item.text}</span>
-                </div>
-              ))}
+              {(siteSetting?.values?.length ? siteSetting.values : [
+                { svg: "Zap", text: "100% Electric Fleet" },
+                { svg: "Battery", text: "Fast Charging Infra" },
+                { svg: "Users", text: "Trained Drivers" },
+                { svg: "Leaf", text: "Zero Emissions" },
+              ]).map((item, i) => {
+                const rawIcon = (item.svg ?? "Bus").toString().trim();
+                const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Zap;
+                return (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-accent">
+                    <Icon className="h-5 w-5 text-accent-foreground shrink-0" />
+                    <span className="text-sm font-medium">{item.text}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div className="relative">
             <div className="aspect-square rounded-2xl gradient-primary opacity-10 absolute inset-0" />
-            <img src={heroBus} alt="About" className="rounded-2xl shadow-xl relative z-10 w-full h-80 object-cover" />
+            <img
+              src={siteSetting?.about_image ? imgUrl(siteSetting.about_image) : heroBus}
+              alt="About"
+              className="rounded-2xl shadow-xl relative z-10 w-full h-80 object-cover"
+            />
           </div>
         </div>
       </section>
