@@ -208,7 +208,7 @@ export default function Index() {
       </section>
 
       {/* Services (dynamic from API) */}
-      <section className="section-padding-lg section-tint-blue relative">
+      <section className="section-padding-lg section-tint-blue section-white-textured relative">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Our Services</p>
@@ -245,7 +245,7 @@ export default function Index() {
       </section>
 
       {/* Team */}
-      <section className="section-padding-lg section-tint-violet relative">
+      <section className="section-padding-lg section-tint-violet section-white-textured relative">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Our Team</p>
@@ -286,7 +286,7 @@ export default function Index() {
       </section>
 
       {/* Vehicles / Fleet */}
-      <section className="section-padding-lg section-tint-amber relative">
+      <section className="section-padding-lg section-tint-amber section-white-textured relative">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="section-eyebrow">Our Fleet</p>
@@ -366,7 +366,7 @@ export default function Index() {
       </section>
 
       {/* Blog */}
-      <section className="section-padding-lg section-tint-blue relative">
+      <section className="section-padding-lg section-tint-blue section-white-textured relative">
         <div className="container">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-14">
             <div>
@@ -419,7 +419,7 @@ export default function Index() {
       </section>
 
       {/* FAQ + Contact (dynamic from API) */}
-      <section className="section-padding-lg section-tint-amber relative">
+      <section className="section-padding-lg section-tint-amber section-white-textured relative">
         <div className="container grid md:grid-cols-2 gap-12 lg:gap-16">
           <div>
             <p className="section-eyebrow">FAQ</p>

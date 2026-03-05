@@ -439,6 +439,15 @@
   @apply bg-white;
 }
 
+/* Home page: grey textured pattern on white sections */
+.section-white-textured {
+  background-color: hsl(0 0% 98%);
+  background-image:
+    linear-gradient(rgba(0 0 0 / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0 0 0 / 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
 /* Home: a few sections with solid green background and light foreground (use .text-primary-foreground in section content; cards stay white) */
 .section-green {
   background: linear-gradient(180deg, hsl(142 55% 32%), hsl(142 50% 26%));
