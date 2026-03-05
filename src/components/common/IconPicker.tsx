@@ -1,5 +1,5 @@
 import { useState } from "react";
-import * as Icons from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,32 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { WEBSITE_ICON_NAMES, type WebsiteIconName } from "@/lib/websiteIcons";
+import { ALL_ICONS, type IconEntry } from "@/lib/websiteIcons";
+
+type IconComponentType = React.ComponentType<{ className?: string }>;
+const lucideRecord = LucideIcons as Record<string, IconComponentType>;
+
+function renderIconForEntry(entry: IconEntry, className?: string) {
+  if (entry.library === "lucide") {
+    const Icon = lucideRecord[entry.name];
+    return Icon ? <Icon className={cn("shrink-0", className)} /> : null;
+  }
+  if (entry.library === "material") {
+    return (
+      <span
+        className={cn("material-icons shrink-0", className)}
+        style={{ fontSize: "1rem" }}
+        aria-hidden
+      >
+        {entry.name}
+      </span>
+    );
+  }
+  if (entry.library === "fa") {
+    return <i className={cn(`fas fa-${entry.name}`, className)} aria-hidden />;
+  }
+  return null;
+}
 
 export interface IconPickerProps {
   value: string;
@@ -39,23 +64,18 @@ export function IconPicker({
 }: IconPickerProps) {
   const [open, setOpen] = useState(false);
 
-  type IconComponentType = React.ComponentType<{ className?: string }>;
-  const iconsRecord = Icons as Record<string, IconComponentType>;
-
-  const IconComponent =
-    value && WEBSITE_ICON_NAMES.includes(value as WebsiteIconName)
-      ? iconsRecord[value]
-      : null;
-
-  const showSuggestion =
-    suggestedIcon &&
-    suggestedIcon !== value &&
-    WEBSITE_ICON_NAMES.includes(suggestedIcon as WebsiteIconName) &&
-    onApplySuggestion;
-
-  const SuggestedIconComponent = showSuggestion
-    ? iconsRecord[suggestedIcon]
+  const selectedEntry = ALL_ICONS.find(
+    (e) => e.id === value || (e.library === "lucide" && e.name === value)
+  );
+  const suggestedEntry = suggestedIcon
+    ? ALL_ICONS.find(
+        (e) => e.id === suggestedIcon || (e.library === "lucide" && e.name === suggestedIcon)
+      )
     : null;
+  const showSuggestion =
+    suggestedEntry &&
+    suggestedIcon !== value &&
+    onApplySuggestion;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -68,10 +88,12 @@ export function IconPicker({
           disabled={disabled}
         >
           <span className="flex items-center gap-2 truncate">
-            {IconComponent ? (
+            {selectedEntry ? (
               <>
-                <IconComponent className="h-4 w-4 shrink-0 opacity-70" />
-                {value}
+                {renderIconForEntry(selectedEntry, "h-4 w-4 opacity-70")}
+                <span className="truncate">
+                  {selectedEntry.library}: {selectedEntry.searchLabel || selectedEntry.name}
+                </span>
               </>
             ) : (
               placeholder
@@ -80,10 +102,10 @@ export function IconPicker({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search icons..." />
-          {showSuggestion && SuggestedIconComponent && (
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-h-[320px] p-0" align="start">
+        <Command shouldFilter={true}>
+          <CommandInput placeholder="Search Lucide, Material, Font Awesome..." />
+          {showSuggestion && suggestedEntry && (
             <div className="border-b px-2 py-2 flex items-center justify-between gap-2 bg-muted/50">
               <span className="text-xs text-muted-foreground">
                 Suggested for this name:
@@ -98,32 +120,29 @@ export function IconPicker({
                   setOpen(false);
                 }}
               >
-                <SuggestedIconComponent className="h-3 w-3 mr-1" />
-                Use {suggestedIcon}
+                {renderIconForEntry(suggestedEntry, "h-3 w-3 mr-1")}
+                Use {suggestedEntry.searchLabel || suggestedEntry.name}
               </Button>
             </div>
           )}
           <CommandList>
             <CommandEmpty>No icon found.</CommandEmpty>
-            <CommandGroup>
-              {WEBSITE_ICON_NAMES.map((name) => {
-                const Icon = iconsRecord[name];
-                return (
-                  <CommandItem
-                    key={name}
-                    value={name}
-                    onSelect={() => {
-                      onChange(name);
-                      setOpen(false);
-                    }}
-                  >
-                    {Icon ? (
-                      <Icon className="mr-2 h-4 w-4 shrink-0 opacity-70" />
-                    ) : null}
-                    {name}
-                  </CommandItem>
-                );
-              })}
+            <CommandGroup heading="All icons (Lucide, Material, Font Awesome)">
+              {ALL_ICONS.map((entry) => (
+                <CommandItem
+                  key={entry.id}
+                  value={`${entry.searchLabel} ${entry.id} ${entry.name} ${entry.library}`}
+                  onSelect={() => {
+                    onChange(entry.id);
+                    setOpen(false);
+                  }}
+                >
+                  {renderIconForEntry(entry, "mr-2 h-4 w-4 opacity-70")}
+                  <span>
+                    {entry.library}: {entry.searchLabel || entry.name}
+                  </span>
+                </CommandItem>
+              ))}
             </CommandGroup>
           </CommandList>
         </Command>

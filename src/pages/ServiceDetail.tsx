@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Bus, Building2, Mountain, CalendarCheck, Plane, GraduationCap, CheckCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle } from "lucide-react";
+import { WebsiteIcon } from "@/components/website/WebsiteIcon";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { Service } from "@/modules/website/types";
-
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { Bus, Building2, Mountain, CalendarCheck, Plane, GraduationCap };
 
 export default function ServiceDetail() {
   const { slug } = useParams();
@@ -39,7 +38,6 @@ export default function ServiceDetail() {
   }
 
   const rawIcon = (service.svg ?? "Bus").toString().trim();
-  const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Bus;
 
   return (
     <div>
@@ -50,7 +48,7 @@ export default function ServiceDetail() {
           </Link>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-xl bg-white/20 flex items-center justify-center">
-              <Icon className="h-8 w-8" />
+              <WebsiteIcon name={rawIcon} className="h-8 w-8" />
             </div>
             <h1 className="text-4xl font-display font-bold">{service.name}</h1>
           </div>

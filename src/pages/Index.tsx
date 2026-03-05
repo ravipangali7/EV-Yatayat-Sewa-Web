@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bus, MapPin, Users, Leaf, Star, ArrowRight, Building2, Mountain, CalendarCheck, Plane, GraduationCap, ChevronRight, Quote, Zap, Battery, Mail, Phone } from "lucide-react";
+import { Bus, MapPin, Star, ArrowRight, ChevronRight, Quote, Zap, Battery, Mail, Phone } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { WebsiteIcon } from "@/components/website/WebsiteIcon";
 import { mockData } from "@/lib/mockData";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle, Blog as BlogType, Slider as SliderType, Service as ServiceType } from "@/modules/website/types";
 import heroBus from "@/assets/hero-bus.jpg";
 import logo from "@/assets/logo.png";
-
-const iconMap: Record<string, any> = { Bus, MapPin, Users, Leaf, Building2, Mountain, CalendarCheck, Plane, GraduationCap };
 
 const CONTACT_FALLBACK = { address: "Kathmandu, Nepal", phone: "+977-1-4XXXXXX", email: "info@evyatayatsewa.com" };
 
@@ -122,10 +121,9 @@ export default function Index() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsList.map((s: { label: string; value: string; icon?: string; svg?: string }, i: number) => {
             const rawIcon = (s.svg ?? s.icon ?? "Bus").toString().trim();
-            const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Bus;
             return (
               <div key={i} className="bg-card rounded-xl shadow-lg p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                <Icon className="h-8 w-8 text-primary mx-auto mb-3" />
+                <WebsiteIcon name={rawIcon} className="h-8 w-8 text-primary mx-auto mb-3" />
                 <p className="text-3xl font-display font-bold text-foreground">{s.value}</p>
                 <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
               </div>
@@ -200,11 +198,10 @@ export default function Index() {
             ) : (
               services.map((s) => {
                 const rawIcon = (s.svg ?? "Bus").toString().trim();
-                const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Bus;
                 return (
                   <Link to={`/service/${s.slug}`} key={s.id} className="group bg-card rounded-xl p-6 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1">
                     <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      <Icon className="h-6 w-6" />
+                      <WebsiteIcon name={rawIcon} className="h-6 w-6" />
                     </div>
                     <h3 className="font-display font-semibold text-lg mb-2">{s.name}</h3>
                     <p className="text-muted-foreground text-sm mb-4">{s.description}</p>

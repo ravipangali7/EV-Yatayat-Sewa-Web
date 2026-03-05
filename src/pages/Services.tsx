@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bus, Building2, Mountain, CalendarCheck, Plane, GraduationCap, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { WebsiteIcon } from "@/components/website/WebsiteIcon";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { Service } from "@/modules/website/types";
-
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = { Bus, Building2, Mountain, CalendarCheck, Plane, GraduationCap };
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -31,11 +30,10 @@ export default function ServicesPage() {
           ) : (
             services.map((s) => {
               const rawIcon = (s.svg ?? "Bus").toString().trim();
-              const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Bus;
               return (
                 <Link to={`/service/${s.slug}`} key={s.id} className="group bg-card rounded-xl p-6 border hover:shadow-lg hover:-translate-y-1 transition-all">
                   <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <Icon className="h-6 w-6" />
+                    <WebsiteIcon name={rawIcon} className="h-6 w-6" />
                   </div>
                   <h3 className="font-display font-semibold text-lg mb-2">{s.name}</h3>
                   <p className="text-muted-foreground text-sm mb-4">{s.description}</p>
