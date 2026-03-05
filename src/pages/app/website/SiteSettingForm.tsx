@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { siteSettingApi } from '@/modules/website/services/websiteApi';
-import type { SiteSetting, StatItem } from '@/modules/website/types';
+import type { SiteSetting, StatItem, AboutValueItem } from '@/modules/website/types';
 import { toast } from 'sonner';
 import { fileToDataUrl } from '@/lib/imagePreview';
 
@@ -27,6 +27,13 @@ export default function SiteSettingForm() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [about_title, setAboutTitle] = useState('');
+  const [about_content, setAboutContent] = useState('');
+  const [mission, setMission] = useState('');
+  const [vision, setVision] = useState('');
+  const [values, setValues] = useState<AboutValueItem[]>([]);
+  const [aboutFile, setAboutFile] = useState<File | null>(null);
+  const [aboutPreview, setAboutPreview] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -49,6 +56,15 @@ export default function SiteSettingForm() {
           const url = d.cover_image.startsWith('http') ? d.cover_image : `${API_BASE}${d.cover_image.startsWith('/') ? '' : '/'}${d.cover_image}`;
           setCoverPreview(url);
         }
+        setAboutTitle(d.about_title ?? '');
+        setAboutContent(d.about_content ?? '');
+        setMission(d.mission ?? '');
+        setVision(d.vision ?? '');
+        setValues(Array.isArray(d.values) ? d.values : []);
+        if (d.about_image) {
+          const url = d.about_image.startsWith('http') ? d.about_image : `${API_BASE}${d.about_image.startsWith('/') ? '' : '/'}${d.about_image}`;
+          setAboutPreview(url);
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -69,8 +85,14 @@ export default function SiteSettingForm() {
       fd.append('map', map);
       fd.append('footer_text', footer_text);
       fd.append('stats', JSON.stringify({ stats }));
+      fd.append('about_title', about_title);
+      fd.append('about_content', about_content);
+      fd.append('mission', mission);
+      fd.append('vision', vision);
+      fd.append('values', JSON.stringify(values));
       if (logoFile) fd.append('logo', logoFile);
       if (coverFile) fd.append('cover_image', coverFile);
+      if (aboutFile) fd.append('about_image', aboutFile);
       await siteSettingApi.edit(fd);
       toast.success('Saved');
       navigate('/admin/website/site-setting');
@@ -102,6 +124,14 @@ export default function SiteSettingForm() {
     return n;
   });
   const removeStat = (i: number) => setStats((s) => s.filter((_, j) => j !== i));
+
+  const addValue = () => setValues((v) => [...v, { text: '' }]);
+  const setValueAt = (i: number, field: keyof AboutValueItem, val: string) => setValues((v) => {
+    const n = [...v];
+    n[i] = { ...n[i], [field]: val };
+    return n;
+  });
+  const removeValue = (i: number) => setValues((v) => v.filter((_, j) => j !== i));
 
   if (loading) {
     return (
@@ -187,6 +217,45 @@ export default function SiteSettingForm() {
             </div>
           ))}
           <Button type="button" variant="outline" size="sm" onClick={addStat}>+ Stat</Button>
+        </div>
+        <hr className="my-6" />
+        <h3 className="text-lg font-semibold">About (home page)</h3>
+        <div>
+          <Label>About Image</Label>
+          <Input type="file" accept="image/*" onChange={(e) => {
+            const f = e.target.files?.[0];
+            setAboutFile(f || null);
+            if (f) fileToDataUrl(f).then(setAboutPreview);
+            else setAboutPreview(null);
+          }} />
+          {aboutPreview && <img src={aboutPreview} alt="About" className="mt-2 h-24 object-cover rounded" />}
+        </div>
+        <div>
+          <Label>About Title</Label>
+          <Input value={about_title} onChange={(e) => setAboutTitle(e.target.value)} placeholder="e.g. Driving Nepal Towards a Greener Future" />
+        </div>
+        <div>
+          <Label>About Content (HTML)</Label>
+          <Textarea value={about_content} onChange={(e) => setAboutContent(e.target.value)} rows={6} placeholder="Rich text / HTML for about section" className="font-mono text-sm" />
+        </div>
+        <div>
+          <Label>Mission</Label>
+          <Textarea value={mission} onChange={(e) => setMission(e.target.value)} rows={2} />
+        </div>
+        <div>
+          <Label>Vision</Label>
+          <Textarea value={vision} onChange={(e) => setVision(e.target.value)} rows={2} />
+        </div>
+        <div>
+          <Label>Values (icon + text for home page boxes)</Label>
+          {values.map((v, i) => (
+            <div key={i} className="border rounded p-3 mb-2 space-y-2">
+              <Input placeholder="Icon (e.g. Zap, Battery, Users, Leaf)" value={v.svg ?? ''} onChange={(e) => setValueAt(i, 'svg', e.target.value)} />
+              <Input placeholder="Text" value={v.text} onChange={(e) => setValueAt(i, 'text', e.target.value)} />
+              <Button type="button" variant="outline" size="sm" onClick={() => removeValue(i)}>Remove</Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={addValue}>+ Value</Button>
         </div>
         <div className="flex gap-2">
           <Button type="submit">Save</Button>
