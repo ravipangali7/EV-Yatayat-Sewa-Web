@@ -19,8 +19,7 @@ export function PublicFooter() {
   useEffect(() => {
     websitePublicApi
       .siteSetting()
-      .then((res) => {
-        const data = res?.data;
+      .then((data) => {
         if (data && typeof data === "object" && "name" in data) {
           setSiteSetting(data as SiteSetting);
         }

@@ -29,12 +29,11 @@ export default function Index() {
       websitePublicApi.testimonials(),
     ])
       .then(([settingRes, faqsRes, testimonialsRes]) => {
-        const settingData = settingRes?.data;
-        if (settingData && typeof settingData === "object" && "name" in settingData) {
-          setSiteSetting(settingData as SiteSetting);
+        if (settingRes && typeof settingRes === "object" && "name" in settingRes) {
+          setSiteSetting(settingRes as SiteSetting);
         }
-        if (Array.isArray(faqsRes?.data)) setFaqs(faqsRes.data as FAQType[]);
-        if (Array.isArray(testimonialsRes?.data)) setTestimonials(testimonialsRes.data as TestimonialType[]);
+        if (Array.isArray(faqsRes)) setFaqs(faqsRes as FAQType[]);
+        if (Array.isArray(testimonialsRes)) setTestimonials(testimonialsRes as TestimonialType[]);
       })
       .catch(() => {});
   }, []);
