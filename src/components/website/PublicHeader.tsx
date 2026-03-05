@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -11,65 +11,109 @@ const navLinks = [
   { label: "Contact", to: "/contact" },
 ];
 
-export function PublicHeader() {
+type PublicHeaderProps = {
+  siteSetting?: unknown;
+  headerPages?: unknown[];
+  aboutSlug?: string | null;
+};
+
+export function PublicHeader(_props?: PublicHeaderProps) {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
 
+  useEffect(() => {
+    if (open) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b">
+    <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl border-b border-border/80 shadow-soft">
       <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg">
           <img src={logo} alt="EV Yatayat Sewa" className="h-12 w-auto" />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname === l.to ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
+        <nav className="hidden md:flex items-center gap-1">
+          {navLinks.map((l) => {
+            const isActive = pathname === l.to;
+            return (
+              <Link
+                key={l.to}
+                to={l.to}
+                className={`relative px-4 py-2.5 rounded-full text-sm font-medium transition-colors duration-200 ${
+                  isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-muted/60"
+                }`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
           <Link
             to="/app/login"
-            className="px-5 py-2 rounded-lg text-sm font-semibold gradient-primary text-white hover:opacity-90 transition"
+            className="ml-2 px-5 py-2.5 rounded-full text-sm font-semibold gradient-primary text-white shadow-soft hover:shadow-card-hover hover:opacity-95 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Login
           </Link>
         </nav>
 
-        <button className="md:hidden p-2" onClick={() => setOpen(!open)}>
+        <button
+          type="button"
+          className="md:hidden p-3 -m-1 rounded-lg text-foreground hover:bg-muted/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          aria-label={open ? "Close menu" : "Open menu"}
+        >
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
-      {open && (
-        <div className="md:hidden border-t bg-background pb-4">
-          {navLinks.map((l) => (
+      {/* Mobile: slide-in panel with backdrop */}
+      <div
+        className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!open}
+      >
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+          aria-label="Close menu"
+        />
+        <div
+          className={`absolute top-0 right-0 w-full max-w-sm h-full bg-background border-l border-border shadow-card-hover flex flex-col pt-20 pb-8 px-6 transition-transform duration-300 ease-out ${
+            open ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <nav className="flex flex-col gap-1">
+            {navLinks.map((l) => {
+              const isActive = pathname === l.to;
+              return (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setOpen(false)}
+                  className={`px-4 py-3.5 rounded-xl text-base font-medium transition-colors ${
+                    isActive ? "text-primary bg-primary/10" : "text-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
             <Link
-              key={l.to}
-              to={l.to}
+              to="/app/login"
               onClick={() => setOpen(false)}
-              className={`block px-6 py-3 text-sm font-medium ${
-                pathname === l.to ? "text-primary" : "text-muted-foreground"
-              }`}
+              className="mt-4 mx-2 py-3.5 rounded-full text-center text-sm font-semibold gradient-primary text-white shadow-soft"
             >
-              {l.label}
+              Login
             </Link>
-          ))}
-          <Link
-            to="/app/login"
-            onClick={() => setOpen(false)}
-            className="mx-6 mt-2 block text-center px-5 py-2 rounded-lg text-sm font-semibold gradient-primary text-white"
-          >
-            Login
-          </Link>
+          </nav>
         </div>
-      )}
+      </div>
     </header>
   );
 }

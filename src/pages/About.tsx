@@ -37,35 +37,38 @@ export default function About() {
 
   return (
     <div>
-      <section className="relative h-64 flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[280px] flex items-center justify-center overflow-hidden">
         <img src={heroImage} alt="About" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 gradient-hero" />
-        <div className="relative z-10 text-center text-primary-foreground">
-          <h1 className="text-4xl font-display font-bold">{heroTitle}</h1>
-          <p className="mt-2 opacity-80">{tagline}</p>
+        <div className="relative z-10 text-center text-primary-foreground container px-4">
+          <h1 className="text-4xl md:text-5xl font-display font-bold">{heroTitle}</h1>
+          <p className="mt-2 text-lg opacity-90">{tagline}</p>
         </div>
       </section>
 
-      <section className="section-padding">
+      <section className="section-padding-lg">
         <div className="container max-w-4xl">
           {siteSetting?.about_content?.trim() && (
-            <div className="mb-12 prose prose-sm max-w-none prose-p:mb-2 text-muted-foreground" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
+            <div className="mb-12 prose prose-sm max-w-none prose-p:mb-2 text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
           )}
           <div className="grid md:grid-cols-3 gap-8 mb-16">
-            <div className="bg-accent rounded-xl p-8">
+            <div className="website-card bg-card p-8 border border-border/50">
               <Target className="h-8 w-8 text-primary mb-4" />
+              <p className="section-eyebrow mb-2">Mission</p>
               <h3 className="font-display font-bold text-xl mb-3">Our Mission</h3>
-              <p className="text-muted-foreground text-sm">{missionText}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{missionText}</p>
             </div>
-            <div className="bg-accent rounded-xl p-8">
+            <div className="website-card bg-card p-8 border border-border/50">
               <Eye className="h-8 w-8 text-primary mb-4" />
+              <p className="section-eyebrow mb-2">Vision</p>
               <h3 className="font-display font-bold text-xl mb-3">Our Vision</h3>
-              <p className="text-muted-foreground text-sm">{visionText}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{visionText}</p>
             </div>
-            <div className="bg-accent rounded-xl p-8">
+            <div className="website-card bg-card p-8 border border-border/50">
               <Leaf className="h-8 w-8 text-primary mb-4" />
+              <p className="section-eyebrow mb-2">Values</p>
               <h3 className="font-display font-bold text-xl mb-3">Our Values</h3>
-              <p className="text-muted-foreground text-sm whitespace-pre-line">{valuesText}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">{valuesText}</p>
             </div>
           </div>
         </div>

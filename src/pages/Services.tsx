@@ -19,11 +19,15 @@ export default function ServicesPage() {
 
   return (
     <div>
-      <section className="bg-[hsl(210_60%_20%)] text-white py-20 text-center">
-        <h1 className="text-4xl font-display font-bold">Our Services</h1>
-        <p className="mt-2 opacity-80">Comprehensive electric transport solutions</p>
+      <section className="relative min-h-[280px] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210_55%_18%)] to-[hsl(210_55%_12%)]" />
+        <div className="relative z-10 text-center text-primary-foreground container px-4">
+          <p className="section-eyebrow text-primary-foreground/90">What we offer</p>
+          <h1 className="text-4xl md:text-5xl font-display font-bold mt-2">Our Services</h1>
+          <p className="mt-2 text-lg opacity-90">Comprehensive electric transport solutions</p>
+        </div>
       </section>
-      <section className="section-padding">
+      <section className="section-padding-lg">
         <div className="container grid md:grid-cols-3 gap-6">
           {services.length === 0 ? (
             <p className="text-muted-foreground col-span-full text-center py-12">No services yet.</p>
@@ -31,13 +35,13 @@ export default function ServicesPage() {
             services.map((s) => {
               const rawIcon = (s.svg ?? "Bus").toString().trim();
               return (
-                <Link to={`/service/${s.slug}`} key={s.id} className="group bg-card rounded-xl p-6 border hover:shadow-lg hover:-translate-y-1 transition-all">
-                  <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <Link to={`/service/${s.slug}`} key={s.id} className="group website-card bg-card p-6">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
                     <WebsiteIcon name={rawIcon} className="h-6 w-6" />
                   </div>
                   <h3 className="font-display font-semibold text-lg mb-2">{s.name}</h3>
                   <p className="text-muted-foreground text-sm mb-4">{s.description}</p>
-                  <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                  <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all duration-200">
                     Learn More <ChevronRight className="h-4 w-4" />
                   </span>
                 </Link>

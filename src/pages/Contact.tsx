@@ -52,16 +52,21 @@ export default function Contact() {
 
   return (
     <div>
-      <section className="bg-[hsl(210_60%_20%)] text-white py-20 text-center">
-        <h1 className="text-4xl font-display font-bold">Contact Us</h1>
-        <p className="mt-2 opacity-80">We'd love to hear from you</p>
+      <section className="relative min-h-[280px] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210_55%_18%)] to-[hsl(210_55%_12%)]" />
+        <div className="relative z-10 text-center text-primary-foreground container px-4">
+          <p className="section-eyebrow text-primary-foreground/90">Get in touch</p>
+          <h1 className="text-4xl md:text-5xl font-display font-bold mt-2">Contact Us</h1>
+          <p className="mt-2 text-lg opacity-90">We&apos;d love to hear from you</p>
+        </div>
       </section>
-      <section className="section-padding">
+      <section className="section-padding-lg">
         <div className="container grid md:grid-cols-2 gap-12">
           <div>
-            <h2 className="text-2xl font-display font-bold mb-6">Send us a Message</h2>
+            <p className="section-eyebrow">Send a message</p>
+            <h2 className="text-3xl font-display font-bold mb-6">Send us a Message</h2>
             {success ? (
-              <div className="rounded-lg border bg-accent/50 p-6 text-center text-sm text-primary font-medium">
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center text-sm text-primary font-medium shadow-soft">
                 Message sent. We&apos;ll get back to you shortly.
               </div>
             ) : (
@@ -71,7 +76,7 @@ export default function Contact() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow"
                 />
                 <input
                   placeholder="Phone"
@@ -79,7 +84,7 @@ export default function Contact() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow"
                 />
                 <textarea
                   placeholder="Message"
@@ -87,12 +92,12 @@ export default function Contact() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none resize-none transition-shadow"
                 />
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-8 py-3 rounded-lg font-semibold gradient-primary text-primary-foreground hover:opacity-90 transition w-full disabled:opacity-70"
+                  className="px-8 py-3.5 rounded-full font-semibold gradient-primary text-primary-foreground shadow-soft hover:shadow-card-hover hover:opacity-95 transition-all w-full disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   {submitting ? "Sending..." : "Send Message"}
                 </button>
@@ -100,49 +105,50 @@ export default function Contact() {
             )}
           </div>
           <div className="space-y-6">
-            <h2 className="text-2xl font-display font-bold mb-6">Contact Information</h2>
-            <div className="flex items-start gap-4 p-4 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                <MapPin className="h-5 w-5 text-accent-foreground" />
+            <p className="section-eyebrow">Contact info</p>
+            <h2 className="text-3xl font-display font-bold mb-6">Contact Information</h2>
+            <div className="flex items-start gap-4 p-5 rounded-2xl border border-border/50 bg-card shadow-soft">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <MapPin className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h4 className="font-semibold text-sm">Address</h4>
-                <p className="text-sm text-muted-foreground">{address}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{address}</p>
               </div>
             </div>
-            <div className="flex items-start gap-4 p-4 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                <Phone className="h-5 w-5 text-accent-foreground" />
+            <div className="flex items-start gap-4 p-5 rounded-2xl border border-border/50 bg-card shadow-soft">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Phone className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h4 className="font-semibold text-sm">Phone</h4>
-                <p className="text-sm text-muted-foreground">{phoneDisplay}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{phoneDisplay}</p>
               </div>
             </div>
-            <div className="flex items-start gap-4 p-4 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                <Mail className="h-5 w-5 text-accent-foreground" />
+            <div className="flex items-start gap-4 p-5 rounded-2xl border border-border/50 bg-card shadow-soft">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Mail className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h4 className="font-semibold text-sm">Email</h4>
-                <p className="text-sm text-muted-foreground">{emailDisplay}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{emailDisplay}</p>
               </div>
             </div>
-            <div className="flex items-start gap-4 p-4 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                <Clock className="h-5 w-5 text-accent-foreground" />
+            <div className="flex items-start gap-4 p-5 rounded-2xl border border-border/50 bg-card shadow-soft">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Clock className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h4 className="font-semibold text-sm">Office Hours</h4>
-                <p className="text-sm text-muted-foreground">Sun - Fri: 9:00 AM - 5:00 PM</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Sun - Fri: 9:00 AM - 5:00 PM</p>
               </div>
             </div>
             {siteSetting?.map?.trim() ? (
-              <div className="rounded-xl overflow-hidden border h-64 bg-muted">
+              <div className="rounded-2xl overflow-hidden border border-border/50 shadow-soft h-64 bg-muted">
                 <iframe title="Map" src={siteSetting.map} className="w-full h-full" />
               </div>
             ) : (
-              <div className="rounded-xl overflow-hidden border h-64 bg-muted flex items-center justify-center">
+              <div className="rounded-2xl overflow-hidden border border-border/50 shadow-soft h-64 bg-muted flex items-center justify-center">
                 <p className="text-muted-foreground text-sm">Map Placeholder</p>
               </div>
             )}

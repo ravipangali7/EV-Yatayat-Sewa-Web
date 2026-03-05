@@ -94,21 +94,27 @@ export default function Index() {
         )}
         <div className="absolute inset-0 gradient-hero" />
         <div className="container relative z-10 text-primary-foreground">
-          <div className="max-w-2xl animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="max-w-3xl animate-fade-in">
+            <div className="flex items-center gap-3 mb-5">
               <img src={logo} alt="Logo" className="h-16 w-auto drop-shadow-lg" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-display font-bold leading-tight mb-6">
+            <h1 className="text-4xl md:text-6xl font-display font-bold leading-tight mb-5">
               {heroSlider?.title ? <span className="whitespace-pre-line">{heroSlider.title}</span> : <>Nepal's Electric<br />Transport Revolution</>}
             </h1>
-            <p className="text-lg md:text-xl opacity-90 mb-8 max-w-lg whitespace-pre-line">
+            <p className="text-lg md:text-xl opacity-90 mb-7 max-w-lg whitespace-pre-line">
               {heroSlider?.subtitle || "Clean, comfortable, and reliable electric bus services across Nepal. Join the green movement today."}
             </p>
             <div className="flex gap-4 flex-wrap">
-              <Link to="/services" className="px-8 py-3 rounded-lg font-semibold bg-primary-foreground text-[hsl(210_60%_20%)] hover:opacity-90 transition flex items-center gap-2">
+              <Link
+                to="/services"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold bg-primary-foreground text-[hsl(210_60%_20%)] shadow-soft hover:shadow-card-hover hover:scale-[1.02] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              >
                 Our Services <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/contact" className="px-8 py-3 rounded-lg font-semibold border-2 border-primary-foreground/50 hover:bg-primary-foreground/10 transition">
+              <Link
+                to="/contact"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold border-2 border-primary-foreground/50 hover:bg-primary-foreground/10 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              >
                 Contact Us
               </Link>
             </div>
@@ -122,7 +128,7 @@ export default function Index() {
           {statsList.map((s: { label: string; value: string; icon?: string; svg?: string }, i: number) => {
             const rawIcon = (s.svg ?? s.icon ?? "Bus").toString().trim();
             return (
-              <div key={i} className="bg-card rounded-xl shadow-lg p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
+              <div key={i} className="bg-card rounded-2xl border border-border/50 shadow-card p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
                 <WebsiteIcon name={rawIcon} className="h-8 w-8 text-primary mx-auto mb-3" />
                 <p className="text-3xl font-display font-bold text-foreground">{s.value}</p>
                 <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
@@ -133,10 +139,10 @@ export default function Index() {
       </section>
 
       {/* About (dynamic from site setting) */}
-      <section className="section-padding">
+      <section className="section-padding-lg">
         <div className="container grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">About Us</p>
+            <p className="section-eyebrow">About Us</p>
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">
               {siteSetting?.about_title?.trim() ? (
                 <span className="whitespace-pre-line">{siteSetting.about_title}</span>
@@ -154,20 +160,20 @@ export default function Index() {
             {(siteSetting?.mission?.trim() || siteSetting?.vision?.trim() || siteSetting?.values?.trim()) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 {siteSetting?.mission?.trim() && (
-                  <div className="p-3 rounded-lg bg-accent">
-                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Mission</p>
+                  <div className="p-4 rounded-2xl border border-border/50 bg-muted/50 shadow-soft">
+                    <p className="section-eyebrow mb-1">Mission</p>
                     <p className="text-sm text-muted-foreground">{siteSetting.mission}</p>
                   </div>
                 )}
                 {siteSetting?.vision?.trim() && (
-                  <div className="p-3 rounded-lg bg-accent">
-                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Vision</p>
+                  <div className="p-4 rounded-2xl border border-border/50 bg-muted/50 shadow-soft">
+                    <p className="section-eyebrow mb-1">Vision</p>
                     <p className="text-sm text-muted-foreground">{siteSetting.vision}</p>
                   </div>
                 )}
                 {siteSetting?.values?.trim() && (
-                  <div className="p-3 rounded-lg bg-accent sm:col-span-2">
-                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">Values</p>
+                  <div className="p-4 rounded-2xl border border-border/50 bg-muted/50 shadow-soft sm:col-span-2">
+                    <p className="section-eyebrow mb-1">Values</p>
                     <p className="text-sm text-muted-foreground whitespace-pre-line">{siteSetting.values}</p>
                   </div>
                 )}
@@ -179,17 +185,17 @@ export default function Index() {
             <img
               src={siteSetting?.about_image ? imgUrl(siteSetting.about_image) : heroBus}
               alt="About"
-              className="rounded-2xl shadow-xl relative z-10 w-full h-80 object-cover"
+              className="rounded-2xl shadow-card relative z-10 w-full h-80 object-cover border border-border/30"
             />
           </div>
         </div>
       </section>
 
       {/* Services (dynamic from API) */}
-      <section className="section-padding bg-muted">
+      <section className="section-padding-lg bg-muted">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Our Services</p>
+            <p className="section-eyebrow">Our Services</p>
             <h2 className="text-3xl md:text-4xl font-display font-bold">Comprehensive EV Transport Solutions</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -199,13 +205,13 @@ export default function Index() {
               services.map((s) => {
                 const rawIcon = (s.svg ?? "Bus").toString().trim();
                 return (
-                  <Link to={`/service/${s.slug}`} key={s.id} className="group bg-card rounded-xl p-6 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1">
-                    <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <Link to={`/service/${s.slug}`} key={s.id} className="group website-card bg-card p-6">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
                       <WebsiteIcon name={rawIcon} className="h-6 w-6" />
                     </div>
                     <h3 className="font-display font-semibold text-lg mb-2">{s.name}</h3>
                     <p className="text-muted-foreground text-sm mb-4">{s.description}</p>
-                    <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                    <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all duration-200">
                       Learn More <ChevronRight className="h-4 w-4" />
                     </span>
                   </Link>
@@ -217,10 +223,10 @@ export default function Index() {
       </section>
 
       {/* Team */}
-      <section className="section-padding">
+      <section className="section-padding-lg">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Our Team</p>
+            <p className="section-eyebrow">Our Team</p>
             <h2 className="text-3xl md:text-4xl font-display font-bold">Meet the People Behind the Wheel</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -230,10 +236,10 @@ export default function Index() {
               team.map((t) => (
                 <div key={t.id} className="text-center group">
                   {t.image ? (
-                    <img src={imgUrl(t.image)} alt={t.name} className="w-24 h-24 mx-auto rounded-full object-cover mb-4 group-hover:ring-2 group-hover:ring-primary transition-all" />
+                    <img src={imgUrl(t.image)} alt={t.name} className="w-24 h-24 mx-auto rounded-full object-cover mb-4 ring-2 ring-transparent group-hover:ring-primary transition-all duration-300" />
                   ) : (
-                    <div className="w-24 h-24 mx-auto rounded-full bg-accent flex items-center justify-center mb-4 group-hover:bg-primary transition-colors">
-                      <span className="text-2xl font-display font-bold text-accent-foreground group-hover:text-primary-foreground transition-colors">
+                    <div className="w-24 h-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary transition-colors duration-300">
+                      <span className="text-2xl font-display font-bold text-primary group-hover:text-primary-foreground transition-colors">
                         {t.name.split(" ").map((n) => n[0]).join("")}
                       </span>
                     </div>
@@ -248,10 +254,10 @@ export default function Index() {
       </section>
 
       {/* Vehicles */}
-      <section className="section-padding bg-muted">
+      <section className="section-padding-lg bg-muted">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Our Fleet</p>
+            <p className="section-eyebrow">Our Fleet</p>
             <h2 className="text-3xl md:text-4xl font-display font-bold">Modern Electric Vehicles</h2>
           </div>
           <div className="grid md:grid-cols-4 gap-6">
@@ -259,17 +265,17 @@ export default function Index() {
               <p className="text-muted-foreground col-span-full text-center py-8">No vehicles yet.</p>
             ) : (
               vehicles.map((v) => (
-                <div key={v.id} className="bg-card rounded-xl p-6 shadow-sm text-center hover:shadow-lg transition">
+                <div key={v.id} className="website-card bg-card p-6 text-center">
                   {v.featured_image ? (
-                    <img src={v.featured_image} alt={v.name} className="h-24 w-full object-cover rounded-lg mx-auto mb-4" />
+                    <img src={v.featured_image} alt={v.name} className="h-24 w-full object-cover rounded-xl mx-auto mb-4" />
                   ) : (
                     <Bus className="h-12 w-12 text-primary mx-auto mb-4" />
                   )}
                   <h4 className="font-display font-semibold mb-1">{v.name}</h4>
                   <p className="text-xs text-muted-foreground mb-3">{v.vehicle_type}</p>
                   <div className="flex justify-center gap-2 flex-wrap text-sm">
-                    {v.vehicle_no && <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground">{v.vehicle_no}</span>}
-                    {v.description && <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground line-clamp-1 max-w-[140px]">{v.description}</span>}
+                    {v.vehicle_no && <span className="px-3 py-1 rounded-full bg-primary/10 text-primary">{v.vehicle_no}</span>}
+                    {v.description && <span className="px-3 py-1 rounded-full bg-primary/10 text-primary line-clamp-1 max-w-[140px]">{v.description}</span>}
                   </div>
                 </div>
               ))
@@ -279,10 +285,10 @@ export default function Index() {
       </section>
 
       {/* Testimonials (dynamic from API) */}
-      <section className="section-padding">
+      <section className="section-padding-lg">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Testimonials</p>
+            <p className="section-eyebrow">Testimonials</p>
             <h2 className="text-3xl md:text-4xl font-display font-bold">What Our Passengers Say</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -290,15 +296,15 @@ export default function Index() {
               <p className="text-muted-foreground col-span-full text-center py-8">No testimonials yet.</p>
             ) : (
               testimonials.map((t) => (
-                <div key={t.id} className="bg-card rounded-xl p-6 shadow-sm border">
+                <div key={t.id} className="website-card bg-card p-6 border border-border/50">
                   <Quote className="h-8 w-8 text-primary/30 mb-4" />
                   <p className="text-muted-foreground mb-4 italic">"{t.message}"</p>
                   <div className="flex items-center gap-2">
                     {t.image ? (
                       <img src={imgUrl(t.image)} alt={t.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center shrink-0">
-                        <span className="text-xs font-display font-bold text-accent-foreground">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-display font-bold text-primary">
                           {t.name.split(" ").map((n) => n[0]).join("")}
                         </span>
                       </div>
@@ -318,14 +324,14 @@ export default function Index() {
       </section>
 
       {/* Blog */}
-      <section className="section-padding bg-muted">
+      <section className="section-padding-lg bg-muted">
         <div className="container">
           <div className="flex items-center justify-between mb-12">
             <div>
-              <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Blog</p>
+              <p className="section-eyebrow">Blog</p>
               <h2 className="text-3xl md:text-4xl font-display font-bold">Latest News & Updates</h2>
             </div>
-            <Link to="/blogs" className="hidden md:flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all">
+            <Link to="/blogs" className="hidden md:flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg">
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -337,7 +343,7 @@ export default function Index() {
                 const excerpt = b.content?.replace(/<[^>]+>/g, "").trim().slice(0, 120) || "";
                 const date = b.created_at ? new Date(b.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "";
                 return (
-                  <Link to={`/blog/${b.slug}`} key={b.id} className="bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition group">
+                  <Link to={`/blog/${b.slug}`} key={b.id} className="website-card bg-card overflow-hidden group">
                     {b.image ? (
                       <img src={imgUrl(b.image)} alt={b.name} className="h-40 w-full object-cover" />
                     ) : (
@@ -346,7 +352,7 @@ export default function Index() {
                       </div>
                     )}
                     <div className="p-5">
-                      <h4 className="font-semibold mt-3 mb-2 group-hover:text-primary transition line-clamp-2">{b.name}</h4>
+                      <h4 className="font-semibold mt-3 mb-2 group-hover:text-primary transition-colors line-clamp-2">{b.name}</h4>
                       <p className="text-sm text-muted-foreground line-clamp-2">{excerpt}{excerpt.length >= 120 ? "…" : ""}</p>
                       <p className="text-xs text-muted-foreground mt-3">{date}</p>
                     </div>
@@ -359,18 +365,18 @@ export default function Index() {
       </section>
 
       {/* FAQ + Contact (dynamic from API) */}
-      <section className="section-padding">
+      <section className="section-padding-lg">
         <div className="container grid md:grid-cols-2 gap-12">
           <div>
-            <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">FAQ</p>
+            <p className="section-eyebrow">FAQ</p>
             <h2 className="text-3xl font-display font-bold mb-6">Frequently Asked Questions</h2>
             {faqs.length === 0 ? (
               <p className="text-muted-foreground">No FAQs yet.</p>
             ) : (
               <Accordion type="single" collapsible className="space-y-2">
                 {faqs.map((f) => (
-                  <AccordionItem key={f.id} value={`faq-${f.id}`} className="border rounded-lg px-4">
-                    <AccordionTrigger className="text-sm font-medium">{f.question}</AccordionTrigger>
+                  <AccordionItem key={f.id} value={`faq-${f.id}`} className="border border-border/50 rounded-xl px-4 shadow-soft">
+                    <AccordionTrigger className="text-sm font-medium hover:no-underline">{f.question}</AccordionTrigger>
                     <AccordionContent className="text-sm text-muted-foreground">{f.answer}</AccordionContent>
                   </AccordionItem>
                 ))}
@@ -378,7 +384,7 @@ export default function Index() {
             )}
           </div>
           <div>
-            <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Contact</p>
+            <p className="section-eyebrow">Contact</p>
             <h2 className="text-3xl font-display font-bold mb-6">Get in Touch</h2>
             <div className="space-y-4 mb-6 text-sm text-muted-foreground">
               <p className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0 text-primary" /> {contactAddress}</p>
@@ -386,7 +392,7 @@ export default function Index() {
               <p className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-primary" /> {contactEmailDisplay}</p>
             </div>
             {contactSuccess ? (
-              <div className="rounded-lg border bg-accent/50 p-6 text-center text-sm text-primary font-medium">
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center text-sm text-primary font-medium shadow-soft">
                 Message sent. We&apos;ll get back to you shortly.
               </div>
             ) : (
@@ -396,7 +402,7 @@ export default function Index() {
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow"
                 />
                 <input
                   placeholder="Phone"
@@ -404,7 +410,7 @@ export default function Index() {
                   value={contactPhone}
                   onChange={(e) => setContactPhone(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none transition-shadow"
                 />
                 <textarea
                   placeholder="Your Message"
@@ -412,12 +418,12 @@ export default function Index() {
                   value={contactMessage}
                   onChange={(e) => setContactMessage(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-input bg-background text-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 outline-none resize-none transition-shadow"
                 />
                 <button
                   type="submit"
                   disabled={contactSubmitting}
-                  className="px-8 py-3 rounded-lg font-semibold gradient-primary text-primary-foreground hover:opacity-90 transition w-full disabled:opacity-70"
+                  className="px-8 py-3.5 rounded-full font-semibold gradient-primary text-primary-foreground shadow-soft hover:shadow-card-hover hover:opacity-95 transition-all w-full disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   {contactSubmitting ? "Sending..." : "Send Message"}
                 </button>

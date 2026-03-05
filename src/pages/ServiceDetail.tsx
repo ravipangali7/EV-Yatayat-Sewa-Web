@@ -41,32 +41,37 @@ export default function ServiceDetail() {
 
   return (
     <div>
-      <section className="bg-[hsl(210_60%_20%)] text-white py-20">
-        <div className="container">
-          <Link to="/services" className="flex items-center gap-2 text-sm opacity-70 hover:opacity-100 mb-4">
+      <section className="relative min-h-[280px] flex items-end py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210_55%_18%)] to-[hsl(210_55%_12%)]" />
+        <div className="relative z-10 container px-4 w-full">
+          <Link to="/services" className="inline-flex items-center gap-2 text-sm text-primary-foreground/90 hover:opacity-100 mb-4 transition-opacity">
             <ArrowLeft className="h-4 w-4" /> Back to Services
           </Link>
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl bg-white/20 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center">
               <WebsiteIcon name={rawIcon} className="h-8 w-8" />
             </div>
-            <h1 className="text-4xl font-display font-bold">{service.name}</h1>
+            <h1 className="text-4xl font-display font-bold text-primary-foreground">{service.name}</h1>
           </div>
         </div>
       </section>
-      <section className="section-padding">
+      <section className="section-padding-lg">
         <div className="container max-w-3xl">
-          <p className="text-lg text-muted-foreground mb-8">{service.description}</p>
-          <h3 className="font-display font-bold text-xl mb-4">Key Features</h3>
+          <p className="text-lg text-muted-foreground leading-relaxed mb-8">{service.description}</p>
+          <p className="section-eyebrow mb-2">Key Features</p>
+          <h3 className="font-display font-bold text-xl mb-4">What we offer</h3>
           <div className="space-y-3">
             {["Fully air-conditioned electric vehicles", "Real-time GPS tracking", "Professional and trained drivers", "24/7 customer support", "Flexible scheduling options"].map((f, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-accent">
+              <div key={i} className="flex items-center gap-3 p-4 rounded-2xl border border-border/50 bg-card shadow-soft">
                 <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
                 <span className="text-sm">{f}</span>
               </div>
             ))}
           </div>
-          <Link to="/contact" className="inline-block mt-8 px-8 py-3 rounded-lg font-semibold gradient-primary text-primary-foreground hover:opacity-90 transition">
+          <Link
+            to="/contact"
+            className="inline-flex items-center mt-8 px-8 py-3.5 rounded-full font-semibold gradient-primary text-primary-foreground shadow-soft hover:shadow-card-hover hover:opacity-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
             Book This Service
           </Link>
         </div>

@@ -55,7 +55,7 @@ export default function Login() {
         </div>
 
         {/* Login Card */}
-        <div className="bg-card rounded-2xl p-8 shadow-2xl border border-border">
+        <div className="bg-card rounded-2xl p-8 shadow-card border border-border/50">
           <div className="text-center mb-6">
             <h2 className="text-xl font-semibold text-foreground">Welcome back</h2>
             <p className="text-muted-foreground text-sm mt-1">Sign in to your account</p>
@@ -90,7 +90,7 @@ export default function Login() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full rounded-full py-2.5 shadow-soft hover:shadow-card-hover transition-shadow" disabled={isLoading}>
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>

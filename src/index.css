@@ -7,11 +7,12 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
+    --background: 210 18% 99%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
+    --primary-muted: 142 45% 55%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
@@ -43,6 +44,7 @@
     --ring: 142 71% 40%;
 
     --radius: 0.75rem;
+    --radius-card: 1rem;
 
     /* Sidebar */
     --sidebar-background: 222 47% 11%;
@@ -126,8 +128,13 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased leading-relaxed;
     font-family: 'Inter', sans-serif;
+  }
+
+  /* Section eyebrow for public website (About Us, Our Services, etc.) */
+  .section-eyebrow {
+    @apply text-primary font-semibold text-sm uppercase tracking-wider mb-2;
   }
 }
 
@@ -406,7 +413,9 @@
   background: linear-gradient(to right, hsl(142 60% 35%), hsl(210 60% 20%));
 }
 .gradient-hero {
-  background: linear-gradient(135deg, hsl(142 60% 35% / 0.9), hsl(210 60% 20% / 0.95));
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 100%, transparent 0%, hsl(210 60% 15% / 0.4) 100%),
+    linear-gradient(135deg, hsl(142 60% 35% / 0.92), hsl(210 60% 18% / 0.96));
 }
 .text-gradient {
   @apply bg-clip-text text-transparent;
@@ -414,4 +423,28 @@
 }
 .section-padding {
   @apply py-16 md:py-24 px-4;
+}
+
+.section-padding-lg {
+  @apply py-20 md:py-28 px-4;
+}
+
+/* Public website card: soft shadow, rounded-2xl, hover lift */
+.website-card {
+  @apply rounded-2xl border border-border/50 shadow-card transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-card-hover hover:border-primary/20;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-count-up,
+  .animate-float-orb,
+  .animate-float-orb-reverse,
+  .animate-float-orb-slow,
+  .animate-pulse-glow {
+    animation: none;
+  }
+  .website-card:hover {
+    transform: none;
+  }
 }
