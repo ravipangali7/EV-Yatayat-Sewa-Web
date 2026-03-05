@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Leaf, Target, Eye } from "lucide-react";
 import heroBus from "@/assets/hero-bus.jpg";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import { RichTextDisplay } from "@/components/common/RichTextDisplay";
 import { TwoColumnPageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import type { SiteSetting } from "@/modules/website/types";
 
@@ -57,7 +58,7 @@ export default function About() {
       <section className="section-padding-lg section-tint-primary">
         <div className="container max-w-4xl">
           {siteSetting?.about_content?.trim() && (
-            <div className="mb-12 prose prose-sm max-w-none prose-p:mb-2 text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
+            <RichTextDisplay html={siteSetting.about_content} className="mb-12 prose-p:mb-2 text-muted-foreground leading-relaxed" />
           )}
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             <div className="website-card bg-card p-8 border border-border/50">

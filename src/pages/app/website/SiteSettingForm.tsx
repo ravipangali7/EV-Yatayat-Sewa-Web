@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/common/RichTextEditor';
 import { IconPicker } from '@/components/common/IconPicker';
 import { suggestIconFromText } from '@/lib/websiteIcons';
 import { siteSettingApi } from '@/modules/website/services/websiteApi';
@@ -249,8 +250,8 @@ export default function SiteSettingForm() {
           <Input value={about_title} onChange={(e) => setAboutTitle(e.target.value)} placeholder="e.g. Driving Nepal Towards a Greener Future" />
         </div>
         <div>
-          <Label>About Content (HTML)</Label>
-          <Textarea value={about_content} onChange={(e) => setAboutContent(e.target.value)} rows={6} placeholder="Rich text / HTML for about section" className="font-mono text-sm" />
+          <Label>About Content</Label>
+          <RichTextEditor value={about_content} onChange={setAboutContent} placeholder="About section content (bold, lists, headings…)" minHeight="180px" />
         </div>
         <div>
           <Label>Mission</Label>

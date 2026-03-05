@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Bus, MapPin, Star, ArrowRight, ChevronRight, Quote, Zap, Battery, Mail, Phone } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { WebsiteIcon } from "@/components/website/WebsiteIcon";
+import { RichTextDisplay } from "@/components/common/RichTextDisplay";
 import { HomePageSkeleton } from "@/components/website/WebsiteLoadingSkeleton";
 import { mockData } from "@/lib/mockData";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
@@ -164,7 +165,10 @@ export default function Index() {
               )}
             </h2>
             {siteSetting?.about_content?.trim() ? (
-              <div className="text-primary-foreground/90 leading-relaxed mb-8 prose prose-sm max-w-none prose-p:mb-3 prose-headings:font-display prose-headings:text-primary-foreground prose-p:text-primary-foreground/90 prose-a:text-primary-foreground prose-strong:text-primary-foreground" dangerouslySetInnerHTML={{ __html: siteSetting.about_content }} />
+              <RichTextDisplay
+                html={siteSetting.about_content}
+                className="text-primary-foreground/90 leading-relaxed mb-8 prose-p:mb-3 prose-headings:font-display prose-headings:text-primary-foreground prose-p:text-primary-foreground/90 prose-a:text-primary-foreground prose-strong:text-primary-foreground"
+              />
             ) : (
               <p className="text-primary-foreground/90 leading-relaxed mb-8 text-base">
                 EV Yatayat Sewa is Nepal's pioneering electric bus transportation company. We are committed to providing sustainable, affordable, and comfortable public transportation while significantly reducing carbon emissions in urban areas.
