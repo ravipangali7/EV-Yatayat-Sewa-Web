@@ -4,7 +4,7 @@ import { Bus, MapPin, Users, Leaf, Star, ArrowRight, Building2, Mountain, Calend
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { mockData } from "@/lib/mockData";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
-import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle, Blog as BlogType, Slider as SliderType } from "@/modules/website/types";
+import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle, Blog as BlogType, Slider as SliderType, Service as ServiceType } from "@/modules/website/types";
 import heroBus from "@/assets/hero-bus.jpg";
 import logo from "@/assets/logo.png";
 
@@ -26,6 +26,7 @@ export default function Index() {
   const [team, setTeam] = useState<TeamType[]>([]);
   const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
   const [blogs, setBlogs] = useState<BlogType[]>([]);
+  const [services, setServices] = useState<ServiceType[]>([]);
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactMessage, setContactMessage] = useState("");
@@ -41,8 +42,9 @@ export default function Index() {
       websitePublicApi.team(),
       websitePublicApi.vehicles(),
       websitePublicApi.blogs(),
+      websitePublicApi.services(),
     ])
-      .then(([settingRes, slidersRes, faqsRes, testimonialsRes, teamRes, vehiclesRes, blogsRes]) => {
+      .then(([settingRes, slidersRes, faqsRes, testimonialsRes, teamRes, vehiclesRes, blogsRes, servicesRes]) => {
         if (settingRes && typeof settingRes === "object" && "name" in settingRes) {
           setSiteSetting(settingRes as SiteSetting);
         }
@@ -52,6 +54,7 @@ export default function Index() {
         if (Array.isArray(teamRes)) setTeam(teamRes as TeamType[]);
         if (Array.isArray(vehiclesRes)) setVehicles(vehiclesRes as PublicVehicle[]);
         if (Array.isArray(blogsRes)) setBlogs(blogsRes as BlogType[]);
+        if (Array.isArray(servicesRes)) setServices(servicesRes as ServiceType[]);
       })
       .catch(() => {});
   }, []);
@@ -118,11 +121,11 @@ export default function Index() {
       <section className="-mt-16 relative z-10 container">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsList.map((s: { label: string; value: string; icon?: string; svg?: string }, i: number) => {
-            const iconKey = s.svg ?? s.icon ?? "Bus";
-            const Icon = iconMap[iconKey];
+            const rawIcon = (s.svg ?? s.icon ?? "Bus").toString().trim();
+            const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Bus;
             return (
               <div key={i} className="bg-card rounded-xl shadow-lg p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                {Icon ? <Icon className="h-8 w-8 text-primary mx-auto mb-3" /> : <Bus className="h-8 w-8 text-primary mx-auto mb-3" />}
+                <Icon className="h-8 w-8 text-primary mx-auto mb-3" />
                 <p className="text-3xl font-display font-bold text-foreground">{s.value}</p>
                 <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
               </div>
@@ -156,7 +159,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Services */}
+      {/* Services (dynamic from API) */}
       <section className="section-padding bg-muted">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -164,21 +167,26 @@ export default function Index() {
             <h2 className="text-3xl md:text-4xl font-display font-bold">Comprehensive EV Transport Solutions</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {mockData.services.map((s) => {
-              const Icon = iconMap[s.icon];
-              return (
-                <Link to={`/service/${s.slug}`} key={s.slug} className="group bg-card rounded-xl p-6 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1">
-                  <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="font-display font-semibold text-lg mb-2">{s.title}</h3>
-                  <p className="text-muted-foreground text-sm mb-4">{s.desc}</p>
-                  <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Learn More <ChevronRight className="h-4 w-4" />
-                  </span>
-                </Link>
-              );
-            })}
+            {services.length === 0 ? (
+              <p className="text-muted-foreground col-span-full text-center py-8">No services yet.</p>
+            ) : (
+              services.map((s) => {
+                const rawIcon = (s.svg ?? "Bus").toString().trim();
+                const Icon = iconMap[rawIcon] ?? iconMap[rawIcon.charAt(0).toUpperCase() + rawIcon.slice(1)] ?? Bus;
+                return (
+                  <Link to={`/service/${s.slug}`} key={s.id} className="group bg-card rounded-xl p-6 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1">
+                    <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="font-display font-semibold text-lg mb-2">{s.name}</h3>
+                    <p className="text-muted-foreground text-sm mb-4">{s.description}</p>
+                    <span className="text-primary text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                      Learn More <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
       </section>
