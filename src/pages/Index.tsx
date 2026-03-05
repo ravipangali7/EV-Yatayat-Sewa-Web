@@ -100,7 +100,6 @@ export default function Index() {
         ) : (
           <img src={heroBus} alt="Electric bus" className="absolute inset-0 w-full h-full object-cover" />
         )}
-        <div className="absolute inset-0 gradient-hero" />
         <div className="container relative z-10 text-primary-foreground">
           <div className="max-w-3xl animate-fade-in">
             <div className="flex items-center gap-3 mb-5">
