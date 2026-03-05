@@ -1,13 +1,66 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bus, MapPin, Users, Leaf, Star, ArrowRight, Building2, Mountain, CalendarCheck, Plane, GraduationCap, ChevronRight, Quote, Zap, Battery } from "lucide-react";
+import { Bus, MapPin, Users, Leaf, Star, ArrowRight, Building2, Mountain, CalendarCheck, Plane, GraduationCap, ChevronRight, Quote, Zap, Battery, Mail, Phone } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { mockData } from "@/lib/mockData";
+import { websitePublicApi } from "@/modules/website/services/websiteApi";
+import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType } from "@/modules/website/types";
 import heroBus from "@/assets/hero-bus.jpg";
 import logo from "@/assets/logo.png";
 
 const iconMap: Record<string, any> = { Bus, MapPin, Users, Leaf, Building2, Mountain, CalendarCheck, Plane, GraduationCap };
 
+const CONTACT_FALLBACK = { address: "Kathmandu, Nepal", phone: "+977-1-4XXXXXX", email: "info@evyatayatsewa.com" };
+
 export default function Index() {
+  const [siteSetting, setSiteSetting] = useState<SiteSetting | null>(null);
+  const [faqs, setFaqs] = useState<FAQType[]>([]);
+  const [testimonials, setTestimonials] = useState<TestimonialType[]>([]);
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      websitePublicApi.siteSetting(),
+      websitePublicApi.faqs(),
+      websitePublicApi.testimonials(),
+    ])
+      .then(([settingRes, faqsRes, testimonialsRes]) => {
+        const settingData = settingRes?.data;
+        if (settingData && typeof settingData === "object" && "name" in settingData) {
+          setSiteSetting(settingData as SiteSetting);
+        }
+        if (Array.isArray(faqsRes?.data)) setFaqs(faqsRes.data as FAQType[]);
+        if (Array.isArray(testimonialsRes?.data)) setTestimonials(testimonialsRes.data as TestimonialType[]);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactSubmitting(true);
+    setContactSuccess(false);
+    try {
+      await websitePublicApi.contactSubmit({ name: contactName, phone: contactPhone, message: contactMessage });
+      setContactName("");
+      setContactPhone("");
+      setContactMessage("");
+      setContactSuccess(true);
+      setTimeout(() => setContactSuccess(false), 4000);
+    } catch {
+      // toast handled by api interceptor
+    } finally {
+      setContactSubmitting(false);
+    }
+  };
+
+  const contactAddress = siteSetting?.address?.trim() || CONTACT_FALLBACK.address;
+  const contactPhoneDisplay = Array.isArray(siteSetting?.phones) && siteSetting.phones.length > 0 ? String(siteSetting.phones[0]).trim() : CONTACT_FALLBACK.phone;
+  const contactEmailDisplay = Array.isArray(siteSetting?.emails) && siteSetting.emails.length > 0 ? String(siteSetting.emails[0]).trim() : CONTACT_FALLBACK.email;
+
   return (
     <div>
       {/* Hero */}
@@ -151,7 +204,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials (dynamic from API) */}
       <section className="section-padding">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -159,20 +212,24 @@ export default function Index() {
             <h2 className="text-3xl md:text-4xl font-display font-bold">What Our Passengers Say</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {mockData.testimonials.map((t, i) => (
-              <div key={i} className="bg-card rounded-xl p-6 shadow-sm border">
-                <Quote className="h-8 w-8 text-primary/30 mb-4" />
-                <p className="text-muted-foreground mb-4 italic">"{t.text}"</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star key={j} className="h-4 w-4 fill-primary text-primary" />
-                    ))}
+            {testimonials.length === 0 ? (
+              <p className="text-muted-foreground col-span-full text-center py-8">No testimonials yet.</p>
+            ) : (
+              testimonials.map((t) => (
+                <div key={t.id} className="bg-card rounded-xl p-6 shadow-sm border">
+                  <Quote className="h-8 w-8 text-primary/30 mb-4" />
+                  <p className="text-muted-foreground mb-4 italic">"{t.message}"</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex">
+                      {Array.from({ length: Math.min(5, Math.max(0, t.star)) }).map((_, j) => (
+                        <Star key={j} className="h-4 w-4 fill-primary text-primary" />
+                      ))}
+                    </div>
+                    <span className="font-semibold text-sm ml-auto">{t.name}</span>
                   </div>
-                  <span className="font-semibold text-sm ml-auto">{t.name}</span>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -207,33 +264,71 @@ export default function Index() {
         </div>
       </section>
 
-      {/* FAQ + Contact */}
+      {/* FAQ + Contact (dynamic from API) */}
       <section className="section-padding">
         <div className="container grid md:grid-cols-2 gap-12">
           <div>
             <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">FAQ</p>
             <h2 className="text-3xl font-display font-bold mb-6">Frequently Asked Questions</h2>
-            <Accordion type="single" collapsible className="space-y-2">
-              {mockData.faqs.map((f, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border rounded-lg px-4">
-                  <AccordionTrigger className="text-sm font-medium">{f.q}</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground">{f.a}</AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            {faqs.length === 0 ? (
+              <p className="text-muted-foreground">No FAQs yet.</p>
+            ) : (
+              <Accordion type="single" collapsible className="space-y-2">
+                {faqs.map((f) => (
+                  <AccordionItem key={f.id} value={`faq-${f.id}`} className="border rounded-lg px-4">
+                    <AccordionTrigger className="text-sm font-medium">{f.question}</AccordionTrigger>
+                    <AccordionContent className="text-sm text-muted-foreground">{f.answer}</AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
           </div>
           <div>
             <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Contact</p>
             <h2 className="text-3xl font-display font-bold mb-6">Get in Touch</h2>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <input placeholder="Your Name" className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none" />
-              <input placeholder="Email Address" type="email" className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none" />
-              <input placeholder="Subject" className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none" />
-              <textarea placeholder="Your Message" rows={4} className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none resize-none" />
-              <button type="submit" className="px-8 py-3 rounded-lg font-semibold gradient-primary text-primary-foreground hover:opacity-90 transition w-full">
-                Send Message
-              </button>
-            </form>
+            <div className="space-y-4 mb-6 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0 text-primary" /> {contactAddress}</p>
+              <p className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-primary" /> {contactPhoneDisplay}</p>
+              <p className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-primary" /> {contactEmailDisplay}</p>
+            </div>
+            {contactSuccess ? (
+              <div className="rounded-lg border bg-accent/50 p-6 text-center text-sm text-primary font-medium">
+                Message sent. We&apos;ll get back to you shortly.
+              </div>
+            ) : (
+              <form className="space-y-4" onSubmit={handleContactSubmit}>
+                <input
+                  placeholder="Your Name"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                />
+                <input
+                  placeholder="Phone"
+                  type="tel"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                />
+                <textarea
+                  placeholder="Your Message"
+                  rows={4}
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
+                />
+                <button
+                  type="submit"
+                  disabled={contactSubmitting}
+                  className="px-8 py-3 rounded-lg font-semibold gradient-primary text-primary-foreground hover:opacity-90 transition w-full disabled:opacity-70"
+                >
+                  {contactSubmitting ? "Sending..." : "Send Message"}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </section>
