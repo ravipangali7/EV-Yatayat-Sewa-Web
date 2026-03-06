@@ -30,10 +30,10 @@ export function PublicHeader(_props?: PublicHeaderProps) {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl border-b border-border/80 shadow-soft">
-      <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg">
-          <img src={logo} alt="EV Yatayat Sewa" className="h-12 w-auto" />
+    <header className="sticky top-0 left-0 right-0 z-50 w-full max-w-full min-w-0 bg-background/70 backdrop-blur-xl border-b border-border/80 shadow-soft">
+      <div className="container w-full max-w-full min-w-0 flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
+        <Link to="/" className="flex items-center gap-2 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg">
+          <img src={logo} alt="EV Yatayat Sewa" className="h-10 w-auto sm:h-12" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -84,7 +84,7 @@ export function PublicHeader(_props?: PublicHeaderProps) {
           aria-label="Close menu"
         />
         <div
-          className={`absolute top-0 right-0 w-full max-w-sm h-full bg-background border-l border-border shadow-card-hover flex flex-col pt-20 pb-8 px-6 transition-transform duration-300 ease-out ${
+          className={`absolute top-0 right-0 w-full max-w-[min(20rem,100vw)] h-full bg-background border-l border-border shadow-card-hover flex flex-col pt-20 pb-8 px-6 transition-transform duration-300 ease-out ${
             open ? "translate-x-0" : "translate-x-full"
           }`}
         >

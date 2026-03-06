@@ -6,6 +6,16 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
   :root {
     --background: 0 0% 100%;
     --foreground: 220 14% 18%;
