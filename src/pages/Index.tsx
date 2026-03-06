@@ -103,25 +103,25 @@ export default function Index() {
         )}
         <div className="container w-full max-w-full relative z-10 text-primary-foreground px-4 sm:px-6">
           <div className="max-w-3xl animate-fade-in">
-            <div className="flex items-center gap-3 mb-5">
-              <img src={logo} alt="Logo" className="h-16 w-auto drop-shadow-lg" />
+            <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-5">
+              <img src={logo} alt="Logo" className="h-8 w-auto sm:h-10 md:h-16 drop-shadow-lg" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-display font-bold leading-tight mb-5">
-              {heroSlider?.title ? <span className="whitespace-pre-line">{heroSlider.title}</span> : <>Nepal's Electric<br />Transport Revolution</>}
+            <h1 className="text-2xl sm:text-3xl md:text-6xl font-display font-bold leading-tight mb-2 md:mb-5">
+              {heroSlider?.title ? <span className="whitespace-pre-line">{heroSlider.title}</span> : <>Nepal's Electric<br className="hidden sm:block" /> Transport Revolution</>}
             </h1>
-            <p className="text-lg md:text-xl opacity-90 mb-7 max-w-lg whitespace-pre-line">
+            <p className="text-sm sm:text-base md:text-xl opacity-90 mb-4 md:mb-7 max-w-lg whitespace-pre-line hidden sm:block">
               {heroSlider?.subtitle || "Clean, comfortable, and reliable electric bus services across Nepal. Join the green movement today."}
             </p>
-            <div className="flex gap-4 flex-wrap">
+            <div className="flex gap-2 sm:gap-4 flex-wrap">
               <Link
                 to="/services"
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold bg-primary-foreground text-foreground shadow-soft hover:shadow-card-hover hover:scale-[1.02] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-4 py-2 sm:px-8 sm:py-3.5 rounded-full text-sm sm:text-base font-semibold bg-primary-foreground text-foreground shadow-soft hover:shadow-card-hover hover:scale-[1.02] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               >
-                Our Services <ArrowRight className="h-4 w-4" />
+                Our Services <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Link>
               <Link
                 to="/contact"
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold border-2 border-primary-foreground/50 hover:bg-primary-foreground/10 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-4 py-2 sm:px-8 sm:py-3.5 rounded-full text-sm sm:text-base font-semibold border-2 border-primary-foreground/50 hover:bg-primary-foreground/10 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               >
                 Contact Us
               </Link>
@@ -130,34 +130,36 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Stats (dynamic from site setting or mock fallback) */}
-      <section className="-mt-16 relative z-10 container">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {statsList.map((s: { label: string; value: string; icon?: string; svg?: string }, i: number) => {
-            const rawIcon = (s.svg ?? s.icon ?? "Bus").toString().trim();
-            const statIconBg = "bg-primary/15 text-primary";
-            return (
-              <div key={i} className="bg-card rounded-2xl border border-border/50 shadow-card p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 ${statIconBg}`}>
-                  <WebsiteIcon name={rawIcon} className="h-8 w-8" />
+      {/* Stats (dynamic from site setting or mock fallback) — on mobile below hero; on md+ overlapping */}
+      <section className="mt-4 px-4 md:-mt-16 md:px-0 relative z-10 w-full max-w-full">
+        <div className="container w-full max-w-full px-0">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            {statsList.map((s: { label: string; value: string; icon?: string; svg?: string }, i: number) => {
+              const rawIcon = (s.svg ?? s.icon ?? "Bus").toString().trim();
+              const statIconBg = "bg-primary/15 text-primary";
+              return (
+                <div key={i} className="bg-card rounded-xl md:rounded-2xl border border-border/50 shadow-card p-4 md:p-6 text-center animate-count-up" style={{ animationDelay: `${i * 0.1}s` }}>
+                  <div className={`w-9 h-9 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center mx-auto mb-2 md:mb-3 ${statIconBg}`}>
+                    <WebsiteIcon name={rawIcon} className="h-5 w-5 md:h-8 md:w-8" />
+                  </div>
+                  <p className="text-xl md:text-3xl font-display font-bold text-foreground">{s.value}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">{s.label}</p>
                 </div>
-                <p className="text-3xl font-display font-bold text-foreground">{s.value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {/* About (dynamic from site setting) — green section, light text */}
       <section className="section-padding-lg section-green relative overflow-hidden">
-        <div className="container grid md:grid-cols-2 gap-14 lg:gap-16 items-center">
+        <div className="container w-full max-w-full px-4 grid md:grid-cols-2 gap-8 md:gap-14 lg:gap-16 items-center">
           <div className="relative z-10 text-primary-foreground">
             <div className="flex flex-col">
               <p className="section-eyebrow">About Us</p>
               <span className="block w-12 h-0.5 rounded-full bg-primary-foreground/80 mb-5" aria-hidden />
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-display font-bold mb-6 leading-tight tracking-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] font-display font-bold mb-4 md:mb-6 leading-tight tracking-tight">
               {siteSetting?.about_title?.trim() ? (
                 <span className="whitespace-pre-line">{siteSetting.about_title}</span>
               ) : (
@@ -175,23 +177,23 @@ export default function Index() {
               </p>
             )}
             {(siteSetting?.mission?.trim() || siteSetting?.vision?.trim() || siteSetting?.values?.trim()) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-foreground">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-foreground">
                 {siteSetting?.mission?.trim() && (
-                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary">
-                    <p className="section-eyebrow mb-2 text-foreground">Mission</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{siteSetting.mission}</p>
+                  <div className="group p-4 sm:p-5 rounded-xl md:rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary">
+                    <p className="section-eyebrow mb-1.5 sm:mb-2 text-foreground text-xs sm:text-sm">Mission</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{siteSetting.mission}</p>
                   </div>
                 )}
                 {siteSetting?.vision?.trim() && (
-                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary">
-                    <p className="section-eyebrow mb-2 text-foreground">Vision</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{siteSetting.vision}</p>
+                  <div className="group p-4 sm:p-5 rounded-xl md:rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary">
+                    <p className="section-eyebrow mb-1.5 sm:mb-2 text-foreground text-xs sm:text-sm">Vision</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{siteSetting.vision}</p>
                   </div>
                 )}
                 {siteSetting?.values?.trim() && (
-                  <div className="group p-5 rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary sm:col-span-2">
-                    <p className="section-eyebrow mb-2 text-foreground">Values</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{siteSetting.values}</p>
+                  <div className="group p-4 sm:p-5 rounded-xl md:rounded-2xl border border-border/50 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-primary sm:col-span-2">
+                    <p className="section-eyebrow mb-1.5 sm:mb-2 text-foreground text-xs sm:text-sm">Values</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{siteSetting.values}</p>
                   </div>
                 )}
               </div>
@@ -213,14 +215,14 @@ export default function Index() {
 
       {/* Services (dynamic from API) */}
       <section className="section-padding-lg section-tint-blue section-white-textured relative">
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="container w-full max-w-full px-4">
+          <div className="text-center max-w-2xl mx-auto mb-8 md:mb-14">
             <p className="section-eyebrow">Our Services</p>
             <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-4" aria-hidden />
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Comprehensive EV Transport Solutions</h2>
-            <p className="text-muted-foreground mt-3 text-sm md:text-base">Clean, reliable electric mobility for cities and beyond.</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight">Comprehensive EV Transport Solutions</h2>
+            <p className="text-muted-foreground mt-2 md:mt-3 text-xs sm:text-sm md:text-base">Clean, reliable electric mobility for cities and beyond.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {services.length === 0 ? (
               <p className="text-muted-foreground col-span-full text-center py-12">No services yet.</p>
             ) : (
@@ -230,10 +232,10 @@ export default function Index() {
                   <Link
                     to={`/service/${s.slug}`}
                     key={s.id}
-                    className="group website-card bg-card p-6 lg:p-7 flex flex-col"
+                    className="group website-card bg-card p-4 sm:p-6 lg:p-7 flex flex-col"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                      <WebsiteIcon name={rawIcon} className="h-7 w-7" />
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                      <WebsiteIcon name={rawIcon} className="h-6 w-6 sm:h-7 sm:w-7" />
                     </div>
                     <h3 className="font-display font-semibold text-lg mb-2 text-foreground group-hover:text-primary transition-colors">{s.name}</h3>
                     <p className="text-muted-foreground text-sm mb-5 flex-1 leading-relaxed">{s.description}</p>
@@ -250,37 +252,37 @@ export default function Index() {
 
       {/* Team */}
       <section className="section-padding-lg section-tint-violet section-white-textured relative">
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="container w-full max-w-full px-4">
+          <div className="text-center max-w-2xl mx-auto mb-8 md:mb-14">
             <p className="section-eyebrow">Our Team</p>
-            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-4" aria-hidden />
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Meet the People Behind the Wheel</h2>
-            <p className="text-muted-foreground mt-3 text-sm md:text-base">Dedicated professionals driving sustainable transport forward.</p>
+            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-3 md:my-4" aria-hidden />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight">Meet the People Behind the Wheel</h2>
+            <p className="text-muted-foreground mt-2 md:mt-3 text-xs sm:text-sm md:text-base">Dedicated professionals driving sustainable transport forward.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {team.length === 0 ? (
               <p className="text-muted-foreground col-span-full text-center py-12">No team members yet.</p>
             ) : (
               team.map((t, idx) => {
                 return (
-                  <div key={t.id} className="website-card bg-card p-6 text-center group">
+                  <div key={t.id} className="website-card bg-card p-4 sm:p-6 text-center group">
                     {t.image ? (
-                      <div className="relative inline-block mb-4">
+                      <div className="relative inline-block mb-3 sm:mb-4">
                         <img
                           src={imgUrl(t.image)}
                           alt={t.name}
-                          className="w-28 h-28 mx-auto rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-primary/50 transition-all duration-300"
+                          className="w-20 h-20 sm:w-28 sm:h-28 mx-auto rounded-xl sm:rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-primary/50 transition-all duration-300"
                         />
                       </div>
                     ) : (
-                      <div className="w-28 h-28 mx-auto rounded-2xl bg-primary/15 flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                        <span className="text-2xl font-display font-bold text-primary group-hover:text-white transition-colors">
+                      <div className="w-20 h-20 sm:w-28 sm:h-28 mx-auto rounded-xl sm:rounded-2xl bg-primary/15 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                        <span className="text-lg sm:text-2xl font-display font-bold text-primary group-hover:text-white transition-colors">
                           {t.name.split(" ").map((n) => n[0]).join("")}
                         </span>
                       </div>
                     )}
-                    <h4 className="font-display font-semibold text-foreground mb-1">{t.name}</h4>
-                    <p className="text-sm text-muted-foreground">{t.designation}</p>
+                    <h4 className="font-display font-semibold text-foreground mb-0.5 sm:mb-1 text-sm sm:text-base">{t.name}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{t.designation}</p>
                   </div>
                 );
               })
@@ -291,29 +293,29 @@ export default function Index() {
 
       {/* Vehicles / Fleet */}
       <section className="section-padding-lg section-tint-amber section-white-textured relative">
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="container w-full max-w-full px-4">
+          <div className="text-center max-w-2xl mx-auto mb-8 md:mb-14">
             <p className="section-eyebrow">Our Fleet</p>
-            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-4" aria-hidden />
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Modern Electric Vehicles</h2>
-            <p className="text-muted-foreground mt-3 text-sm md:text-base">Zero-emission buses built for comfort and reliability.</p>
+            <span className="block w-12 h-0.5 rounded-full bg-primary mx-auto my-3 md:my-4" aria-hidden />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight">Modern Electric Vehicles</h2>
+            <p className="text-muted-foreground mt-2 md:mt-3 text-xs sm:text-sm md:text-base">Zero-emission buses built for comfort and reliability.</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {vehicles.length === 0 ? (
               <p className="text-muted-foreground col-span-full text-center py-12">No vehicles yet.</p>
             ) : (
               vehicles.map((v) => (
                   <div key={v.id} className="website-card bg-card overflow-hidden group">
-                    <div className="h-32 flex items-center justify-center bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
+                    <div className="h-24 sm:h-32 flex items-center justify-center bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
                       {v.featured_image ? (
                         <img src={v.featured_image} alt={v.name} className="h-full w-full object-cover object-center" />
                       ) : (
                         <Bus className="h-14 w-14 text-primary/60 group-hover:text-primary transition-colors" />
                       )}
                     </div>
-                    <div className="p-5 text-center">
-                      <h4 className="font-display font-semibold text-foreground mb-1">{v.name}</h4>
-                      <p className="text-xs text-muted-foreground mb-3">{v.vehicle_type}</p>
+                    <div className="p-4 sm:p-5 text-center">
+                      <h4 className="font-display font-semibold text-foreground mb-0.5 sm:mb-1 text-sm sm:text-base">{v.name}</h4>
+                      <p className="text-xs text-muted-foreground mb-2 sm:mb-3">{v.vehicle_type}</p>
                       <div className="flex justify-center gap-2 flex-wrap">
                         {v.vehicle_no && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium">{v.vehicle_no}</span>}
                         {v.description && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs line-clamp-1 max-w-[140px]">{v.description}</span>}
@@ -328,21 +330,21 @@ export default function Index() {
 
       {/* Testimonials (dynamic from API) — green section, light text */}
       <section className="section-padding-lg section-green relative">
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-14 text-primary-foreground">
+        <div className="container w-full max-w-full px-4">
+          <div className="text-center max-w-2xl mx-auto mb-8 md:mb-14 text-primary-foreground">
             <p className="section-eyebrow">Testimonials</p>
-            <span className="block w-12 h-0.5 rounded-full bg-primary-foreground/80 mx-auto my-4" aria-hidden />
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">What Our Passengers Say</h2>
-            <p className="text-primary-foreground/90 mt-3 text-sm md:text-base">Real stories from people who ride with us.</p>
+            <span className="block w-12 h-0.5 rounded-full bg-primary-foreground/80 mx-auto my-3 md:my-4" aria-hidden />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight">What Our Passengers Say</h2>
+            <p className="text-primary-foreground/90 mt-2 md:mt-3 text-xs sm:text-sm md:text-base">Real stories from people who ride with us.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {testimonials.length === 0 ? (
               <p className="text-primary-foreground/90 col-span-full text-center py-12">No testimonials yet.</p>
             ) : (
               testimonials.map((t) => (
-                <div key={t.id} className="website-card bg-card p-6 lg:p-7 border-l-4 border-l-primary flex flex-col">
-                  <Quote className="h-10 w-10 text-primary/25 mb-4 shrink-0" aria-hidden />
-                  <p className="text-muted-foreground mb-5 italic leading-relaxed flex-1">"{t.message}"</p>
+                <div key={t.id} className="website-card bg-card p-4 sm:p-6 lg:p-7 border-l-4 border-l-primary flex flex-col">
+                  <Quote className="h-8 w-8 sm:h-10 sm:w-10 text-primary/25 mb-3 sm:mb-4 shrink-0" aria-hidden />
+                  <p className="text-muted-foreground mb-4 sm:mb-5 italic leading-relaxed flex-1 text-sm sm:text-base">"{t.message}"</p>
                   <div className="flex items-center gap-3 pt-3 border-t border-border/50">
                     {t.image ? (
                       <img src={imgUrl(t.image)} alt={t.name} className="h-10 w-10 rounded-full object-cover shrink-0 ring-2 ring-border/50" />
@@ -371,22 +373,22 @@ export default function Index() {
 
       {/* Blog */}
       <section className="section-padding-lg section-tint-blue section-white-textured relative">
-        <div className="container">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-14">
+        <div className="container w-full max-w-full px-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 md:mb-14">
             <div>
               <p className="section-eyebrow">Blog</p>
-              <span className="block w-12 h-0.5 rounded-full bg-primary mt-2 mb-4" aria-hidden />
-              <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight">Latest News & Updates</h2>
-              <p className="text-muted-foreground mt-2 text-sm md:text-base">Insights, announcements, and stories from the road.</p>
+              <span className="block w-12 h-0.5 rounded-full bg-primary mt-2 mb-3 md:mb-4" aria-hidden />
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight">Latest News & Updates</h2>
+              <p className="text-muted-foreground mt-2 text-xs sm:text-sm md:text-base">Insights, announcements, and stories from the road.</p>
             </div>
             <Link
               to="/blogs"
-              className="inline-flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg shrink-0"
+              className="inline-flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg shrink-0 text-sm sm:text-base"
             >
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {blogs.length === 0 ? (
               <p className="text-muted-foreground col-span-full text-center py-12">No posts yet.</p>
             ) : (
@@ -424,12 +426,12 @@ export default function Index() {
 
       {/* FAQ + Contact (dynamic from API) */}
       <section className="section-padding-lg section-tint-amber section-white-textured relative">
-        <div className="container grid md:grid-cols-2 gap-12 lg:gap-16">
+        <div className="container w-full max-w-full px-4 grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16">
           <div>
             <p className="section-eyebrow">FAQ</p>
-            <span className="block w-12 h-0.5 rounded-full bg-primary mb-4" aria-hidden />
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight mb-2">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground text-sm mb-8">Quick answers to common questions.</p>
+            <span className="block w-12 h-0.5 rounded-full bg-primary mb-3 md:mb-4" aria-hidden />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight mb-2">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground text-xs sm:text-sm mb-6 md:mb-8">Quick answers to common questions.</p>
             {faqs.length === 0 ? (
               <p className="text-muted-foreground">No FAQs yet.</p>
             ) : (
@@ -438,12 +440,12 @@ export default function Index() {
                   <AccordionItem
                     key={f.id}
                     value={`faq-${f.id}`}
-                    className="border border-border/50 rounded-2xl px-5 shadow-soft bg-card hover:shadow-card-hover transition-shadow border-l-4 border-l-primary"
+                    className="border border-border/50 rounded-xl md:rounded-2xl px-4 md:px-5 shadow-soft bg-card hover:shadow-card-hover transition-shadow border-l-4 border-l-primary"
                   >
-                    <AccordionTrigger className="text-sm font-medium hover:no-underline py-4 [&[data-state=open]]:text-primary">
+                    <AccordionTrigger className="text-xs sm:text-sm font-medium hover:no-underline py-3 md:py-4 [&[data-state=open]]:text-primary">
                       {f.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-sm text-muted-foreground pb-4 leading-relaxed">
+                    <AccordionContent className="text-xs sm:text-sm text-muted-foreground pb-3 md:pb-4 leading-relaxed">
                       {f.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -453,10 +455,10 @@ export default function Index() {
           </div>
           <div>
             <p className="section-eyebrow">Contact</p>
-            <span className="block w-12 h-0.5 rounded-full bg-primary mb-4" aria-hidden />
-            <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight mb-2">Get in Touch</h2>
-            <p className="text-muted-foreground text-sm mb-6">We&apos;d love to hear from you.</p>
-            <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-soft space-y-4 mb-6">
+            <span className="block w-12 h-0.5 rounded-full bg-primary mb-3 md:mb-4" aria-hidden />
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight mb-2">Get in Touch</h2>
+            <p className="text-muted-foreground text-xs sm:text-sm mb-4 md:mb-6">We&apos;d love to hear from you.</p>
+            <div className="rounded-xl md:rounded-2xl border border-border/50 bg-card p-4 md:p-5 shadow-soft space-y-3 md:space-y-4 mb-4 md:mb-6">
               <p className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <MapPin className="h-4 w-4 text-primary" />

@@ -49,20 +49,20 @@ export function PublicFooter(_props?: PublicFooterProps) {
   return (
     <footer className="w-full max-w-full text-white bg-[hsl(220_14%_18%)] relative">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" aria-hidden />
-      <div className="container py-8 md:py-10 px-4">
-        <div className="grid md:grid-cols-4 gap-8 md:gap-10">
-          <div className="space-y-3">
+      <div className="container w-full max-w-full py-6 md:py-8 lg:py-10 px-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10">
+          <div className="space-y-2 md:space-y-3 col-span-2 md:col-span-1">
             <div className="flex items-center gap-2">
-              <span className="flex w-9 h-9 items-center justify-center rounded-lg bg-primary/20">
-                <Bus className="h-5 w-5 text-primary shrink-0" />
+              <span className="flex w-8 h-8 md:w-9 md:h-9 items-center justify-center rounded-lg bg-primary/20 shrink-0">
+                <Bus className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               </span>
-              <span className="font-display text-lg font-bold">{brandName}</span>
+              <span className="font-display text-base md:text-lg font-bold">{brandName}</span>
             </div>
             <p className="text-xs opacity-85 leading-relaxed max-w-xs">{tagline}</p>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-semibold text-white text-sm tracking-wide">Quick Links</h4>
+          <div className="space-y-2 md:space-y-3">
+            <h4 className="font-semibold text-white text-xs md:text-sm tracking-wide">Quick Links</h4>
             <div className="flex flex-col space-y-1 text-xs opacity-85">
               <Link to="/about" className={linkClass}>About</Link>
               <Link to="/services" className={linkClass}>Services</Link>
@@ -71,8 +71,8 @@ export function PublicFooter(_props?: PublicFooterProps) {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-semibold text-white text-sm tracking-wide">Services</h4>
+          <div className="space-y-2 md:space-y-3">
+            <h4 className="font-semibold text-white text-xs md:text-sm tracking-wide">Services</h4>
             <div className="flex flex-col space-y-1 text-xs opacity-85">
               {services.length === 0 ? (
                 <span className="opacity-70">—</span>
@@ -84,9 +84,9 @@ export function PublicFooter(_props?: PublicFooterProps) {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="font-semibold text-white text-sm tracking-wide">Contact</h4>
-            <div className="space-y-2 text-xs opacity-85">
+          <div className="space-y-2 md:space-y-3">
+            <h4 className="font-semibold text-white text-xs md:text-sm tracking-wide">Contact</h4>
+            <div className="space-y-1.5 md:space-y-2 text-xs opacity-85">
               <p className="flex items-center gap-2.5">
                 <MapPin className="h-4 w-4 shrink-0 text-primary" /> {address}
               </p>
@@ -100,7 +100,7 @@ export function PublicFooter(_props?: PublicFooterProps) {
           </div>
         </div>
 
-        <div className="border-t border-white/15 mt-8 pt-5 text-center text-xs opacity-60">
+        <div className="border-t border-white/15 mt-6 md:mt-8 pt-4 md:pt-5 text-center text-xs opacity-60">
           {copyrightText}
         </div>
       </div>
