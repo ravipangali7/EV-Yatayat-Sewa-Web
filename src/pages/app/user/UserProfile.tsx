@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { User, Lock, Wallet, CreditCard, CalendarDays, LogOut, ChevronRight, Camera, Edit, Receipt, PlusCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import AppBar from "@/components/app/AppBar";
+import { userApi } from "@/modules/users/services/userApi";
 
 const menuItems: { icon: typeof Edit; label: string; iconClass: string; to?: string; onClick?: string }[] = [
   { icon: Edit, label: "Edit Profile", iconClass: "icon-violet", onClick: "edit" },
@@ -23,14 +24,38 @@ const menuItems: { icon: typeof Edit; label: string; iconClass: string; to?: str
 ];
 
 export default function UserProfile() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState(user?.name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
+
+  useEffect(() => {
+    if (showEditModal && user) {
+      setName(user.name ?? "");
+      setPhone(user.phone ?? "");
+      setEmail(user.email ?? "");
+    }
+  }, [showEditModal, user]);
+
+  const handleSaveEdit = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      await userApi.edit(user.id, { name, phone, email });
+      await refreshUser();
+      setShowEditModal(false);
+      toast.success("Profile updated!");
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleLogout = () => {
     setShowLogoutConfirm(false);
@@ -111,7 +136,9 @@ export default function UserProfile() {
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="h-11 rounded-xl" />
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" className="h-11 rounded-xl" />
               <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="h-11 rounded-xl" />
-              <Button className="w-full h-11 rounded-xl" onClick={() => { setShowEditModal(false); toast.success("Profile updated!"); }}>Save</Button>
+              <Button className="w-full h-11 rounded-xl" onClick={handleSaveEdit} disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

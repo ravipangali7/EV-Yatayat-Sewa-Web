@@ -36,17 +36,22 @@ export default function TransferModal({
 
   const doSearch = useCallback(async () => {
     const q = (searchQuery || "").trim();
-    if (q.length < 2) {
+    if (q.length < 10) {
       setResults([]);
       return;
     }
     setSearching(true);
     try {
-      const res = await userApi.list({ search: q, per_page: 10 });
-      const list = (res.results || []).filter(
-        (u) => currentUserId && String(u.id) !== String(currentUserId)
-      );
-      setResults(list);
+      const user = await userApi.getByPhone(q);
+      if (!user) {
+        setResults([]);
+        return;
+      }
+      if (currentUserId && String(user.id) === String(currentUserId)) {
+        setResults([]);
+        return;
+      }
+      setResults([user]);
     } catch {
       setResults([]);
     } finally {
@@ -56,9 +61,14 @@ export default function TransferModal({
 
   useEffect(() => {
     if (!open) return;
-    const t = setTimeout(doSearch, 300);
+    const q = (searchQuery || "").trim();
+    if (q.length < 10) {
+      setResults([]);
+      return;
+    }
+    const t = setTimeout(doSearch, 400);
     return () => clearTimeout(t);
-  }, [open, doSearch]);
+  }, [open, searchQuery, doSearch]);
 
   const handleClose = () => {
     setSearchQuery("");
@@ -102,14 +112,14 @@ export default function TransferModal({
       <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle>Transfer</DialogTitle>
-          <DialogDescription>Search by phone or name and enter amount.</DialogDescription>
+          <DialogDescription>Enter recipient&apos;s exact phone number, then select and enter amount.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           {!selectedUser ? (
             <>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Search by phone or name..."
+                  placeholder="Enter recipient's exact phone number"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="rounded-xl flex-1"
@@ -129,8 +139,8 @@ export default function TransferModal({
                     <span className="text-muted-foreground text-sm ml-2">{u.phone}</span>
                   </button>
                 ))}
-                {!searching && searchQuery.trim().length >= 2 && results.length === 0 && (
-                  <p className="text-sm text-muted-foreground py-2">No users found.</p>
+                {!searching && searchQuery.trim().length >= 10 && results.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2">No user found with this phone number.</p>
                 )}
               </div>
             </>

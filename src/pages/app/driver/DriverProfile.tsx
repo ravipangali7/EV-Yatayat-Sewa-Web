@@ -10,6 +10,7 @@ import AppBar from "@/components/app/AppBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { walletApi } from "@/modules/wallets/services/walletApi";
+import { userApi } from "@/modules/users/services/userApi";
 import { toNumber } from "@/lib/utils";
 
 const menuItemDefs = [
@@ -24,14 +25,38 @@ const menuItemDefs = [
 ];
 
 export default function DriverProfile() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [toPay, setToPay] = useState(0);
   const [name, setName] = useState(user?.name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
+
+  useEffect(() => {
+    if (showEditModal && user) {
+      setName(user.name ?? "");
+      setPhone(user.phone ?? "");
+      setEmail(user.email ?? "");
+    }
+  }, [showEditModal, user]);
+
+  const handleSaveEdit = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      await userApi.edit(user.id, { name, phone, email });
+      await refreshUser();
+      setShowEditModal(false);
+      toast.success("Profile updated!");
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const refreshToPay = useCallback(async () => {
     if (!user?.id) return;
@@ -132,8 +157,8 @@ export default function DriverProfile() {
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="h-11 rounded-xl" />
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" className="h-11 rounded-xl" />
               <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="h-11 rounded-xl" />
-              <Button className="w-full h-11 rounded-xl" onClick={() => { setShowEditModal(false); toast.success("Profile updated!"); }}>
-                Save Changes
+              <Button className="w-full h-11 rounded-xl" onClick={handleSaveEdit} disabled={saving}>
+                {saving ? "Saving…" : "Save Changes"}
               </Button>
             </div>
           </DialogContent>

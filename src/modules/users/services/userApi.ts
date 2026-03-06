@@ -8,12 +8,21 @@ export const userApi = {
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
     if (params?.search) queryParams.append('search', params.search);
+    if (params?.phone) queryParams.append('phone', params.phone);
     if (params?.is_driver !== undefined) queryParams.append('is_driver', params.is_driver.toString());
     if (params?.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
-    
+
     const queryString = queryParams.toString();
     const url = `users/${queryString ? `?${queryString}` : ''}`;
     return api.get<PaginatedResponse<User>>(url);
+  },
+
+  // Look up user by exact phone number (for transfer recipient)
+  getByPhone: async (phone: string): Promise<User | null> => {
+    const trimmed = (phone || '').trim();
+    if (!trimmed) return null;
+    const res = await userApi.list({ phone: trimmed, per_page: 1 });
+    return (res.results && res.results[0]) ? res.results[0] : null;
   },
 
   // Get single user
