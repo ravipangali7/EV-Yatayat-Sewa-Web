@@ -95,7 +95,7 @@ export default function Index() {
   return (
     <div className="w-full max-w-full min-w-0">
       {/* Hero (dynamic from first slider or static fallback) */}
-      <section className="relative w-full h-[90vh] min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center overflow-hidden">
+      <section className="relative w-full h-[35vh] min-h-[200px] md:h-[90vh] md:min-h-[500px] lg:min-h-[600px] flex items-center overflow-hidden">
         {heroSlider?.image ? (
           <img src={imgUrl(heroSlider.image)} alt={heroSlider.title} className="absolute inset-0 w-full h-full object-cover object-center" />
         ) : (

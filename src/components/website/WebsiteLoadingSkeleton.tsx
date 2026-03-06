@@ -5,7 +5,7 @@ export function HomePageSkeleton() {
   return (
     <div className="animate-in fade-in duration-200">
       {/* Hero */}
-      <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
+      <section className="relative h-[35vh] min-h-[200px] md:h-[90vh] md:min-h-[500px] lg:min-h-[600px] flex items-center overflow-hidden">
         <Skeleton className="absolute inset-0 w-full h-full rounded-none" />
         <div className="container relative z-10 max-w-3xl">
           <Skeleton className="h-14 w-48 mb-6 rounded-lg" />
