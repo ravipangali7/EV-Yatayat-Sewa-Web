@@ -48,26 +48,19 @@ export function DirectBookFlow({
   );
   const stopPoints = vehicle.active_route_details?.stop_points ?? [];
 
-  const fromSet = fromPlaceId !== "" || !!userPosition;
+  const fromSet = fromPlaceId !== "";
   const toSet = !!destinationPlaceId;
   const canFetchPreview =
-    selectedSeats.length > 0 &&
-    !!destinationPlaceId &&
-    (fromPlaceId !== "" || !!userPosition);
+    selectedSeats.length > 0 && !!destinationPlaceId && fromPlaceId !== "";
 
   const fetchPreview = useCallback(async () => {
-    if (!destinationPlaceId || selectedSeats.length === 0) return;
-    if (fromPlaceId === "" && !userPosition) return;
+    if (!destinationPlaceId || selectedSeats.length === 0 || !fromPlaceId) return;
     setLoadingPreview(true);
     try {
       const res = await seatBookingApi.directBookPreview({
         vehicle: vehicle.id,
         destination_place: destinationPlaceId,
-        ...(fromPlaceId !== ""
-          ? { origin_place: fromPlaceId }
-          : userPosition
-            ? { latitude: userPosition.lat, longitude: userPosition.lng }
-            : {}),
+        origin_place: fromPlaceId,
       });
       setEstimatedAmountPerSeat(res.estimated_trip_amount);
     } catch {
@@ -129,9 +122,19 @@ export function DirectBookFlow({
   const totalAmount = perSeatAmount * selectedSeats.length;
 
   const handlePayAndBook = async () => {
-    if (selectedSeats.length === 0 || !userPosition) return;
+    if (selectedSeats.length === 0) return;
     if (hasStops && !destinationPlaceId) {
       toast.error("Please select To (destination)");
+      return;
+    }
+
+    const fromPlace = fromPlaceId
+      ? stopPoints.find((sp) => sp.place === fromPlaceId)?.place_details
+      : null;
+    const checkInLat = fromPlace?.latitude ?? userPosition?.lat;
+    const checkInLng = fromPlace?.longitude ?? userPosition?.lng;
+    if (checkInLat == null || checkInLng == null) {
+      toast.error("Check-in location is missing. Please select From (pick-up).");
       return;
     }
 
@@ -150,10 +153,10 @@ export function DirectBookFlow({
     try {
       const common = {
         vehicle: vehicle.id,
-        check_in_lat: userPosition.lat,
-        check_in_lng: userPosition.lng,
+        check_in_lat: checkInLat,
+        check_in_lng: checkInLng,
         check_in_datetime: new Date().toISOString(),
-        check_in_address: "Current location",
+        check_in_address: fromPlace?.name ?? "Pick-up location",
         trip_amount: seatIds.length === 1 ? perSeatAmount : totalAmount,
         ...(destinationPlaceId ? { destination_place: destinationPlaceId } : {}),
       };
@@ -196,9 +199,7 @@ export function DirectBookFlow({
     : String((perSeatAmount * selectedSeats.length).toFixed(2));
 
   const fromLabel =
-    fromPlaceId === ""
-      ? "Current location"
-      : stopPoints.find((sp) => sp.place === fromPlaceId)?.place_details?.name ?? fromPlaceId;
+    stopPoints.find((sp) => sp.place === fromPlaceId)?.place_details?.name ?? fromPlaceId ?? "—";
   const toLabel =
     stopPoints.find((sp) => sp.place === destinationPlaceId)?.place_details?.name ?? destinationPlaceId;
 
@@ -237,7 +238,7 @@ export function DirectBookFlow({
                     value={fromPlaceId}
                     onChange={(e) => setFromPlaceId(e.target.value)}
                   >
-                    <option value="">Current location</option>
+                    <option value="">— Select pick-up —</option>
                     {stopPoints.map((sp) => (
                       <option key={sp.id} value={sp.place}>
                         {sp.place_details?.name ?? sp.place}
