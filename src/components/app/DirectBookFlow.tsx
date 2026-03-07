@@ -31,6 +31,7 @@ export function DirectBookFlow({
 }: DirectBookFlowProps) {
   const [step, setStep] = useState<"seat" | "confirm">("seat");
   const [selectedSeats, setSelectedSeats] = useState<SeatPosition[]>([]);
+  const [fromPlaceId, setFromPlaceId] = useState<string>("");
   const [destinationPlaceId, setDestinationPlaceId] = useState<string>("");
   const [estimatedAmountPerSeat, setEstimatedAmountPerSeat] = useState<string>("");
   const [loadingPreview, setLoadingPreview] = useState(false);
@@ -47,18 +48,26 @@ export function DirectBookFlow({
   );
   const stopPoints = vehicle.active_route_details?.stop_points ?? [];
 
-  const canFetchPreview = selectedSeats.length > 0 && !!destinationPlaceId && !!userPosition;
-  const destinationRequired = stopPoints.length > 0;
+  const fromSet = fromPlaceId !== "" || !!userPosition;
+  const toSet = !!destinationPlaceId;
+  const canFetchPreview =
+    selectedSeats.length > 0 &&
+    !!destinationPlaceId &&
+    (fromPlaceId !== "" || !!userPosition);
 
   const fetchPreview = useCallback(async () => {
-    if (!userPosition || !destinationPlaceId || selectedSeats.length === 0) return;
+    if (!destinationPlaceId || selectedSeats.length === 0) return;
+    if (fromPlaceId === "" && !userPosition) return;
     setLoadingPreview(true);
     try {
       const res = await seatBookingApi.directBookPreview({
         vehicle: vehicle.id,
-        latitude: userPosition.lat,
-        longitude: userPosition.lng,
         destination_place: destinationPlaceId,
+        ...(fromPlaceId !== ""
+          ? { origin_place: fromPlaceId }
+          : userPosition
+            ? { latitude: userPosition.lat, longitude: userPosition.lng }
+            : {}),
       });
       setEstimatedAmountPerSeat(res.estimated_trip_amount);
     } catch {
@@ -67,7 +76,7 @@ export function DirectBookFlow({
     } finally {
       setLoadingPreview(false);
     }
-  }, [vehicle.id, userPosition, destinationPlaceId, selectedSeats.length]);
+  }, [vehicle.id, userPosition, fromPlaceId, destinationPlaceId, selectedSeats.length]);
 
   useEffect(() => {
     if (canFetchPreview) {
@@ -86,16 +95,32 @@ export function DirectBookFlow({
     });
   };
 
-  const canProceed = selectedSeats.length >= 1 && (!destinationRequired || !!destinationPlaceId);
+  const hasStops = stopPoints.length > 0;
+  const canProceed =
+    selectedSeats.length >= 1 &&
+    hasStops &&
+    fromSet &&
+    toSet &&
+    !!estimatedAmountPerSeat;
 
   const handleProceedToConfirm = () => {
     if (selectedSeats.length === 0) {
       toast.error("Select at least one seat");
       return;
     }
-    if (destinationRequired && !destinationPlaceId) {
-      toast.error("Please select a destination");
-      return;
+    if (hasStops) {
+      if (!fromSet) {
+        toast.error("Please select From (pick-up)");
+        return;
+      }
+      if (!destinationPlaceId) {
+        toast.error("Please select To (destination)");
+        return;
+      }
+      if (!estimatedAmountPerSeat) {
+        toast.error("Please wait for fare to be calculated");
+        return;
+      }
     }
     setStep("confirm");
   };
@@ -105,8 +130,8 @@ export function DirectBookFlow({
 
   const handlePayAndBook = async () => {
     if (selectedSeats.length === 0 || !userPosition) return;
-    if (destinationRequired && !destinationPlaceId) {
-      toast.error("Please select a destination");
+    if (hasStops && !destinationPlaceId) {
+      toast.error("Please select To (destination)");
       return;
     }
 
@@ -170,6 +195,13 @@ export function DirectBookFlow({
     ? estimatedAmountPerSeat
     : String((perSeatAmount * selectedSeats.length).toFixed(2));
 
+  const fromLabel =
+    fromPlaceId === ""
+      ? "Current location"
+      : stopPoints.find((sp) => sp.place === fromPlaceId)?.place_details?.name ?? fromPlaceId;
+  const toLabel =
+    stopPoints.find((sp) => sp.place === destinationPlaceId)?.place_details?.name ?? destinationPlaceId;
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
@@ -191,28 +223,48 @@ export function DirectBookFlow({
                 multiSelect
               />
             </div>
+            {stopPoints.length === 0 && (
+              <p className="text-sm text-amber-600">
+                This vehicle has no route stops. From and To are required for short-trip booking.
+              </p>
+            )}
             {stopPoints.length > 0 && (
-              <div>
-                <Label className="text-xs text-muted-foreground">
-                  Destination {destinationRequired ? "(required)" : ""}
-                </Label>
-                <select
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  value={destinationPlaceId}
-                  onChange={(e) => setDestinationPlaceId(e.target.value)}
-                >
-                  <option value="">— Select stop —</option>
-                  {stopPoints.map((sp) => (
-                    <option key={sp.id} value={sp.place}>
-                      {sp.place_details?.name ?? sp.place}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div>
+                  <Label className="text-xs text-muted-foreground">From (required)</Label>
+                  <select
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    value={fromPlaceId}
+                    onChange={(e) => setFromPlaceId(e.target.value)}
+                  >
+                    <option value="">Current location</option>
+                    {stopPoints.map((sp) => (
+                      <option key={sp.id} value={sp.place}>
+                        {sp.place_details?.name ?? sp.place}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">To (required)</Label>
+                  <select
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    value={destinationPlaceId}
+                    onChange={(e) => setDestinationPlaceId(e.target.value)}
+                  >
+                    <option value="">— Select destination —</option>
+                    {stopPoints.map((sp) => (
+                      <option key={sp.id} value={sp.place}>
+                        {sp.place_details?.name ?? sp.place}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
             )}
             {!canFetchPreview && (
               <p className="text-sm text-muted-foreground">
-                Select seat(s) and destination to see estimated amount
+                Select seat(s), From and To to see estimated amount
               </p>
             )}
             {canFetchPreview && loadingPreview && (
@@ -245,6 +297,11 @@ export function DirectBookFlow({
 
         {step === "confirm" && (
           <div className="space-y-4">
+            {hasStops && (
+              <p className="text-sm text-muted-foreground">
+                From {fromLabel} → To {toLabel}
+              </p>
+            )}
             <p className="text-sm">
               Seat(s) {seatsLabel} · Rs. {totalDisplay}
             </p>

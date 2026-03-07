@@ -71,18 +71,23 @@ export const seatBookingApi = {
     return api.post<SeatBooking>('seat-bookings/switch/', data);
   },
 
-  // Direct book preview (estimated trip_amount for map direct booking)
+  // Direct book preview (estimated trip_amount from origin to destination)
   directBookPreview: async (params: {
     vehicle: string;
-    latitude: number;
-    longitude: number;
-    destination_place?: string;
+    destination_place: string;
+    origin_place?: string;
+    latitude?: number;
+    longitude?: number;
   }): Promise<{ per_km_charge: string; distance_km: string; estimated_trip_amount: string }> => {
     const q = new URLSearchParams();
     q.set('vehicle', params.vehicle);
-    q.set('latitude', String(params.latitude));
-    q.set('longitude', String(params.longitude));
-    if (params.destination_place) q.set('destination_place', params.destination_place);
+    q.set('destination_place', params.destination_place);
+    if (params.origin_place) {
+      q.set('origin_place', params.origin_place);
+    } else if (params.latitude != null && params.longitude != null) {
+      q.set('latitude', String(params.latitude));
+      q.set('longitude', String(params.longitude));
+    }
     return api.get(`seat-bookings/direct-book-preview/?${q.toString()}`);
   },
 
