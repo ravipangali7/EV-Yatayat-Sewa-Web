@@ -169,7 +169,7 @@ export function SeatLayoutVisualizer({
                     className={cn(
                       'flex items-center justify-center rounded text-xs font-medium transition-colors',
                       cellClass,
-                      selected && 'ring-2 ring-primary ring-offset-1',
+                      selected && 'bg-background ring-2 ring-primary ring-offset-1 text-foreground',
                       booked && 'bg-destructive/20 text-destructive cursor-not-allowed opacity-70',
                       !booked && !selected && 'bg-success/20 text-success hover:bg-success/40',
                       clickable && !booked && 'cursor-pointer'

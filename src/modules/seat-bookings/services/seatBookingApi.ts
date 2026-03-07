@@ -100,6 +100,21 @@ export const seatBookingApi = {
     return api.post<SeatBooking>('seat-bookings/direct-book/', data);
   },
 
+  // Direct seat booking for multiple seats (atomic: one payment, N bookings)
+  directBookMultiple: async (data: {
+    vehicle: string;
+    vehicle_seats: string[];
+    check_in_lat: number;
+    check_in_lng: number;
+    check_in_datetime: string;
+    check_in_address: string;
+    trip_amount: number;
+    destination_place?: string;
+  }): Promise<SeatBooking[]> => {
+    const res = await api.post<SeatBooking[]>('seat-bookings/direct-book/', data);
+    return Array.isArray(res) ? res : [res];
+  },
+
   // Checkout (optional place_id, confirm_out_of_range for outside-destination confirm)
   // May return SeatBooking or preview when outside 500m of destination
   checkout: async (data: {
