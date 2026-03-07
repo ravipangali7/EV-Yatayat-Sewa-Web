@@ -12,6 +12,8 @@ export interface CurrentStopResponse {
   at_stop: {
     place_id: string;
     name: string;
+    announcement_text?: string;
+    has_destination_booking?: boolean;
     pickups: Array<{ pnr: string; name: string; phone?: string; seat: string }>;
     dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string }>;
   } | null;

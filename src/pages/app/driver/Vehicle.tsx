@@ -22,7 +22,7 @@ import { routeApi } from "@/modules/routes/services/routeApi";
 import { tripApi, type ActiveTrip, type CurrentStopResponse, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
 import { matchesSearch } from "@/lib/transliterate";
-import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync, playBeep, refreshVehicle } from "@/lib/flutterBridge";
+import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync, playBeep, playReachedStop, refreshVehicle } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
 import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicleScheduleApi";
 import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
@@ -258,6 +258,7 @@ export default function Vehicle() {
   const [showDropoffModal, setShowDropoffModal] = useState(false);
   const [dropoffData, setDropoffData] = useState<{ placeId: string; placeName: string; dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string; trip_amount?: string }> } | null>(null);
   const lastDropoffPlaceIdRef = useRef<string | null>(null);
+  const lastAnnouncedPlaceIdRef = useRef<string | null>(null);
   type OutOfRangeItem = {
     vehicle_seat_id: string;
     seat_label: string;
@@ -360,6 +361,24 @@ export default function Vehicle() {
 
   useEffect(() => {
     if (!activeTrip?.id || driverState !== "trip_started") return;
+    if (isFlutterBridgeAvailable()) {
+      window.__onDriverPosition = (jsonStr: string) => {
+        try {
+          const d = JSON.parse(jsonStr) as { lat: number; lng: number; speed?: number };
+          if (typeof d.lat === "number" && typeof d.lng === "number") {
+            setLastLocation((prev) => {
+              if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
+              return { lat: d.lat, lng: d.lng, speed: typeof d.speed === "number" ? d.speed : undefined };
+            });
+          }
+        } catch {
+          // ignore invalid payload
+        }
+      };
+      return () => {
+        delete window.__onDriverPosition;
+      };
+    }
     const interval = setInterval(() => {
       locationApi.list({ trip: activeTrip.id, per_page: 1 })
         .then((r) => {
@@ -384,6 +403,12 @@ export default function Vehicle() {
     const lng = lastLocation.lng;
     tripApi.getCurrentStop(t, lat, lng).then((res) => {
       const at = res.at_stop;
+      const hasDestination = (at?.dropoffs?.length ?? 0) > 0 || at?.has_destination_booking === true;
+      if (at && hasDestination && at.place_id !== lastAnnouncedPlaceIdRef.current) {
+        lastAnnouncedPlaceIdRef.current = at.place_id;
+        const announcementText = (at.announcement_text?.trim() || at.name || "We reached a stop").trim();
+        playReachedStop(announcementText || "We reached a stop");
+      }
       if (at?.dropoffs?.length && at.place_id !== lastDropoffPlaceIdRef.current) {
         lastDropoffPlaceIdRef.current = at.place_id;
         const labels = new Set(at.dropoffs.map((d: { seat_label: string }) => d.seat_label));
@@ -917,6 +942,7 @@ export default function Vehicle() {
       stopLocationStream();
       setDriverState("route_selected");
       setActiveTrip(null);
+      lastAnnouncedPlaceIdRef.current = null;
 setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
         return;
     }
@@ -934,6 +960,7 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         stopLocationStream();
         setDriverState("route_selected");
         setActiveTrip(null);
+        lastAnnouncedPlaceIdRef.current = null;
         setPendingEndTripLocation(null);
         setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
         setShowEndTripOutOfRangeModal(false);
@@ -969,6 +996,7 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       stopLocationStream();
       setDriverState("route_selected");
       setActiveTrip(null);
+      lastAnnouncedPlaceIdRef.current = null;
       setPendingEndTripLocation(null);
       setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
       setShowEndTripOutOfRangeModal(false);
