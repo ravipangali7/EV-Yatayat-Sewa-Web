@@ -272,7 +272,7 @@ export default function Vehicle() {
   const [destinationSearch, setDestinationSearch] = useState("");
   const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
-  const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number } | null>(null);
+  const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number; course?: number } | null>(null);
   const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
   const prevLocationRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -364,11 +364,16 @@ export default function Vehicle() {
     if (isFlutterBridgeAvailable()) {
       window.__onDriverPosition = (jsonStr: string) => {
         try {
-          const d = JSON.parse(jsonStr) as { lat: number; lng: number; speed?: number };
+          const d = JSON.parse(jsonStr) as { lat: number; lng: number; speed?: number; course?: number };
           if (typeof d.lat === "number" && typeof d.lng === "number") {
             setLastLocation((prev) => {
               if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
-              return { lat: d.lat, lng: d.lng, speed: typeof d.speed === "number" ? d.speed : undefined };
+              return {
+                lat: d.lat,
+                lng: d.lng,
+                speed: typeof d.speed === "number" ? d.speed : undefined,
+                course: typeof d.course === "number" ? d.course : undefined,
+              };
             });
           }
         } catch {
@@ -384,7 +389,12 @@ export default function Vehicle() {
         .then((r) => {
           const loc = r.results?.[0];
           if (loc) {
-            const next = { lat: Number(loc.latitude), lng: Number(loc.longitude), speed: loc.speed ? Number(loc.speed) : undefined };
+            const next = {
+              lat: Number(loc.latitude),
+              lng: Number(loc.longitude),
+              speed: loc.speed ? Number(loc.speed) : undefined,
+              course: loc.course != null && loc.course !== "" ? Number(loc.course) : undefined,
+            };
             setLastLocation((prev) => {
               if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
               return next;
@@ -1320,6 +1330,7 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
               <DriverNavigationMap
                 center={navCenterPoint}
                 previousCenter={prevLocationRef.current}
+                heading={lastLocation?.course}
                 routeWaypoints={routeWaypoints.length >= 2 ? routeWaypoints : []}
                 routeMarkers={routeMarkers}
                 className="flex-1 min-h-0 rounded-2xl border border-border"

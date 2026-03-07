@@ -27,6 +27,8 @@ export interface DriverNavigationMapProps {
   center: { lat: number; lng: number };
   /** Previous position; if set, heading is computed from prev -> center for map rotation. */
   previousCenter?: { lat: number; lng: number } | null;
+  /** Optional heading in degrees (0-360). When provided, used for marker rotation instead of computing from previousCenter/center. */
+  heading?: number | null;
   /** Route waypoints for polyline (start, stops, end). */
   routeWaypoints?: Array<{ lat: number; lng: number }>;
   /** Start, stop, and end markers to show on the map. */
@@ -48,16 +50,21 @@ function computeHeading(
 export default function DriverNavigationMap({
   center,
   previousCenter,
+  heading: headingOverride,
   routeWaypoints = [],
   routeMarkers = [],
   className = "",
 }: DriverNavigationMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const [roadPath, setRoadPath] = useState<Array<{ lat: number; lng: number }> | null>(null);
-  const heading =
+  const computedHeading =
     previousCenter && (previousCenter.lat !== center.lat || previousCenter.lng !== center.lng)
       ? computeHeading(previousCenter, center)
       : 0;
+  const heading =
+    headingOverride != null && typeof headingOverride === "number"
+      ? headingOverride
+      : computedHeading;
   const { isLoaded } = useGoogleMaps();
 
   const routeWaypointsKey = useMemo(
@@ -156,8 +163,12 @@ export default function DriverNavigationMap({
         ))}
       </GoogleMap>
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 flex justify-center items-center"
-        style={{ width: NAVIGATION_MARKER_SIZE, height: NAVIGATION_MARKER_SIZE }}
+        className="absolute left-1/2 top-1/2 pointer-events-none z-10 flex justify-center items-center"
+        style={{
+          width: NAVIGATION_MARKER_SIZE,
+          height: NAVIGATION_MARKER_SIZE,
+          transform: `translate(-50%, -50%) rotate(${heading}deg)`,
+        }}
         aria-hidden
       >
         <img

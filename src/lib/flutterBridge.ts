@@ -50,7 +50,7 @@ declare global {
     };
     __onScanResult?: (jsonStr: string) => void;
     __onLocationResult?: (jsonStr: string) => void;
-    /** Called by Flutter every 1s with { lat, lng, speed? } when trip location stream is active (driver map). */
+    /** Called by Flutter every 1s with { lat, lng, speed?, course? } when trip location stream is active (driver map). course is heading in degrees 0-360. */
     __onDriverPosition?: (jsonStr: string) => void;
     __onVoiceSearchResult?: (jsonStr: string) => void;
     __onWalkieTalkieStatus?: (jsonStr: string) => void;

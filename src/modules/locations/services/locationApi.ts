@@ -7,6 +7,7 @@ export interface LocationRecord {
   latitude: string;
   longitude: string;
   speed: string | null;
+  course: string | null;
   created_at: string;
   updated_at: string;
 }
