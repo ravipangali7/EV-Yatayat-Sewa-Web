@@ -22,6 +22,9 @@ import UserDeposit from "@/pages/app/user/UserDeposit";
 import CardTopup from "@/pages/app/user/CardTopup";
 import DealerRevenue from "@/pages/app/user/DealerRevenue";
 import DealerProfile from "@/pages/app/user/DealerProfile";
+import UserShortTripDetail from "@/pages/app/user/UserShortTripDetail";
+import UserTicketDetail from "@/pages/app/user/UserTicketDetail";
+import UserTrackTrip from "@/pages/app/user/UserTrackTrip";
 import AppTransactions from "@/pages/app/AppTransactions";
 import AppTransactionDetail from "@/pages/app/AppTransactionDetail";
 import WalkieTalkie from "@/pages/app/WalkieTalkie";
@@ -95,6 +98,9 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     routes: {
       home: UserHome,
       booking: UserBooking,
+      "booking/short-trip/:id": UserShortTripDetail,
+      "booking/ticket/:id": UserTicketDetail,
+      "booking/track/:tripId": UserTrackTrip,
       walkietalkie: WalkieTalkie,
       wallet: UserWallet,
       card: UserCard,
@@ -117,6 +123,9 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
     routes: {
       home: UserHome,
       booking: UserBooking,
+      "booking/short-trip/:id": UserShortTripDetail,
+      "booking/ticket/:id": UserTicketDetail,
+      "booking/track/:tripId": UserTrackTrip,
       walkietalkie: WalkieTalkie,
       wallet: UserWallet,
       card: UserCard,

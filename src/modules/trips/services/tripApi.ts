@@ -55,6 +55,7 @@ export const tripApi = {
     vehicle?: string;
     driver?: string;
     route?: string;
+    vehicle_schedule?: string;
     active_only?: boolean;
     search?: string;
     date_from?: string;
@@ -66,6 +67,7 @@ export const tripApi = {
     if (params?.vehicle) queryParams.append('vehicle', params.vehicle);
     if (params?.driver) queryParams.append('driver', params.driver);
     if (params?.route) queryParams.append('route', params.route);
+    if (params?.vehicle_schedule) queryParams.append('vehicle_schedule', params.vehicle_schedule);
     if (params?.active_only !== undefined) queryParams.append('active_only', params.active_only.toString());
     if (params?.search) queryParams.append('search', params.search);
     if (params?.date_from) queryParams.append('date_from', params.date_from);

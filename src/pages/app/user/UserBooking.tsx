@@ -396,7 +396,11 @@ export default function UserBooking() {
                   return (
                     <div
                       key={b.id}
-                      className={`bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-l-4 p-4 hover:shadow-md transition-all ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`short-trip/${b.id}`)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(`short-trip/${b.id}`)}
+                      className={`bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-l-4 p-4 hover:shadow-md transition-all cursor-pointer ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-bold text-sm">{b.vehicle_details?.name ?? "Vehicle"} · Seat {seatLabel}</p>
@@ -431,7 +435,11 @@ export default function UserBooking() {
                   return (
                     <div
                       key={b.id}
-                      className={`bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-l-4 p-4 hover:shadow-md transition-all ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`ticket/${b.id}`)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(`ticket/${b.id}`)}
+                      className={`bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-l-4 p-4 hover:shadow-md transition-all cursor-pointer ${b.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500" : "border-amber-200 dark:border-amber-800 border-l-amber-500"}`}
                     >
                       <div className="flex justify-between items-start gap-3">
                         <div className="flex-1 min-w-0">
@@ -451,19 +459,22 @@ export default function UserBooking() {
                           size="sm"
                           variant="outline"
                           className="shrink-0 rounded-xl h-9"
-                          onClick={async () => {
-                            try {
-                              const blob = await vehicleTicketBookingApi.getTicketPdfBlob(b.id);
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
-                              a.href = url;
-                              a.download = `ticket-${b.pnr}.pdf`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                              toast.success("Download started");
-                            } catch {
-                              toast.error("Failed to download ticket");
-                            }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            (async () => {
+                              try {
+                                const blob = await vehicleTicketBookingApi.getTicketPdfBlob(b.id);
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = `ticket-${b.pnr}.pdf`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                                toast.success("Download started");
+                              } catch {
+                                toast.error("Failed to download ticket");
+                              }
+                            })();
                           }}
                         >
                           <FileDown size={14} className="mr-1" /> PDF
