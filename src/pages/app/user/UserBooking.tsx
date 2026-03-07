@@ -724,11 +724,6 @@ export default function UserBooking() {
                 {checkoutVehicleLayout.length > 0 && (
                   <div className="mb-6">
                     <p className="text-sm font-medium mb-2">Select seats (click to toggle)</p>
-                    <p className="text-xs text-muted-foreground mb-2 flex flex-wrap gap-4">
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-success/30 border border-success" /> Available</span>
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/30 border border-destructive" /> Booked</span>
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-primary/30 border-2 border-primary" /> Selected</span>
-                    </p>
                     <SeatLayoutVisualizer
                       seatLayout={checkoutVehicleLayout}
                       seats={checkoutVehicleSeats}

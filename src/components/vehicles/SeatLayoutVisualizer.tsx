@@ -135,6 +135,24 @@ export function SeatLayoutVisualizer({
   return (
     <div className="rounded-xl border border-border bg-muted/30 p-4">
       <h4 className="mb-3 text-center font-semibold text-foreground">Seat Layout</h4>
+      <div className="flex flex-wrap gap-3 justify-center text-xs mb-3">
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded seat-available" />
+          <span>Available</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded seat-booked" />
+          <span>Booked</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded seat-selected" />
+          <span>Selected</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded seat-driver" />
+          <span>Driver</span>
+        </div>
+      </div>
       <div className="flex flex-col items-center gap-1">
         {rows.map((row, ri) => (
           <div key={ri} className="flex items-center gap-1">
@@ -146,7 +164,7 @@ export function SeatLayoutVisualizer({
                 return (
                   <div
                     key={ci}
-                    className={cn('flex items-center justify-center rounded bg-amber-500/30 text-xs font-bold text-amber-700', cellClass)}
+                    className={cn('flex items-center justify-center rounded-xl seat-driver text-xs font-bold', cellClass)}
                     title="Driver"
                   >
                     D
@@ -161,17 +179,21 @@ export function SeatLayoutVisualizer({
                 const booked = isBooked(pos);
                 const selected = isSelected(pos);
                 const clickable = onSeatClick && (!onlyAvailable || !booked);
+                const seatStateClass = selected
+                  ? 'seat-selected'
+                  : booked
+                    ? 'seat-booked'
+                    : 'seat-available';
                 return (
                   <button
                     key={ci}
                     type="button"
                     title={`${pos.side}${pos.number}${booked ? ' (booked)' : ''}`}
                     className={cn(
-                      'flex items-center justify-center rounded text-xs font-medium transition-colors',
+                      'flex items-center justify-center rounded-xl text-xs font-medium transition-colors',
                       cellClass,
-                      selected && 'bg-background ring-2 ring-primary ring-offset-1 text-foreground',
-                      booked && 'bg-destructive/20 text-destructive cursor-not-allowed opacity-70',
-                      !booked && !selected && 'bg-success/20 text-success hover:bg-success/40',
+                      seatStateClass,
+                      booked && onlyAvailable && 'cursor-not-allowed opacity-70',
                       clickable && !booked && 'cursor-pointer'
                     )}
                     onClick={() => handleCellClick(ri, ci)}
