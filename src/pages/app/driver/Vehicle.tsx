@@ -32,6 +32,7 @@ import { seatBookingApi, type CheckoutPreviewResponse } from "@/modules/seat-boo
 import AppBar from "@/components/app/AppBar";
 import { VoiceSearchButton } from "@/components/app/VoiceSearchButton";
 import { toast } from "sonner";
+import { useTripSocket } from "@/hooks/useTripSocket";
 
 const CHECKOUT_ALL_FIRST_MSG = "Check out all passengers first.";
 
@@ -274,6 +275,8 @@ export default function Vehicle() {
   const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
   const prevLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [showSeatsBookedModal, setShowSeatsBookedModal] = useState(false);
+  const [seatsBookedLabels, setSeatsBookedLabels] = useState<string[]>([]);
 
   const NEPAL_CENTER = { lat: 27.7172, lng: 85.324 };
 
@@ -423,6 +426,18 @@ export default function Vehicle() {
       setSeats(buildSeatsFromVehicle(res, fallback));
     } catch (_) {}
   };
+
+  useTripSocket({
+    tripId: activeTrip?.id ?? null,
+    enabled: driverState === "trip_started" && !!activeTrip?.id,
+    onSeatBooked: (payload) => {
+      refetchVehicleAndSeats();
+      toast.success("New seat(s) booked – remember to pick up");
+      const labels = (payload.seats || []).map((s) => `${s.side}${s.number}`);
+      setSeatsBookedLabels(labels);
+      setShowSeatsBookedModal(true);
+    },
+  });
 
   const vehicleInfo = selectedVehicle ? vehicleToVehicleInfo(selectedVehicle) : null;
   const bookedSelected = selectedSeats.filter((s) => s.status === "booked");
@@ -1375,6 +1390,18 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
               />
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showSeatsBookedModal} onOpenChange={(open) => { if (!open) setShowSeatsBookedModal(false); }}>
+        <DialogContent className="max-w-[340px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base">Seats booked</DialogTitle>
+            <DialogDescription>Remember to pick up these passengers.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <p className="text-sm font-medium">Seat{seatsBookedLabels.length !== 1 ? "s" : ""}: {seatsBookedLabels.length ? seatsBookedLabels.join(", ") : "—"}</p>
+          </div>
+          <Button className="w-full rounded-xl" onClick={() => setShowSeatsBookedModal(false)}>OK</Button>
         </DialogContent>
       </Dialog>
       <ConfirmModal open={showCheckinModal} onClose={() => setShowCheckinModal(false)} onConfirm={confirmCheckIn} title="Confirm Check-In" description={`Check in ${availableSelected.length} passenger(s)?`} confirmLabel="Check In" />
