@@ -14,6 +14,7 @@ import {
   walkietalkieApi,
   type WalkieTalkieRecording,
   type WalkieTalkieDriver,
+  type AdminDriverVoiceMessage,
 } from "@/modules/walkietalkie/services/walkietalkieApi";
 
 function getInitials(name: string | undefined, id: number): string {
@@ -50,9 +51,14 @@ export function WalkieTalkieDrawer() {
     joinDirectRoom,
     connect,
     retryConnect,
+    playDirectMessage,
+    activeDirectMessageId,
   } = useWalkieTalkie();
   const [drivers, setDrivers] = useState<WalkieTalkieDriver[]>([]);
+  const [directMessages, setDirectMessages] = useState<AdminDriverVoiceMessage[]>([]);
+  const [driverInboxMessages, setDriverInboxMessages] = useState<AdminDriverVoiceMessage[]>([]);
   const isSuperuser = !!user?.is_superuser;
+  const isDriver = !!user?.is_driver;
   const pttButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -84,6 +90,34 @@ export function WalkieTalkieDrawer() {
     walkietalkieApi.listDrivers().then(setDrivers).catch(() => setDrivers([]));
   }, [drawerOpen, isSuperuser]);
 
+  useEffect(() => {
+    if (!drawerOpen || !isDirect || directDriverId == null) return;
+    walkietalkieApi.listDirectMessages({ driver_id: directDriverId }).then(setDirectMessages).catch(() => setDirectMessages([]));
+  }, [drawerOpen, isDirect, directDriverId]);
+
+  useEffect(() => {
+    if (!drawerOpen || !isDirect || directDriverId == null) return;
+    const interval = setInterval(
+      () => walkietalkieApi.listDirectMessages({ driver_id: directDriverId }).then(setDirectMessages).catch(() => {}),
+      10000
+    );
+    return () => clearInterval(interval);
+  }, [drawerOpen, isDirect, directDriverId]);
+
+  useEffect(() => {
+    if (!drawerOpen || !isDriver || isSuperuser) return;
+    walkietalkieApi.listDirectMessages({ recipient: "me" }).then(setDriverInboxMessages).catch(() => setDriverInboxMessages([]));
+  }, [drawerOpen, isDriver, isSuperuser]);
+
+  useEffect(() => {
+    if (!drawerOpen || !isDriver || isSuperuser) return;
+    const interval = setInterval(
+      () => walkietalkieApi.listDirectMessages({ recipient: "me" }).then(setDriverInboxMessages).catch(() => {}),
+      10000
+    );
+    return () => clearInterval(interval);
+  }, [drawerOpen, isDriver, isSuperuser]);
+
   const isConnected = status === "connected";
   const canTalk = isConnected && !!selectedGroupId && !speakingUser;
   const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
@@ -92,6 +126,7 @@ export function WalkieTalkieDrawer() {
   const selectedDriver = directDriverId != null ? drivers.find((d) => d.id === directDriverId) : null;
   const displayRecordings =
     selectedGroupId.startsWith("direct:") || selectedGroupId === "direct" ? [] : recordings;
+  const displayDirectMessages = isDirect ? directMessages : [];
 
   const handleSelectDriver = (driver: WalkieTalkieDriver) => {
     setSelectedGroupId(`direct:${driver.id}`);
@@ -147,6 +182,32 @@ export function WalkieTalkieDrawer() {
             </Button>
           )}
         </div>
+
+        {/* Messages from admin (driver only) */}
+        {isDriver && !isSuperuser && driverInboxMessages.length > 0 && (
+          <div className="shrink-0 px-5 pb-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Messages from admin
+            </p>
+            <div className="space-y-1.5 max-h-32 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-card p-2">
+              {driverInboxMessages.slice(0, 10).map((msg) => (
+                <DirectMessageRow
+                  key={msg.id}
+                  msg={msg}
+                  isActive={activeDirectMessageId === msg.id}
+                  isPlaying={isPlaybackPlaying}
+                  currentTime={playbackCurrentTime}
+                  duration={playbackDuration}
+                  onPlay={() => {
+                    playDirectMessage(msg.id, msg.sample_rate ?? 48000);
+                    walkietalkieApi.markDirectMessageRead(msg.id).catch(() => {});
+                  }}
+                  onPause={pausePlayback}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Channels */}
         <div className="shrink-0 px-5 pb-4">
@@ -219,16 +280,35 @@ export function WalkieTalkieDrawer() {
             Voice messages
           </p>
           <div className="flex-1 overflow-auto px-2 pb-2 space-y-1 min-h-0">
-            {displayRecordings.length === 0 ? (
+            {isDirect ? (
+              displayDirectMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-3 mb-2">
+                    <Mic className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">No direct voice messages yet.</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Hold the button below to send one.</p>
+                </div>
+              ) : (
+                displayDirectMessages.map((msg) => (
+                  <DirectMessageRow
+                    key={msg.id}
+                    msg={msg}
+                    isActive={activeDirectMessageId === msg.id}
+                    isPlaying={isPlaybackPlaying}
+                    currentTime={playbackCurrentTime}
+                    duration={playbackDuration}
+                    onPlay={() => playDirectMessage(msg.id, msg.sample_rate ?? 48000)}
+                    onPause={pausePlayback}
+                  />
+                ))
+              )
+            ) : displayRecordings.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-6 text-center">
                 <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-3 mb-2">
                   <Mic className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {selectedGroupId.startsWith("direct:")
-                    ? "No recordings for direct messages."
-                    : "No voice messages in this channel yet."}
-                </p>
+                <p className="text-xs text-muted-foreground">No voice messages in this channel yet.</p>
                 <p className="text-[10px] text-muted-foreground mt-1">Hold the button below to send one.</p>
               </div>
             ) : (
@@ -306,6 +386,82 @@ function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function DirectMessageRow({
+  msg,
+  isActive,
+  isPlaying,
+  currentTime,
+  duration,
+  onPlay,
+  onPause,
+}: {
+  msg: AdminDriverVoiceMessage;
+  isActive: boolean;
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  onPlay: () => void;
+  onPause: () => void;
+}) {
+  const name = msg.sender_name ?? `User #${msg.sender}`;
+  const initials = getInitials(msg.sender_name ?? undefined, msg.sender);
+  const totalSeconds = msg.duration_seconds != null && msg.duration_seconds > 0 ? msg.duration_seconds : duration;
+  const displayDuration = isActive ? duration : totalSeconds;
+  const displayCurrent = isActive ? currentTime : 0;
+  const progressPercent = displayDuration > 0 ? (displayCurrent / displayDuration) * 100 : 0;
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-card py-1.5 px-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+      <Avatar className="h-7 w-7 shrink-0">
+        <AvatarFallback className="text-[9px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-1 mb-0.5">
+          <p className="text-[11px] font-semibold truncate text-foreground leading-tight">{name}</p>
+          <span className="text-[9px] text-muted-foreground shrink-0">
+            {format(new Date(msg.created_at), "d MMM HH:mm")}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 rounded bg-slate-100 dark:bg-slate-800/80 py-1 px-1.5">
+          <button
+            type="button"
+            className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            onClick={isPlaying ? onPause : onPlay}
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? (
+              <Pause className="h-2.5 w-2.5" />
+            ) : (
+              <Play className="h-2.5 w-2.5 ml-0.5" />
+            )}
+          </button>
+          <div className="flex-1 min-w-0">
+            <div
+              className="h-0.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
+              role="progressbar"
+              aria-valuenow={isActive ? displayCurrent : undefined}
+              aria-valuemin={0}
+              aria-valuemax={isActive ? displayDuration : undefined}
+            >
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-150"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+          <span className="text-[9px] font-medium tabular-nums text-muted-foreground shrink-0 w-8 text-right">
+            {isActive
+              ? `${formatTime(displayCurrent)}/${formatTime(displayDuration)}`
+              : formatTime(displayDuration)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function VoiceMessageRow({

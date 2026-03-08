@@ -42,8 +42,9 @@ export function playPcmBytes(bytes: Uint8Array, sampleRate: number = FALLBACK_SA
   const channel = buffer.getChannelData(0);
   const view = new DataView(bytes.buffer, bytes.byteOffset, numSamples * 2);
   for (let i = 0; i < numSamples; i++) {
-    const s = view.getInt16(i * 2, true);
-    channel[i] = s / 32768;
+    let s = view.getInt16(i * 2, true) / 32768;
+    s = Math.tanh(s);
+    channel[i] = s;
   }
 
   const duration = numSamples / sr;

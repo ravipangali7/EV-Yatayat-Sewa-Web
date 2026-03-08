@@ -64,6 +64,8 @@ interface WalkieTalkieContextType {
   joinDirectRoom: (driverId: number) => void;
   isWebView: boolean;
   retryConnect: () => void;
+  playDirectMessage: (id: number, sampleRate?: number) => Promise<void>;
+  activeDirectMessageId: number | null;
 }
 
 const WalkieTalkieContext = createContext<WalkieTalkieContextType | undefined>(undefined);
@@ -79,6 +81,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const [speakingUser, setSpeakingUser] = useState<{ userId: number; name?: string; groupId: string } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeRecordingId, setActiveRecordingId] = useState<number | null>(null);
+  const [activeDirectMessageId, setActiveDirectMessageId] = useState<number | null>(null);
   const [playbackCurrentTime, setPlaybackCurrentTime] = useState(0);
   const [playbackDuration, setPlaybackDuration] = useState(0);
   const [isPlaybackPlaying, setIsPlaybackPlaying] = useState(false);
@@ -113,11 +116,47 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     fetchRecordingsRef.current = fetchRecordings;
   }, [fetchRecordings]);
 
+  const playDirectMessage = useCallback(async (id: number, sampleRate = 48000) => {
+    try {
+      const isResume = activeDirectMessageId === id && !isPlaybackPlaying;
+      if (!isResume) {
+        recordingPlayer.stop();
+        setActiveRecordingId(null);
+        if (activeDirectMessageId !== null) setActiveDirectMessageId(null);
+        const blob = await walkietalkieApi.getDirectMessagePlayBlob(id);
+        await recordingPlayer.loadFromBlob(blob, sampleRate);
+        setPlaybackDuration(recordingPlayer.getDuration());
+        setPlaybackCurrentTime(0);
+        lastPausedOffsetRef.current = 0;
+      }
+      setActiveDirectMessageId(id);
+      setIsPlaybackPlaying(true);
+      const startOffset = isResume ? lastPausedOffsetRef.current : 0;
+      recordingPlayer.play(
+        startOffset,
+        (current, duration) => {
+          setPlaybackCurrentTime(current);
+          setPlaybackDuration(duration);
+        },
+        () => {
+          setIsPlaybackPlaying(false);
+          setPlaybackCurrentTime(recordingPlayer.getDuration());
+          setActiveDirectMessageId(null);
+        }
+      );
+    } catch {
+      toast.error("Playback failed");
+      setIsPlaybackPlaying(false);
+      setActiveDirectMessageId(null);
+    }
+  }, [activeDirectMessageId, isPlaybackPlaying]);
+
   const playRecording = useCallback(async (id: number) => {
     try {
       const isResume = activeRecordingId === id && !isPlaybackPlaying;
       if (!isResume) {
         recordingPlayer.stop();
+        setActiveDirectMessageId(null);
         if (activeRecordingId !== null) setActiveRecordingId(null);
         const blob = await walkietalkieApi.getRecordingPlayBlob(id);
         const rec = recordings.find((r) => r.id === id);
@@ -510,6 +549,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     joinDirectRoom,
     isWebView,
     retryConnect: () => setConnectRetryKey((k) => k + 1),
+    playDirectMessage,
+    activeDirectMessageId,
   };
 
   return (
