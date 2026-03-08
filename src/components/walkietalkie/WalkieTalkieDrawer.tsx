@@ -61,6 +61,9 @@ export function WalkieTalkieDrawer() {
   const isDriver = !!user?.is_driver;
   const pttButtonRef = useRef<HTMLButtonElement>(null);
 
+  const isDirect = selectedGroupId.startsWith("direct:");
+  const directDriverId = isDirect ? Number(selectedGroupId.slice(7)) : null;
+
   useEffect(() => {
     if (groups.length === 0) return;
     const isDirect = selectedGroupId.startsWith("direct:");
@@ -121,8 +124,6 @@ export function WalkieTalkieDrawer() {
   const isConnected = status === "connected";
   const canTalk = isConnected && !!selectedGroupId && !speakingUser;
   const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
-  const isDirect = selectedGroupId.startsWith("direct:");
-  const directDriverId = isDirect ? Number(selectedGroupId.slice(7)) : null;
   const selectedDriver = directDriverId != null ? drivers.find((d) => d.id === directDriverId) : null;
   const displayRecordings =
     selectedGroupId.startsWith("direct:") || selectedGroupId === "direct" ? [] : recordings;
