@@ -14,7 +14,14 @@ function getTripSocketServerUrl(): string {
 export interface SeatBookedPayload {
   trip_id: string;
   vehicle_id: string | null;
-  seats: Array<{ vehicle_seat_id?: string; side: string; number: number }>;
+  seats: Array<{
+    vehicle_seat_id?: string;
+    side: string;
+    number: number;
+    user_name?: string;
+    from_address?: string;
+    to_name?: string;
+  }>;
 }
 
 interface UseTripSocketOptions {

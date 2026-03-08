@@ -278,7 +278,7 @@ export default function Vehicle() {
   const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
   const prevLocationRef = useRef<{ lat: number; lng: number } | null>(null);
   const [showSeatsBookedModal, setShowSeatsBookedModal] = useState(false);
-  const [seatsBookedLabels, setSeatsBookedLabels] = useState<string[]>([]);
+  const [seatsBookedDetails, setSeatsBookedDetails] = useState<Array<{ label: string; user_name?: string; from_address?: string; to_name?: string }>>([]);
 
   const NEPAL_CENTER = { lat: 27.7172, lng: 85.324 };
 
@@ -431,7 +431,8 @@ export default function Vehicle() {
   }, [activeTrip?.id, driverState, lastLocation?.lat, lastLocation?.lng, seats]);
 
   useEffect(() => {
-    if (showDropoffModal || showCheckoutModal) playBeep();
+    // Beep only when checkout modal opens; no beep for dropoff modal (stop arrival uses announcement.mp3 then TTS).
+    if (showCheckoutModal) playBeep();
   }, [showDropoffModal, showCheckoutModal]);
 
   useEffect(() => {
@@ -470,8 +471,13 @@ export default function Vehicle() {
     onSeatBooked: (payload) => {
       refetchVehicleAndSeats();
       toast.success("New seat(s) booked – remember to pick up");
-      const labels = (payload.seats || []).map((s) => `${s.side}${s.number}`);
-      setSeatsBookedLabels(labels);
+      const details = (payload.seats || []).map((s) => ({
+        label: `${s.side}${s.number}`,
+        user_name: s.user_name,
+        from_address: s.from_address,
+        to_name: s.to_name,
+      }));
+      setSeatsBookedDetails(details);
       setShowSeatsBookedModal(true);
     },
     authReady: isFlutterBridgeAvailable() ? authReadyForSocket : true,
@@ -1445,13 +1451,35 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         </DialogContent>
       </Dialog>
       <Dialog open={showSeatsBookedModal} onOpenChange={(open) => { if (!open) setShowSeatsBookedModal(false); }}>
-        <DialogContent className="max-w-[340px] rounded-2xl">
+        <DialogContent className="max-w-[380px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-base">Seats booked</DialogTitle>
+            <DialogTitle className="text-base">New seat(s) booked</DialogTitle>
             <DialogDescription>Remember to pick up these passengers.</DialogDescription>
           </DialogHeader>
-          <div className="py-2">
-            <p className="text-sm font-medium">Seat{seatsBookedLabels.length !== 1 ? "s" : ""}: {seatsBookedLabels.length ? seatsBookedLabels.join(", ") : "—"}</p>
+          <div className="py-2 max-h-[60vh] overflow-y-auto space-y-3">
+            {seatsBookedDetails.length ? (
+              seatsBookedDetails.map((item, idx) => (
+                <div key={`${item.label}-${idx}`} className="rounded-xl border border-border bg-muted/30 p-3 text-sm space-y-1.5">
+                  <p className="font-semibold text-foreground flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 rounded-md bg-primary/15 text-primary text-xs font-bold">Seat {item.label}</span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground/90">Passenger: </span>
+                    {item.user_name?.trim() || "Guest"}
+                  </p>
+                  <p className="text-muted-foreground truncate" title={item.from_address}>
+                    <span className="font-medium text-foreground/90">From: </span>
+                    {item.from_address?.trim() || "—"}
+                  </p>
+                  <p className="text-muted-foreground truncate" title={item.to_name}>
+                    <span className="font-medium text-foreground/90">To: </span>
+                    {item.to_name?.trim() || "—"}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No seat details.</p>
+            )}
           </div>
           <Button className="w-full rounded-xl" onClick={() => setShowSeatsBookedModal(false)}>OK</Button>
         </DialogContent>
