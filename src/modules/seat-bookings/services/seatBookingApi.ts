@@ -121,8 +121,7 @@ export const seatBookingApi = {
   },
 
   // Checkout (optional place_id, confirm_out_of_range for outside-destination confirm)
-  // May return SeatBooking or preview when outside 500m of destination.
-  // Tries with trailing slash first, then without (for server/proxy variations).
+  // May return SeatBooking or preview when outside 500m of destination
   checkout: async (data: {
     vehicle_seat_id: string;
     check_out_lat: number;
@@ -132,15 +131,7 @@ export const seatBookingApi = {
     place_id?: string;
     confirm_out_of_range?: boolean;
   }): Promise<SeatBooking | CheckoutPreviewResponse> => {
-    try {
-      return await api.post<SeatBooking | CheckoutPreviewResponse>('seat-bookings/checkout/', data);
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) {
-        return api.post<SeatBooking | CheckoutPreviewResponse>('seat-bookings/checkout', data);
-      }
-      throw err;
-    }
+    return api.post<SeatBooking | CheckoutPreviewResponse>('seat-bookings/checkout/', data);
   },
 };
 
