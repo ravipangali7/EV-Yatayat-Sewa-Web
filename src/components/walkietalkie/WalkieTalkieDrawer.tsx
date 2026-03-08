@@ -92,35 +92,6 @@ export function WalkieTalkieDrawer() {
   const displayRecordings =
     selectedGroupId.startsWith("direct:") || selectedGroupId === "direct" ? [] : recordings;
 
-  // Touch handlers for mobile/WebView: must use passive: false and touch-action so long-press works
-  useEffect(() => {
-    const el = pttButtonRef.current;
-    if (!el) return;
-    const opts: AddEventListenerOptions = { passive: false };
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (selectedGroupId && isConnected) pttStart(selectedGroupId);
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (selectedGroupId) pttEnd(selectedGroupId);
-    };
-    const onTouchCancel = (e: TouchEvent) => {
-      e.preventDefault();
-      if (selectedGroupId) pttEnd(selectedGroupId);
-    };
-    el.addEventListener("touchstart", onTouchStart, opts);
-    el.addEventListener("touchend", onTouchEnd, opts);
-    el.addEventListener("touchcancel", onTouchCancel, opts);
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart, opts);
-      el.removeEventListener("touchend", onTouchEnd, opts);
-      el.removeEventListener("touchcancel", onTouchCancel, opts);
-    };
-  }, [drawerOpen, selectedGroupId, isConnected, pttStart, pttEnd]);
-
   const handleSelectDriver = (driver: WalkieTalkieDriver) => {
     setSelectedGroupId(`direct:${driver.id}`);
     joinDirectRoom(driver.id);
@@ -295,6 +266,18 @@ export function WalkieTalkieDrawer() {
             onMouseDown={() => isConnected && selectedGroupId && pttStart(selectedGroupId)}
             onMouseUp={() => selectedGroupId && pttEnd(selectedGroupId)}
             onMouseLeave={() => selectedGroupId && pttEnd(selectedGroupId)}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              if (isConnected && selectedGroupId) pttStart(selectedGroupId);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              if (selectedGroupId) pttEnd(selectedGroupId);
+            }}
+            onTouchCancel={(e) => {
+              e.preventDefault();
+              if (selectedGroupId) pttEnd(selectedGroupId);
+            }}
           >
             <span
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 transition-transform ${
