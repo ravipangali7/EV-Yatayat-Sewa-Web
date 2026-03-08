@@ -14,6 +14,7 @@ import {
   walkietalkieApi,
   type WalkieTalkieRecording,
   type WalkieTalkieDriver,
+  type WalkieTalkieAdmin,
   type AdminDriverVoiceMessage,
 } from "@/modules/walkietalkie/services/walkietalkieApi";
 
@@ -34,6 +35,7 @@ export function WalkieTalkieDrawer() {
     status,
     statusMessage,
     groups,
+    admins,
     recordings,
     selectedGroupId,
     setSelectedGroupId,
@@ -62,7 +64,9 @@ export function WalkieTalkieDrawer() {
   const pttButtonRef = useRef<HTMLButtonElement>(null);
 
   const isDirect = selectedGroupId.startsWith("direct:");
-  const directDriverId = isDirect ? Number(selectedGroupId.slice(7)) : null;
+  const directIdNum = isDirect ? Number(selectedGroupId.slice(7)) : null;
+  const directDriverId = isDirect && isSuperuser ? directIdNum : null;
+  const selectedAdmin: WalkieTalkieAdmin | null = isDirect && isDriver ? (admins.find((a) => a.id === directIdNum) ?? null) : null;
 
   useEffect(() => {
     if (groups.length === 0) return;
@@ -264,13 +268,39 @@ export function WalkieTalkieDrawer() {
                   </button>
                 );
               })}
+            {isDriver &&
+              !isSuperuser &&
+              admins.map((admin) => {
+                const directId = `direct:${admin.id}`;
+                const isSelected = selectedGroupId === directId;
+                return (
+                  <button
+                    key={directId}
+                    type="button"
+                    onClick={() => setSelectedGroupId(directId)}
+                    className={`flex shrink-0 items-center gap-2 rounded-2xl border-2 px-4 py-2.5 transition-all ${
+                      isSelected
+                        ? "border-amber-500 bg-amber-500 text-white shadow-md"
+                        : "border-slate-200 dark:border-slate-700 bg-card hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <Avatar className={`h-8 w-8 ${isSelected ? "ring-2 ring-white/30" : ""}`}>
+                      {admin.avatar ? <AvatarImage src={admin.avatar} alt={admin.name} /> : null}
+                      <AvatarFallback className="text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                        {admin.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium max-w-[100px] truncate">{admin.name}</span>
+                  </button>
+                );
+              })}
           </div>
-          {(selectedGroup || selectedDriver) && (
+          {(selectedGroup || selectedDriver || selectedAdmin) && (
             <p className="text-xs text-muted-foreground mt-2">
-              {selectedGroup ? `In ${selectedGroup.name}` : selectedDriver ? `Direct → ${selectedDriver.name}` : ""}
+              {selectedGroup ? `In ${selectedGroup.name}` : selectedDriver ? `Direct → ${selectedDriver.name}` : selectedAdmin ? `Direct → ${selectedAdmin.name}` : ""}
             </p>
           )}
-          {groups.length === 0 && !isSuperuser && (
+          {groups.length === 0 && !isSuperuser && (!isDriver || admins.length === 0) && (
             <p className="text-sm text-muted-foreground mt-2">No channels. Ask admin to add you to one.</p>
           )}
         </div>

@@ -30,6 +30,12 @@ export interface WalkieTalkieDriver {
   avatar?: string;
 }
 
+export interface WalkieTalkieAdmin {
+  id: number;
+  name: string;
+  avatar?: string;
+}
+
 export interface AdminDriverVoiceMessage {
   id: number;
   sender: number;
@@ -49,6 +55,9 @@ export const walkietalkieApi = {
 
   listDrivers: (): Promise<WalkieTalkieDriver[]> =>
     api.get<WalkieTalkieDriver[]>("walkietalkie/drivers/"),
+
+  listAdmins: (): Promise<WalkieTalkieAdmin[]> =>
+    api.get<WalkieTalkieAdmin[]>("walkietalkie/admins/"),
 
   listRecordings: (params?: { group_id?: number; user_id?: number }): Promise<WalkieTalkieRecording[]> => {
     const q = new URLSearchParams();

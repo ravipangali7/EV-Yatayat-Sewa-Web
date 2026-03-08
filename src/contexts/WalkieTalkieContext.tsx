@@ -24,6 +24,7 @@ import {
   walkietalkieApi,
   type WalkieTalkieGroup,
   type WalkieTalkieRecording,
+  type WalkieTalkieAdmin,
 } from "@/modules/walkietalkie/services/walkietalkieApi";
 
 export type WalkieTalkieStatus = "connected" | "disconnected" | "error";
@@ -42,6 +43,7 @@ interface WalkieTalkieContextType {
   status: WalkieTalkieStatus;
   statusMessage: string | null;
   groups: WalkieTalkieGroup[];
+  admins: WalkieTalkieAdmin[];
   recordings: WalkieTalkieRecording[];
   selectedGroupId: string;
   setSelectedGroupId: (id: string) => void;
@@ -75,6 +77,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<WalkieTalkieStatus>("disconnected");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [groups, setGroups] = useState<WalkieTalkieGroup[]>([]);
+  const [admins, setAdmins] = useState<WalkieTalkieAdmin[]>([]);
   const [recordings, setRecordings] = useState<WalkieTalkieRecording[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [pttActive, setPttActive] = useState(false);
@@ -196,20 +199,37 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const joinDirectRoom = useCallback(
     (driverId: number) => {
       const directId = `direct:${driverId}`;
+      const baseIds = groups.map((g) => String(g.id));
+      const withDirect = [...baseIds, directId];
+      if (user?.is_driver) {
+        withDirect.push(`direct:${user.id}`);
+        admins.forEach((a) => withDirect.push(`direct:${a.id}`));
+      }
+      if (user?.is_staff || user?.is_superuser) {
+        if (!withDirect.includes(`direct:${user.id}`)) withDirect.push(`direct:${user.id}`);
+      }
+      const uniqueIds = Array.from(new Set(withDirect));
       if (isWebView) {
-        const groupIds = [...groups.map((g) => String(g.id)), directId];
-        connectWalkieTalkie(serverUrl, token ?? "", groupIds);
+        connectWalkieTalkie(serverUrl, token ?? "", uniqueIds);
         return;
       }
-      const ids = [...groups.map((g) => String(g.id)), directId];
-      socketRef.current?.emit("join_groups", { groupIds: ids });
+      socketRef.current?.emit("join_groups", { groupIds: uniqueIds });
     },
-    [groups, isWebView, serverUrl, token]
+    [groups, admins, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser, isWebView, serverUrl, token]
   );
 
   const connect = useCallback(() => {
     if (!token || groups.length === 0) return;
-    const groupIds = groups.map((g) => String(g.id));
+    const baseIds = groups.map((g) => String(g.id));
+    const fullGroupIds = [...baseIds];
+    if (user?.is_driver) {
+      fullGroupIds.push(`direct:${user.id}`);
+      admins.forEach((a) => fullGroupIds.push(`direct:${a.id}`));
+    }
+    if (user?.is_staff || user?.is_superuser) {
+      if (!fullGroupIds.includes(`direct:${user.id}`)) fullGroupIds.push(`direct:${user.id}`);
+    }
+    const groupIds = Array.from(new Set(fullGroupIds));
 
     if (isWebView) {
       connectWalkieTalkie(serverUrl, token, groupIds);
@@ -269,7 +289,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       setStatus("error");
       setStatusMessage("Connection failed");
     });
-  }, [token, groups, serverUrl, isWebView]);
+  }, [token, groups, admins, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser, serverUrl, isWebView]);
 
   const disconnect = useCallback(() => {
     if (isWebView) {
@@ -347,20 +367,41 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         setGroups(list);
         if (list.length === 0) setStatusMessage(null);
         if (list.length > 0 && !selectedGroupId) setSelectedGroupId(String(list[0].id));
-        const groupIds = list.map((g) => String(g.id));
-        if (isWebView) {
-          if (list.length > 0) {
-            hasAutoConnected.current = true;
-            connectWalkieTalkie(serverUrl, token, groupIds);
+        let adminsList: WalkieTalkieAdmin[] = [];
+        if (user?.is_driver) {
+          try {
+            adminsList = await walkietalkieApi.listAdmins();
+            if (cancelled) return;
+            setAdmins(adminsList);
+          } catch {
+            setAdmins([]);
           }
         } else {
-          // Browser: always connect to socket so status can show "connected" even with 0 groups
+          setAdmins([]);
+        }
+        const baseGroupIds = list.map((g) => String(g.id));
+        const fullGroupIds = [...baseGroupIds];
+        if (user?.is_driver) {
+          fullGroupIds.push(`direct:${user.id}`);
+          adminsList.forEach((a) => fullGroupIds.push(`direct:${a.id}`));
+        }
+        if (user?.is_staff || user?.is_superuser) {
+          if (!fullGroupIds.includes(`direct:${user.id}`)) {
+            fullGroupIds.push(`direct:${user.id}`);
+          }
+        }
+        if (isWebView) {
+          if (fullGroupIds.length > 0) {
+            hasAutoConnected.current = true;
+            connectWalkieTalkie(serverUrl, token, fullGroupIds);
+          }
+        } else {
           const socket = io(serverUrl, { path: "/socket.io/", transports: ["websocket", "polling"] });
           socketRef.current = socket;
           socket.on("connect", () => {
             socket.emit("auth", { token }, (ack: unknown) => {
               if (ack && typeof ack === "object" && (ack as { success?: boolean }).success) {
-                socket.emit("join_groups", { groupIds });
+                socket.emit("join_groups", { groupIds: fullGroupIds });
               } else {
                 setStatus("error");
                 setStatusMessage("Authentication failed");
@@ -420,19 +461,36 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       }
       hasAutoConnected.current = false;
     };
-  }, [token, serverUrl, isWebView, connectRetryKey]);
+  }, [token, serverUrl, isWebView, connectRetryKey, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
 
   // Refetch groups when drawer opens; sync to socket so PTT works after groups load
   useEffect(() => {
     if (!drawerOpen || !token) return;
-    walkietalkieApi
-      .listGroups()
-      .then((raw) => {
+    const buildFullGroupIds = (
+      list: WalkieTalkieGroup[],
+      adminsList: WalkieTalkieAdmin[],
+      u: { id: string; is_driver?: boolean; is_staff?: boolean; is_superuser?: boolean } | null
+    ) => {
+      const base = list.map((g) => String(g.id));
+      if (u?.is_driver) {
+        base.push(`direct:${u.id}`);
+        adminsList.forEach((a) => base.push(`direct:${a.id}`));
+      }
+      if (u?.is_staff || u?.is_superuser) {
+        if (!base.includes(`direct:${u.id}`)) base.push(`direct:${u.id}`);
+      }
+      return Array.from(new Set(base));
+    };
+    Promise.all([
+      walkietalkieApi.listGroups(),
+      user?.is_driver ? walkietalkieApi.listAdmins() : Promise.resolve([] as WalkieTalkieAdmin[]),
+    ])
+      .then(([raw, adminsList]) => {
         const list = Array.isArray(raw) ? raw : [];
         setGroups(list);
+        if (user?.is_driver) setAdmins(adminsList);
         if (list.length > 0 && !selectedGroupIdRef.current) setSelectedGroupId(String(list[0].id));
-        // If socket already connected but we had 0 groups before, join rooms now so hold-to-talk works
-        const groupIds = list.map((g) => String(g.id));
+        const groupIds = buildFullGroupIds(list, adminsList, user);
         if (groupIds.length > 0 && socketRef.current?.connected) {
           socketRef.current.emit("join_groups", { groupIds });
         }
@@ -441,7 +499,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         setStatus("error");
         setStatusMessage("Could not load groups. Check your connection.");
       });
-  }, [drawerOpen, token]);
+  }, [drawerOpen, token, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
 
   useEffect(() => {
     if (!isWebView) return;
@@ -527,6 +585,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     status,
     statusMessage,
     groups,
+    admins,
     recordings,
     selectedGroupId,
     setSelectedGroupId,
