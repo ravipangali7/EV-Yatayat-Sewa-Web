@@ -4,20 +4,31 @@ import AppBar from "@/components/app/AppBar";
 import { api } from "@/lib/api";
 import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
 import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
+import { useTripSocket } from "@/hooks/useTripSocket";
+import { useAuthReadyForSocket } from "@/hooks/useAuthReadyForSocket";
 import {
   VEHICLE_MARKER_ICON,
   VEHICLE_MARKER_WIDTH,
   VEHICLE_MARKER_HEIGHT,
-  VEHICLE_MARKER_ANCHOR_X,
-  VEHICLE_MARKER_ANCHOR_Y,
 } from "@/config/mapConstants";
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 3000;
 const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
-const ANIMATION_DURATION_MS = 1500;
+/** Time constant for exponential follow; slightly slower than driver map for polling. */
+const SMOOTH_FOLLOW_SPEED = 4;
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
+}
+
+function lerpHeading(from: number, to: number, t: number): number {
+  const d = ((to - from + 540) % 360) - 180;
+  return (from + d * t + 360) % 360;
+}
+
+function smoothFactor(dtMs: number): number {
+  const dtSec = dtMs / 1000;
+  return 1 - Math.exp(-dtSec * SMOOTH_FOLLOW_SPEED);
 }
 
 interface TripLocation {
@@ -76,37 +87,63 @@ export default function UserTrackTrip() {
     lat: Number(loc.latitude),
     lng: Number(loc.longitude),
   }));
+  const latestLoc = trip?.locations?.length ? trip.locations[trip.locations.length - 1] : null;
   const latestPoint = path.length ? path[path.length - 1] : null;
   const targetCenter = latestPoint ?? DEFAULT_CENTER;
+  const targetHeading =
+    latestLoc && latestLoc.course != null && latestLoc.course !== ""
+      ? Number(latestLoc.course)
+      : path.length >= 2
+        ? (() => {
+            if (typeof google === "undefined" || !google.maps?.geometry?.spherical) return 0;
+            const from = path[path.length - 2];
+            const to = path[path.length - 1];
+            return google.maps.geometry.spherical.computeHeading(
+              new google.maps.LatLng(from.lat, from.lng),
+              new google.maps.LatLng(to.lat, to.lng)
+            );
+          })()
+        : 0;
   const isActive = trip && !trip.end_time;
 
   const mapRef = useRef<google.maps.Map | null>(null);
+  const vehicleOverlayRef = useRef<HTMLDivElement | null>(null);
   const displayCenterRef = useRef<{ lat: number; lng: number }>({ ...targetCenter });
+  const displayHeadingRef = useRef<number>(targetHeading);
   const targetCenterRef = useRef<{ lat: number; lng: number }>({ ...targetCenter });
-  const animStartRef = useRef<{ center: { lat: number; lng: number }; time: number } | null>(null);
+  const targetHeadingRef = useRef<number>(targetHeading);
+  const lastTickTimeRef = useRef<number>(performance.now());
   const rafRef = useRef<number | null>(null);
 
   targetCenterRef.current = targetCenter;
+  targetHeadingRef.current = targetHeading;
+
+  const authReadyForSocket = useAuthReadyForSocket();
+  useTripSocket({
+    tripId: trip?.trip_id ?? null,
+    enabled: !!trip?.trip_id && !trip?.end_time,
+    authReady: authReadyForSocket,
+    onSeatBooked: () => {},
+    onTripLocation: useCallback((payload) => {
+      targetCenterRef.current = { lat: payload.lat, lng: payload.lng };
+      if (payload.course != null) targetHeadingRef.current = payload.course;
+    }, []),
+  });
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
     displayCenterRef.current = { ...targetCenterRef.current };
+    displayHeadingRef.current = targetHeadingRef.current;
+    lastTickTimeRef.current = performance.now();
     map.setCenter(targetCenterRef.current);
-    animStartRef.current = null;
   }, []);
 
   const onMapUnmount = useCallback(() => {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     mapRef.current = null;
+    vehicleOverlayRef.current = null;
   }, []);
-
-  useEffect(() => {
-    animStartRef.current = {
-      center: { ...displayCenterRef.current },
-      time: performance.now(),
-    };
-  }, [targetCenter.lat, targetCenter.lng]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -116,21 +153,25 @@ export default function UserTrackTrip() {
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
-      const start = animStartRef.current;
+      const dt = now - lastTickTimeRef.current;
+      lastTickTimeRef.current = now;
       const targetC = targetCenterRef.current;
-      if (!start) {
-        rafRef.current = requestAnimationFrame(tick);
-        return;
-      }
-      const elapsed = now - start.time;
-      const t = Math.min(1, elapsed / ANIMATION_DURATION_MS);
-      const easeT = t < 1 ? 1 - Math.pow(1 - t, 2) : 1;
-      const displayLat = lerp(start.center.lat, targetC.lat, easeT);
-      const displayLng = lerp(start.center.lng, targetC.lng, easeT);
+      const targetH = targetHeadingRef.current;
+      const t = Math.min(1, smoothFactor(dt));
+
+      const displayLat = lerp(displayCenterRef.current.lat, targetC.lat, t);
+      const displayLng = lerp(displayCenterRef.current.lng, targetC.lng, t);
+      const displayHeading = lerpHeading(displayHeadingRef.current, targetH, t);
+
       displayCenterRef.current = { lat: displayLat, lng: displayLng };
+      displayHeadingRef.current = displayHeading;
+
       map.setCenter({ lat: displayLat, lng: displayLng });
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
-      else animStartRef.current = null;
+      if (vehicleOverlayRef.current) {
+        vehicleOverlayRef.current.style.transform = `translate(-50%, -50%) rotate(${displayHeading}deg)`;
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => {
@@ -179,18 +220,25 @@ export default function UserTrackTrip() {
             {path.length > 0 && (
               <Marker position={path[0]} label="S" title="Start" />
             )}
-            {latestPoint && typeof window !== "undefined" && window.google?.maps && (
-              <Marker
-                position={latestPoint}
-                title="Vehicle"
-                icon={{
-                  url: VEHICLE_MARKER_ICON,
-                  scaledSize: new window.google.maps.Size(VEHICLE_MARKER_WIDTH, VEHICLE_MARKER_HEIGHT),
-                  anchor: new window.google.maps.Point(VEHICLE_MARKER_ANCHOR_X, VEHICLE_MARKER_ANCHOR_Y),
-                }}
-              />
-            )}
           </GoogleMap>
+        )}
+        {isLoaded && latestPoint && (
+          <div
+            ref={vehicleOverlayRef}
+            className="absolute left-1/2 top-1/2 pointer-events-none z-10 flex justify-center items-center"
+            style={{
+              width: VEHICLE_MARKER_WIDTH,
+              height: VEHICLE_MARKER_HEIGHT,
+              transform: `translate(-50%, -50%) rotate(${displayHeadingRef.current}deg)`,
+            }}
+            aria-hidden
+          >
+            <img
+              src={VEHICLE_MARKER_ICON}
+              alt=""
+              className="object-contain drop-shadow-md w-full h-full"
+            />
+          </div>
         )}
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-muted-foreground">

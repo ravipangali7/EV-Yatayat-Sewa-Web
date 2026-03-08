@@ -11,7 +11,7 @@ import SeatLayout, { Seat } from "@/components/app/SeatLayout";
 import SwipeButton from "@/components/app/SwipeButton";
 import ConfirmModal from "@/components/app/ConfirmModal";
 import MiniMap, { MapPoint } from "@/components/app/MiniMap";
-import DriverNavigationMap from "@/components/app/DriverNavigationMap";
+import DriverNavigationMap, { type LiveTargetSnapshot } from "@/components/app/DriverNavigationMap";
 import TransactionCard from "@/components/app/TransactionCard";
 import type { AppTransaction } from "@/components/app/TransactionCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -277,6 +277,10 @@ export default function Vehicle() {
   const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
   const prevLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+  /** Live target for map (updated every Flutter push); used by DriverNavigationMap when in WebView for smooth tracking without re-renders. */
+  const driverTargetRef = useRef<LiveTargetSnapshot | null>(null);
+  const lastLocationUpdateTimeRef = useRef<number>(0);
+  const DRIVER_POSITION_THROTTLE_MS = 120;
   const [showSeatsBookedModal, setShowSeatsBookedModal] = useState(false);
   const [seatsBookedDetails, setSeatsBookedDetails] = useState<Array<{ label: string; user_name?: string; from_address?: string; to_name?: string }>>([]);
 
@@ -367,15 +371,26 @@ export default function Vehicle() {
         try {
           const d = JSON.parse(jsonStr) as { lat: number; lng: number; speed?: number; course?: number };
           if (typeof d.lat === "number" && typeof d.lng === "number") {
-            setLastLocation((prev) => {
-              if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
-              return {
-                lat: d.lat,
-                lng: d.lng,
-                speed: typeof d.speed === "number" ? d.speed : undefined,
-                course: typeof d.course === "number" ? d.course : undefined,
-              };
-            });
+            const center = { lat: d.lat, lng: d.lng };
+            const previousCenter = driverTargetRef.current?.center ?? prevLocationRef.current ?? null;
+            driverTargetRef.current = {
+              center,
+              previousCenter: previousCenter && (previousCenter.lat !== center.lat || previousCenter.lng !== center.lng) ? previousCenter : null,
+              heading: typeof d.course === "number" ? d.course : null,
+            };
+            const now = Date.now();
+            if (now - lastLocationUpdateTimeRef.current >= DRIVER_POSITION_THROTTLE_MS) {
+              lastLocationUpdateTimeRef.current = now;
+              setLastLocation((prev) => {
+                if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
+                return {
+                  lat: d.lat,
+                  lng: d.lng,
+                  speed: typeof d.speed === "number" ? d.speed : undefined,
+                  course: typeof d.course === "number" ? d.course : undefined,
+                };
+              });
+            }
           }
         } catch {
           // ignore invalid payload
@@ -1342,6 +1357,7 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
                   center={navCenterPoint}
                   previousCenter={prevLocationRef.current}
                   heading={lastLocation?.course}
+                  liveTargetRef={isFlutterBridgeAvailable() ? driverTargetRef : undefined}
                   routeWaypoints={routeWaypoints.length >= 2 ? routeWaypoints : []}
                   routeMarkers={routeMarkers}
                   className="h-full w-full min-h-0"

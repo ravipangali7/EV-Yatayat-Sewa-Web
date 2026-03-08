@@ -24,18 +24,30 @@ export interface SeatBookedPayload {
   }>;
 }
 
+export interface TripLocationPayload {
+  trip_id: string;
+  lat: number;
+  lng: number;
+  course?: number;
+  speed?: number;
+}
+
 interface UseTripSocketOptions {
   tripId: string | null;
   enabled: boolean;
   onSeatBooked: (payload: SeatBookedPayload) => void;
+  /** Called when server pushes a new trip location (real-time user tracking). */
+  onTripLocation?: (payload: TripLocationPayload) => void;
   /** When false (e.g. in WebView waiting for Flutter to inject token), socket is not connected. Default true. */
   authReady?: boolean;
 }
 
-export function useTripSocket({ tripId, enabled, onSeatBooked, authReady = true }: UseTripSocketOptions): void {
+export function useTripSocket({ tripId, enabled, onSeatBooked, onTripLocation, authReady = true }: UseTripSocketOptions): void {
   const socketRef = useRef<Socket | null>(null);
   const onSeatBookedRef = useRef(onSeatBooked);
+  const onTripLocationRef = useRef(onTripLocation);
   onSeatBookedRef.current = onSeatBooked;
+  onTripLocationRef.current = onTripLocation;
 
   useEffect(() => {
     if (!enabled || !tripId || !authReady) {
@@ -72,6 +84,10 @@ export function useTripSocket({ tripId, enabled, onSeatBooked, authReady = true 
 
     socket.on("seat_booked", (payload: SeatBookedPayload) => {
       onSeatBookedRef.current(payload);
+    });
+
+    socket.on("trip_location", (payload: TripLocationPayload) => {
+      onTripLocationRef.current?.(payload);
     });
 
     socket.on("connect_error", () => {
