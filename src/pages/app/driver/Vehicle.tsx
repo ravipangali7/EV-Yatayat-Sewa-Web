@@ -1267,7 +1267,13 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
           Map
         </button>
       </div>
-      <div className={`px-4 pt-4 pb-24 flex-1 flex flex-col min-h-0 ${tripTab === "map" ? "overflow-hidden" : "overflow-auto"}`}>
+      <div
+        className={
+          tripTab === "map"
+            ? "flex-1 flex flex-col min-h-0 overflow-hidden pb-24"
+            : "px-4 pt-4 pb-24 flex-1 flex flex-col min-h-0 overflow-auto"
+        }
+      >
       {tripTab === "seats" && (
         <>
       <SeatLayout seats={seats} selectedSeats={selectedSeats} onSeatSelect={setSelectedSeats} size="large" />
@@ -1310,36 +1316,40 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         </>
       )}
       {tripTab === "map" && (
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 relative">
+          <div className="absolute inset-0">
+            {(() => {
+              const navCenter = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+              const navCenterPoint = { lat: navCenter.lat, lng: navCenter.lng };
+              const routeWaypoints: Array<{ lat: number; lng: number }> = selectedRoute
+                ? [
+                    ...(selectedRoute.startPoint ? [{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }] : []),
+                    ...(selectedRoute.stops ?? []).map((s) => ({ lat: s.lat, lng: s.lng })),
+                    ...(selectedRoute.endPoint ? [{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }] : []),
+                  ].filter((p) => p.lat !== 0 || p.lng !== 0)
+                : [];
+              const routeMarkers = tripMapPoints.filter(
+                (p): p is MapPoint & { type: "start" | "stop" | "end" } => p.type !== "current"
+              );
+              return (
+                <DriverNavigationMap
+                  center={navCenterPoint}
+                  previousCenter={prevLocationRef.current}
+                  heading={lastLocation?.course}
+                  routeWaypoints={routeWaypoints.length >= 2 ? routeWaypoints : []}
+                  routeMarkers={routeMarkers}
+                  className="h-full w-full min-h-0"
+                />
+              );
+            })()}
+          </div>
           {lastLocation && (
-            <p className="text-sm text-muted-foreground shrink-0">
-              Speed: {lastLocation.speed != null ? `${Number(lastLocation.speed).toFixed(0)} km/h` : "—"}
-            </p>
+            <div className="absolute bottom-3 left-3 right-3 flex justify-center pointer-events-none">
+              <span className="rounded-lg px-3 py-1.5 text-sm font-medium bg-background/90 backdrop-blur-sm border border-border/50 shadow-sm text-muted-foreground">
+                Speed: {lastLocation.speed != null ? `${Number(lastLocation.speed).toFixed(0)} km/h` : "—"}
+              </span>
+            </div>
           )}
-          {(() => {
-            const navCenter = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
-            const navCenterPoint = { lat: navCenter.lat, lng: navCenter.lng };
-            const routeWaypoints: Array<{ lat: number; lng: number }> = selectedRoute
-              ? [
-                  ...(selectedRoute.startPoint ? [{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }] : []),
-                  ...(selectedRoute.stops ?? []).map((s) => ({ lat: s.lat, lng: s.lng })),
-                  ...(selectedRoute.endPoint ? [{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }] : []),
-                ].filter((p) => p.lat !== 0 || p.lng !== 0)
-              : [];
-            const routeMarkers = tripMapPoints.filter(
-              (p): p is MapPoint & { type: "start" | "stop" | "end" } => p.type !== "current"
-            );
-            return (
-              <DriverNavigationMap
-                center={navCenterPoint}
-                previousCenter={prevLocationRef.current}
-                heading={lastLocation?.course}
-                routeWaypoints={routeWaypoints.length >= 2 ? routeWaypoints : []}
-                routeMarkers={routeMarkers}
-                className="flex-1 min-h-0 rounded-2xl border border-border"
-              />
-            );
-          })()}
         </div>
       )}
 

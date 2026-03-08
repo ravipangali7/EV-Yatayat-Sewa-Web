@@ -11,7 +11,19 @@ import {
   ROUTE_MARKER_ANCHOR,
   ROUTE_MARKER_SIZE,
 } from "@/config/mapConstants";
+import { GOOGLE_MAPS_CONFIG } from "@/config/maps";
 import { getDirectionsPath } from "@/lib/directions";
+
+const ANIMATION_DURATION_MS = 1500;
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function lerpHeading(from: number, to: number, t: number): number {
+  let d = ((to - from + 540) % 360) - 180;
+  return (from + d * t + 360) % 360;
+}
 
 export type RouteMarkerType = "start" | "stop" | "end";
 
@@ -61,11 +73,23 @@ export default function DriverNavigationMap({
     previousCenter && (previousCenter.lat !== center.lat || previousCenter.lng !== center.lng)
       ? computeHeading(previousCenter, center)
       : 0;
-  const heading =
+  const targetHeading =
     headingOverride != null && typeof headingOverride === "number"
       ? headingOverride
       : computedHeading;
+
+  const displayCenterRef = useRef<{ lat: number; lng: number }>({ ...center });
+  const displayHeadingRef = useRef<number>(targetHeading);
+  const targetCenterRef = useRef<{ lat: number; lng: number }>({ ...center });
+  const targetHeadingRef = useRef<number>(targetHeading);
+  const animStartRef = useRef<{ center: { lat: number; lng: number }; heading: number; time: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
+
   const { isLoaded } = useGoogleMaps();
+  const mapId = GOOGLE_MAPS_CONFIG.mapId;
+
+  targetCenterRef.current = { lat: center.lat, lng: center.lng };
+  targetHeadingRef.current = targetHeading;
 
   const routeWaypointsKey = useMemo(
     () => routeWaypoints.map((w) => `${w.lat},${w.lng}`).join("|"),
@@ -75,16 +99,71 @@ export default function DriverNavigationMap({
   const onMapLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map;
+      displayCenterRef.current = { lat: center.lat, lng: center.lng };
+      displayHeadingRef.current = targetHeading;
+      animStartRef.current = null;
       map.setCenter(center);
       if (typeof (map as google.maps.Map & { setHeading?: (n: number) => void }).setHeading === "function") {
-        (map as google.maps.Map & { setHeading: (n: number) => void }).setHeading(heading);
+        (map as google.maps.Map & { setHeading: (n: number) => void }).setHeading(targetHeading);
       }
     },
-    [center.lat, center.lng, heading]
+    [center.lat, center.lng, targetHeading]
   );
   const onMapUnmount = useCallback(() => {
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
     mapRef.current = null;
   }, []);
+
+  useEffect(() => {
+    animStartRef.current = {
+      center: { ...displayCenterRef.current },
+      heading: displayHeadingRef.current,
+      time: performance.now(),
+    };
+  }, [center.lat, center.lng, targetHeading]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const tick = (now: number) => {
+      const map = mapRef.current;
+      if (!map) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      const setHeadingFn = typeof (map as google.maps.Map & { setHeading?: (n: number) => void }).setHeading === "function"
+        ? (map as google.maps.Map & { setHeading: (n: number) => void }).setHeading
+        : null;
+      const start = animStartRef.current;
+      const targetC = targetCenterRef.current;
+      const targetH = targetHeadingRef.current;
+      if (!start) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      const elapsed = now - start.time;
+      const t = Math.min(1, elapsed / ANIMATION_DURATION_MS);
+      const easeT = t < 1 ? 1 - Math.pow(1 - t, 2) : 1;
+
+      const displayLat = lerp(start.center.lat, targetC.lat, easeT);
+      const displayLng = lerp(start.center.lng, targetC.lng, easeT);
+      const displayHeading = lerpHeading(start.heading, targetH, easeT);
+
+      displayCenterRef.current = { lat: displayLat, lng: displayLng };
+      displayHeadingRef.current = displayHeading;
+
+      map.setCenter({ lat: displayLat, lng: displayLng });
+      if (setHeadingFn) setHeadingFn.call(map, displayHeading);
+
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+      else animStartRef.current = null;
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [isLoaded]);
 
   useEffect(() => {
     if (!isLoaded || routeWaypoints.length < 2) {
@@ -101,15 +180,6 @@ export default function DriverNavigationMap({
     };
   }, [isLoaded, routeWaypointsKey]);
 
-  useEffect(() => {
-    if (!mapRef.current || !isLoaded) return;
-    const map = mapRef.current;
-    map.setCenter(center);
-    if (typeof map.setHeading === "function") {
-      map.setHeading(heading);
-    }
-  }, [isLoaded, center.lat, center.lng, heading]);
-
   if (!isLoaded) {
     return (
       <div className={`flex items-center justify-center bg-muted/50 rounded-xl text-muted-foreground text-sm ${className}`} style={{ minHeight: 200 }}>
@@ -120,6 +190,21 @@ export default function DriverNavigationMap({
 
   const polylinePath = roadPath && roadPath.length >= 2 ? roadPath : (routeWaypoints.length >= 2 ? routeWaypoints : null);
 
+  const mapOptions: google.maps.MapOptions = {
+    clickableIcons: false,
+    disableDefaultUI: true,
+    zoomControl: true,
+    streetViewControl: false,
+    mapTypeControl: false,
+    fullscreenControl: false,
+    gestureHandling: "greedy",
+  };
+  if (mapId) {
+    mapOptions.mapId = mapId;
+  } else {
+    mapOptions.mapTypeId = google.maps.MapTypeId.HYBRID;
+  }
+
   return (
     <div className={`relative rounded-xl overflow-hidden h-full min-h-[200px] ${className}`} style={{ height: "100%" }}>
       <GoogleMap
@@ -128,16 +213,7 @@ export default function DriverNavigationMap({
         zoom={NAV_ZOOM}
         onLoad={onMapLoad}
         onUnmount={onMapUnmount}
-        options={{
-          clickableIcons: false,
-          disableDefaultUI: true,
-          zoomControl: true,
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: false,
-          gestureHandling: "greedy",
-          mapTypeId: google.maps.MapTypeId.HYBRID,
-        }}
+        options={mapOptions}
       >
         {polylinePath && (
           <Polyline
@@ -167,7 +243,7 @@ export default function DriverNavigationMap({
         style={{
           width: NAVIGATION_MARKER_SIZE,
           height: NAVIGATION_MARKER_SIZE,
-          transform: `translate(-50%, -50%) rotate(${heading}deg)`,
+          transform: `translate(-50%, -50%) rotate(${mapId ? 0 : targetHeading}deg)`,
         }}
         aria-hidden
       >

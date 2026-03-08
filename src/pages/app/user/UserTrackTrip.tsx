@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import AppBar from "@/components/app/AppBar";
 import { api } from "@/lib/api";
@@ -14,6 +14,11 @@ import {
 
 const POLL_INTERVAL_MS = 5000;
 const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
+const ANIMATION_DURATION_MS = 1500;
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
 
 interface TripLocation {
   id: string;
@@ -72,8 +77,69 @@ export default function UserTrackTrip() {
     lng: Number(loc.longitude),
   }));
   const latestPoint = path.length ? path[path.length - 1] : null;
-  const center = latestPoint ?? DEFAULT_CENTER;
+  const targetCenter = latestPoint ?? DEFAULT_CENTER;
   const isActive = trip && !trip.end_time;
+
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const displayCenterRef = useRef<{ lat: number; lng: number }>({ ...targetCenter });
+  const targetCenterRef = useRef<{ lat: number; lng: number }>({ ...targetCenter });
+  const animStartRef = useRef<{ center: { lat: number; lng: number }; time: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  targetCenterRef.current = targetCenter;
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+    displayCenterRef.current = { ...targetCenterRef.current };
+    map.setCenter(targetCenterRef.current);
+    animStartRef.current = null;
+  }, []);
+
+  const onMapUnmount = useCallback(() => {
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    mapRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    animStartRef.current = {
+      center: { ...displayCenterRef.current },
+      time: performance.now(),
+    };
+  }, [targetCenter.lat, targetCenter.lng]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const tick = (now: number) => {
+      const map = mapRef.current;
+      if (!map) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      const start = animStartRef.current;
+      const targetC = targetCenterRef.current;
+      if (!start) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      const elapsed = now - start.time;
+      const t = Math.min(1, elapsed / ANIMATION_DURATION_MS);
+      const easeT = t < 1 ? 1 - Math.pow(1 - t, 2) : 1;
+      const displayLat = lerp(start.center.lat, targetC.lat, easeT);
+      const displayLng = lerp(start.center.lng, targetC.lng, easeT);
+      displayCenterRef.current = { lat: displayLat, lng: displayLng };
+      map.setCenter({ lat: displayLat, lng: displayLng });
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+      else animStartRef.current = null;
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [isLoaded]);
+
+  const initialCenter = path.length ? path[0] : DEFAULT_CENTER;
 
   if (loading && !trip) {
     return (
@@ -96,26 +162,15 @@ export default function UserTrackTrip() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AppBar
-        title="Live tracking"
-        showBack
-        right={
-          isActive ? (
-            <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold">Live</span>
-          ) : null
-        }
-      />
-      <div className="px-4 py-2 bg-white dark:bg-card/80 border-b border-border/50">
-        <p className="text-sm font-semibold">{trip.vehicle_name ?? trip.vehicle_no ?? "Vehicle"}</p>
-        <p className="text-xs text-muted-foreground">Trip: {trip.trip_id}</p>
-      </div>
-      <div className="flex-1 min-h-[300px] relative">
+    <div className="fixed inset-0 flex flex-col bg-background">
+      <div className="absolute inset-0 z-0">
         {isLoaded && (
           <GoogleMap
-            mapContainerStyle={{ width: "100%", height: "100%", minHeight: "300px" }}
-            center={center}
+            mapContainerStyle={{ width: "100%", height: "100%" }}
+            center={initialCenter}
             zoom={path.length > 1 ? 14 : 12}
+            onLoad={onMapLoad}
+            onUnmount={onMapUnmount}
             options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false }}
           >
             {path.length > 0 && (
@@ -137,10 +192,32 @@ export default function UserTrackTrip() {
             )}
           </GoogleMap>
         )}
-        {!isLoaded && <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">Loading map...</div>}
+        {!isLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-muted-foreground">
+            Loading map...
+          </div>
+        )}
+      </div>
+      <AppBar
+        title="Live tracking"
+        showBack
+        className="relative z-10 bg-background/80 backdrop-blur-sm border-b border-border/50"
+        right={
+          isActive ? (
+            <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold">
+              Live
+            </span>
+          ) : null
+        }
+      />
+      <div className="relative z-10 mx-4 mt-2 px-3 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm max-w-md">
+        <p className="text-sm font-semibold">{trip.vehicle_name ?? trip.vehicle_no ?? "Vehicle"}</p>
+        <p className="text-xs text-muted-foreground">Trip: {trip.trip_id}</p>
       </div>
       {path.length === 0 && isLoaded && (
-        <div className="px-5 py-4 text-center text-sm text-muted-foreground">No location data yet. The driver may not have started moving.</div>
+        <div className="relative z-10 mx-4 mt-2 px-4 py-3 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 text-center text-sm text-muted-foreground">
+          No location data yet. The driver may not have started moving.
+        </div>
       )}
     </div>
   );
