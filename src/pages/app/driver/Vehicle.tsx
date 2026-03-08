@@ -32,6 +32,7 @@ import { seatBookingApi, type CheckoutPreviewResponse } from "@/modules/seat-boo
 import AppBar from "@/components/app/AppBar";
 import { VoiceSearchButton } from "@/components/app/VoiceSearchButton";
 import { toast } from "sonner";
+import { useAuthReadyForSocket } from "@/hooks/useAuthReadyForSocket";
 import { useTripSocket } from "@/hooks/useTripSocket";
 
 const CHECKOUT_ALL_FIRST_MSG = "Check out all passengers first.";
@@ -462,6 +463,7 @@ export default function Vehicle() {
     } catch (_) {}
   };
 
+  const authReadyForSocket = useAuthReadyForSocket();
   useTripSocket({
     tripId: activeTrip?.id ?? null,
     enabled: driverState === "trip_started" && !!activeTrip?.id,
@@ -472,6 +474,7 @@ export default function Vehicle() {
       setSeatsBookedLabels(labels);
       setShowSeatsBookedModal(true);
     },
+    authReady: isFlutterBridgeAvailable() ? authReadyForSocket : true,
   });
 
   const vehicleInfo = selectedVehicle ? vehicleToVehicleInfo(selectedVehicle) : null;

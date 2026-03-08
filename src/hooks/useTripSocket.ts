@@ -21,15 +21,17 @@ interface UseTripSocketOptions {
   tripId: string | null;
   enabled: boolean;
   onSeatBooked: (payload: SeatBookedPayload) => void;
+  /** When false (e.g. in WebView waiting for Flutter to inject token), socket is not connected. Default true. */
+  authReady?: boolean;
 }
 
-export function useTripSocket({ tripId, enabled, onSeatBooked }: UseTripSocketOptions): void {
+export function useTripSocket({ tripId, enabled, onSeatBooked, authReady = true }: UseTripSocketOptions): void {
   const socketRef = useRef<Socket | null>(null);
   const onSeatBookedRef = useRef(onSeatBooked);
   onSeatBookedRef.current = onSeatBooked;
 
   useEffect(() => {
-    if (!enabled || !tripId) {
+    if (!enabled || !tripId || !authReady) {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current.removeAllListeners();
@@ -78,5 +80,5 @@ export function useTripSocket({ tripId, enabled, onSeatBooked }: UseTripSocketOp
       socket.removeAllListeners();
       socketRef.current = null;
     };
-  }, [enabled, tripId]);
+  }, [enabled, tripId, authReady]);
 }
