@@ -430,10 +430,21 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     };
     const onPTTAudio = (jsonStr: string) => {
       try {
-        const data = JSON.parse(jsonStr) as { chunk?: string; sampleRate?: number; sample_rate?: number };
-        if (typeof data.chunk === "string") {
-          const sr = data.sampleRate ?? data.sample_rate;
-          playPcmBase64Chunk(data.chunk, sr);
+        const data = JSON.parse(jsonStr) as
+          | { chunk?: string; sampleRate?: number; sample_rate?: number }
+          | { batch?: Array<{ chunk?: string; sampleRate?: number }> };
+        if (Array.isArray(data.batch)) {
+          for (const item of data.batch) {
+            if (typeof item.chunk === "string") {
+              playPcmBase64Chunk(item.chunk, item.sampleRate);
+            }
+          }
+          return;
+        }
+        const single = data as { chunk?: string; sampleRate?: number; sample_rate?: number };
+        if (typeof single.chunk === "string") {
+          const sr = single.sampleRate ?? single.sample_rate;
+          playPcmBase64Chunk(single.chunk, sr);
         }
       } catch {
         // ignore
