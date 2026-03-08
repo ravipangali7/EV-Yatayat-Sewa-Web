@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Mic, Radio, Loader2, Wifi, WifiOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWalkieTalkie } from "@/contexts/WalkieTalkieContext";
 import { walkietalkieApi, type WalkieTalkieGroup } from "@/modules/walkietalkie/services/walkietalkieApi";
 import {
   isAvailable as isFlutterBridgeAvailable,
@@ -23,6 +24,7 @@ function getPttServerUrl(): string {
 
 export default function WalkieTalkie() {
   const { user } = useAuth();
+  const { speakingUser } = useWalkieTalkie();
   const [groups, setGroups] = useState<WalkieTalkieGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<WalkieTalkieStatusPayload["status"]>("disconnected");
@@ -88,8 +90,9 @@ export default function WalkieTalkie() {
     setStatusMessage(null);
   };
 
+  const canTalk = status === "connected" && !!selectedGroupId && !speakingUser;
   const handlePttDown = () => {
-    if (selectedGroupId && status === "connected") {
+    if (canTalk) {
       pttStart(selectedGroupId);
       setPttActive(true);
     }
@@ -133,7 +136,7 @@ export default function WalkieTalkie() {
       el.removeEventListener("touchend", onTouchEnd, opts);
       el.removeEventListener("touchcancel", onTouchCancel, opts);
     };
-  }, [status]);
+  }, [status, canTalk]);
 
   const inApp = isFlutterBridgeAvailable();
   const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
@@ -239,7 +242,8 @@ export default function WalkieTalkie() {
                 <button
                   ref={pttButtonRef}
                   type="button"
-                  className={`h-24 w-24 rounded-full flex items-center justify-center touch-manipulation select-none shadow-lg active:scale-95 transition-all outline-none ${pttActive ? "bg-rose-500 shadow-rose-500/30 scale-105" : "bg-primary shadow-primary/25"} text-primary-foreground`}
+                  aria-disabled={!canTalk}
+                  className={`h-24 w-24 rounded-full flex items-center justify-center touch-manipulation select-none shadow-lg active:scale-95 transition-all outline-none ${!canTalk ? "opacity-50 cursor-not-allowed bg-slate-300 dark:bg-slate-700" : pttActive ? "bg-rose-500 shadow-rose-500/30 scale-105" : "bg-primary shadow-primary/25"} text-primary-foreground`}
                   style={{ touchAction: "none" }}
                   onMouseDown={handlePttDown}
                   onMouseUp={handlePttUp}
@@ -248,7 +252,7 @@ export default function WalkieTalkie() {
                   <Mic className={`h-9 w-9 ${pttActive ? "scale-110" : ""} transition-transform`} />
                 </button>
                 <span className="text-sm font-semibold mt-4 text-foreground">
-                  {pttActive ? "Speaking…" : "Hold to talk"}
+                  {pttActive ? "Speaking…" : speakingUser ? `Wait for ${speakingUser.name || `User ${speakingUser.userId}`} to finish` : "Hold to talk"}
                 </span>
               </div>
             )}

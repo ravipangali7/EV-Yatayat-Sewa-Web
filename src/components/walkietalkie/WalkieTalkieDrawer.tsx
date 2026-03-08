@@ -85,6 +85,7 @@ export function WalkieTalkieDrawer() {
   }, [drawerOpen, isSuperuser]);
 
   const isConnected = status === "connected";
+  const canTalk = isConnected && !!selectedGroupId && !speakingUser;
   const selectedGroup = groups.find((g) => String(g.id) === selectedGroupId);
   const isDirect = selectedGroupId.startsWith("direct:");
   const directDriverId = isDirect ? Number(selectedGroupId.slice(7)) : null;
@@ -260,15 +261,15 @@ export function WalkieTalkieDrawer() {
           <button
             ref={pttButtonRef}
             type="button"
-            aria-disabled={!isConnected || !selectedGroupId}
-            className={`w-full touch-manipulation select-none rounded-xl py-2.5 flex flex-row items-center justify-center gap-2 transition-all shadow border border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] outline-none ${!isConnected || !selectedGroupId ? "opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800" : "cursor-pointer"}`}
+            aria-disabled={!canTalk}
+            className={`w-full touch-manipulation select-none rounded-xl py-2.5 flex flex-row items-center justify-center gap-2 transition-all shadow border border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] outline-none ${!canTalk ? "opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800" : "cursor-pointer"}`}
             style={{ touchAction: "none" }}
-            onMouseDown={() => isConnected && selectedGroupId && pttStart(selectedGroupId)}
+            onMouseDown={() => canTalk && pttStart(selectedGroupId)}
             onMouseUp={() => selectedGroupId && pttEnd(selectedGroupId)}
             onMouseLeave={() => selectedGroupId && pttEnd(selectedGroupId)}
             onTouchStart={(e) => {
               e.preventDefault();
-              if (isConnected && selectedGroupId) pttStart(selectedGroupId);
+              if (canTalk) pttStart(selectedGroupId);
             }}
             onTouchEnd={(e) => {
               e.preventDefault();
@@ -286,7 +287,9 @@ export function WalkieTalkieDrawer() {
             >
               <Mic className="h-4 w-4" />
             </span>
-            <span className="text-xs font-semibold">{pttActive ? "Speaking…" : "Hold to talk"}</span>
+            <span className="text-xs font-semibold">
+              {pttActive ? "Speaking…" : speakingUser ? `Wait for ${speakingUser.name || `User ${speakingUser.userId}`} to finish` : "Hold to talk"}
+            </span>
             {(selectedGroup || selectedDriver) && (
               <span className="text-[10px] opacity-90 truncate max-w-[100px]">
                 in {selectedGroup?.name ?? selectedDriver?.name ?? "channel"}
