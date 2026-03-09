@@ -242,8 +242,9 @@ export default function WalkieTalkie() {
                 <button
                   ref={pttButtonRef}
                   type="button"
+                  disabled={!canTalk}
                   aria-disabled={!canTalk}
-                  className={`h-24 w-24 rounded-full flex items-center justify-center touch-manipulation select-none shadow-lg active:scale-95 transition-all outline-none ${!canTalk ? "opacity-50 cursor-not-allowed bg-slate-300 dark:bg-slate-700" : pttActive ? "bg-rose-500 shadow-rose-500/30 scale-105" : "bg-primary shadow-primary/25"} text-primary-foreground`}
+                  className={`h-24 w-24 rounded-full flex items-center justify-center touch-manipulation select-none shadow-lg active:scale-95 transition-all outline-none ${!canTalk ? "opacity-50 cursor-not-allowed pointer-events-none bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-400" : pttActive ? "bg-rose-500 shadow-rose-500/30 scale-105 text-white" : "bg-primary shadow-primary/25 text-primary-foreground"}`}
                   style={{ touchAction: "none" }}
                   onMouseDown={handlePttDown}
                   onMouseUp={handlePttUp}

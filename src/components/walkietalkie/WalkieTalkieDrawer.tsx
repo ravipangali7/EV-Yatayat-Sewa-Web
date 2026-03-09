@@ -372,8 +372,15 @@ export function WalkieTalkieDrawer() {
           <button
             ref={pttButtonRef}
             type="button"
+            disabled={!canTalk}
             aria-disabled={!canTalk}
-            className={`w-full touch-manipulation select-none rounded-xl py-2.5 flex flex-row items-center justify-center gap-2 transition-all shadow border border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] outline-none ${!canTalk ? "opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800" : "cursor-pointer"}`}
+            className={`w-full touch-manipulation select-none rounded-xl py-2.5 flex flex-row items-center justify-center gap-2 transition-all shadow border outline-none ${
+              pttActive
+                ? "cursor-pointer border-rose-500/30 bg-rose-500 text-white hover:bg-rose-600 active:scale-[0.98] shadow-rose-500/30"
+                : !canTalk
+                  ? "opacity-50 cursor-not-allowed pointer-events-none border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                  : "cursor-pointer border border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]"
+            }`}
             style={{ touchAction: "none" }}
             onMouseDown={() => canTalk && pttStart(selectedGroupId)}
             onMouseUp={() => selectedGroupId && pttEnd(selectedGroupId)}

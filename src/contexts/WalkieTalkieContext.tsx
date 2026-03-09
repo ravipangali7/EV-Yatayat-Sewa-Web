@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDriverActiveTrip } from "@/hooks/useDriverActiveTrip";
 import {
   isAvailable as isFlutterBridgeAvailable,
   connectWalkieTalkie,
@@ -74,6 +75,7 @@ const WalkieTalkieContext = createContext<WalkieTalkieContextType | undefined>(u
 
 export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { hasActiveTrip } = useDriverActiveTrip();
   const [status, setStatus] = useState<WalkieTalkieStatus>("disconnected");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [groups, setGroups] = useState<WalkieTalkieGroup[]>([]);
@@ -390,12 +392,13 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
             fullGroupIds.push(`direct:${user.id}`);
           }
         }
-        if (isWebView) {
+        const driverMayConnect = !user?.is_driver || hasActiveTrip;
+        if (driverMayConnect && isWebView) {
           if (fullGroupIds.length > 0) {
             hasAutoConnected.current = true;
             connectWalkieTalkie(serverUrl, token, fullGroupIds);
           }
-        } else {
+        } else if (driverMayConnect && !isWebView) {
           const socket = io(serverUrl, { path: "/socket.io/", transports: ["websocket", "polling"] });
           socketRef.current = socket;
           socket.on("connect", () => {
@@ -463,7 +466,24 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       }
       hasAutoConnected.current = false;
     };
-  }, [token, serverUrl, isWebView, connectRetryKey, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
+  }, [token, serverUrl, isWebView, connectRetryKey, hasActiveTrip, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
+
+  // When driver loses active trip, disconnect so they stop receiving/sending PTT
+  useEffect(() => {
+    if (user?.is_driver && !hasActiveTrip && status === "connected") {
+      if (isWebView) {
+        disconnectWalkieTalkie();
+      } else if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.removeAllListeners();
+        socketRef.current = null;
+      }
+      setStatus("disconnected");
+      setStatusMessage(null);
+      setSpeakingUser(null);
+      hasAutoConnected.current = false;
+    }
+  }, [user?.is_driver, hasActiveTrip, status, isWebView]);
 
   // Refetch groups when drawer opens; sync to socket so PTT works after groups load
   useEffect(() => {

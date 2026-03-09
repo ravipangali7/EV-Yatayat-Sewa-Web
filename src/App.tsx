@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useWalkieTalkie } from "@/contexts/WalkieTalkieContext";
+import { useDriverActiveTrip } from "@/hooks/useDriverActiveTrip";
 import { GoogleMapsProvider } from "@/contexts/GoogleMapsContext";
 import { WalkieTalkieProvider } from "@/contexts/WalkieTalkieContext";
 import { WalkieTalkieFab } from "@/components/walkietalkie/WalkieTalkieFab";
@@ -143,10 +144,11 @@ function AppRoutesWithWalkieTalkie() {
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { groups } = useWalkieTalkie();
+  const { hasActiveTrip } = useDriverActiveTrip();
   const pathOk =
     (location.pathname.startsWith("/admin") || location.pathname.startsWith("/app")) &&
     !location.pathname.includes("/app/login");
-  const canUseWalkieTalkie = !!user?.is_driver || groups.length > 0;
+  const canUseWalkieTalkie = (user?.is_driver && hasActiveTrip) || groups.length > 0;
   const showFab = isAuthenticated && pathOk && canUseWalkieTalkie;
 
   return (
