@@ -15,7 +15,7 @@ function hasActiveTripFromVehicle(vehicle: { active_trip?: { id?: string; start_
  */
 export function useDriverActiveTrip(): { hasActiveTrip: boolean } {
   const { user } = useAuth();
-  const [hasActiveTrip, setHasActiveTrip] = useState(true);
+  const [hasActiveTrip, setHasActiveTrip] = useState(false);
 
   const fetchActiveTrip = useCallback(async () => {
     if (!user?.is_driver) {

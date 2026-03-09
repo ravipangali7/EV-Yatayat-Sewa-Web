@@ -148,7 +148,7 @@ function AppRoutesWithWalkieTalkie() {
   const pathOk =
     (location.pathname.startsWith("/admin") || location.pathname.startsWith("/app")) &&
     !location.pathname.includes("/app/login");
-  const canUseWalkieTalkie = (user?.is_driver && hasActiveTrip) || groups.length > 0;
+  const canUseWalkieTalkie = user?.is_driver ? hasActiveTrip : groups.length > 0;
   const showFab = isAuthenticated && pathOk && canUseWalkieTalkie;
 
   return (
