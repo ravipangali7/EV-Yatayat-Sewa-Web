@@ -1073,6 +1073,56 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       : { name: "Current Location", lat: NEPAL_CENTER.lat, lng: NEPAL_CENTER.lng, type: "current" as const };
   const currentLocation: MapPoint = currentLocationPoint;
 
+  const routePointsForAnnounce = useMemo(() => {
+    if (!selectedRoute) return [];
+    const pts: Array<{ lat: number; lng: number; name: string }> = [];
+    if (selectedRoute.startPoint && (selectedRoute.startPoint.lat !== 0 || selectedRoute.startPoint.lng !== 0)) {
+      pts.push({ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng, name: selectedRoute.startPoint.name ?? "Start" });
+    }
+    (selectedRoute.stops ?? []).forEach((s) => {
+      if (s.lat !== 0 || s.lng !== 0) pts.push({ lat: s.lat, lng: s.lng, name: s.name ?? "Stop" });
+    });
+    if (selectedRoute.endPoint && (selectedRoute.endPoint.lat !== 0 || selectedRoute.endPoint.lng !== 0)) {
+      pts.push({ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng, name: selectedRoute.endPoint.name ?? "End" });
+    }
+    return pts;
+  }, [selectedRoute]);
+
+  const inAnnounceRadius = useMemo(() => {
+    if (!lastLocation || !selectedRoute || pointCoverRadiusKm <= 0 || routePointsForAnnounce.length === 0) return false;
+    return routePointsForAnnounce.some(
+      (p) => haversineKm(lastLocation!.lat, lastLocation!.lng, p.lat, p.lng) <= pointCoverRadiusKm
+    );
+  }, [lastLocation, selectedRoute, pointCoverRadiusKm, routePointsForAnnounce]);
+
+  const showAnnounceButton =
+    driverState === "trip_started" &&
+    (tripTab === "seats" || tripTab === "map") &&
+    inAnnounceRadius &&
+    !!activeTrip?.id &&
+    !!lastLocation;
+
+  const handleAnnounceClick = () => {
+    if (!activeTrip?.id || !lastLocation) return;
+    tripApi
+      .getCurrentStop(activeTrip.id, lastLocation.lat, lastLocation.lng)
+      .then((res: CurrentStopResponse) => {
+        const at = res.at_stop;
+        const text = (at?.announcement_text?.trim() || at?.name || "We reached a stop").trim();
+        playReachedStop(text || "We reached a stop");
+      })
+      .catch(() => {
+        if (routePointsForAnnounce.length > 0) {
+          const nearest = routePointsForAnnounce.reduce((a, b) =>
+            haversineKm(lastLocation.lat, lastLocation.lng, a.lat, a.lng) <= haversineKm(lastLocation.lat, lastLocation.lng, b.lat, b.lng) ? a : b
+          );
+          playReachedStop("We reached " + nearest.name);
+        } else {
+          playReachedStop("We reached a stop");
+        }
+      });
+  };
+
   if (driverState === "no_vehicle") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6">
@@ -1267,56 +1317,6 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       </div>
     );
   }
-
-  const routePointsForAnnounce = useMemo(() => {
-    if (!selectedRoute) return [];
-    const pts: Array<{ lat: number; lng: number; name: string }> = [];
-    if (selectedRoute.startPoint && (selectedRoute.startPoint.lat !== 0 || selectedRoute.startPoint.lng !== 0)) {
-      pts.push({ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng, name: selectedRoute.startPoint.name ?? "Start" });
-    }
-    (selectedRoute.stops ?? []).forEach((s) => {
-      if (s.lat !== 0 || s.lng !== 0) pts.push({ lat: s.lat, lng: s.lng, name: s.name ?? "Stop" });
-    });
-    if (selectedRoute.endPoint && (selectedRoute.endPoint.lat !== 0 || selectedRoute.endPoint.lng !== 0)) {
-      pts.push({ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng, name: selectedRoute.endPoint.name ?? "End" });
-    }
-    return pts;
-  }, [selectedRoute]);
-
-  const inAnnounceRadius = useMemo(() => {
-    if (!lastLocation || !selectedRoute || pointCoverRadiusKm <= 0 || routePointsForAnnounce.length === 0) return false;
-    return routePointsForAnnounce.some(
-      (p) => haversineKm(lastLocation!.lat, lastLocation!.lng, p.lat, p.lng) <= pointCoverRadiusKm
-    );
-  }, [lastLocation, selectedRoute, pointCoverRadiusKm, routePointsForAnnounce]);
-
-  const showAnnounceButton =
-    driverState === "trip_started" &&
-    (tripTab === "seats" || tripTab === "map") &&
-    inAnnounceRadius &&
-    !!activeTrip?.id &&
-    !!lastLocation;
-
-  const handleAnnounceClick = () => {
-    if (!activeTrip?.id || !lastLocation) return;
-    tripApi
-      .getCurrentStop(activeTrip.id, lastLocation.lat, lastLocation.lng)
-      .then((res: CurrentStopResponse) => {
-        const at = res.at_stop;
-        const text = (at?.announcement_text?.trim() || at?.name || "We reached a stop").trim();
-        playReachedStop(text || "We reached a stop");
-      })
-      .catch(() => {
-        if (routePointsForAnnounce.length > 0) {
-          const nearest = routePointsForAnnounce.reduce((a, b) =>
-            haversineKm(lastLocation.lat, lastLocation.lng, a.lat, a.lng) <= haversineKm(lastLocation.lat, lastLocation.lng, b.lat, b.lng) ? a : b
-          );
-          playReachedStop("We reached " + nearest.name);
-        } else {
-          playReachedStop("We reached a stop");
-        }
-      });
-  };
 
   const tripMapPoints: MapPoint[] = [
     ...(selectedRoute ? [{
