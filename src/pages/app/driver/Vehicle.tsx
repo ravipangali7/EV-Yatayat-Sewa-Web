@@ -494,11 +494,17 @@ export default function Vehicle() {
       }));
       setSeatsBookedDetails(details);
       setShowSeatsBookedModal(true);
-      // Short delay so modal is shown first; then play beep (in app: Flutter plays asset or system sound)
-      setTimeout(() => playBeep(), 100);
     },
     authReady: isFlutterBridgeAvailable() ? authReadyForSocket : true,
   });
+
+  useEffect(() => {
+    if (!showSeatsBookedModal) return;
+    const t = setTimeout(() => {
+      playBeep();
+    }, 250);
+    return () => clearTimeout(t);
+  }, [showSeatsBookedModal]);
 
   const vehicleInfo = selectedVehicle ? vehicleToVehicleInfo(selectedVehicle) : null;
   const bookedSelected = selectedSeats.filter((s) => s.status === "booked");
