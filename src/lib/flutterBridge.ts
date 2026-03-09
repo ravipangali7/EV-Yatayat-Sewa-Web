@@ -160,7 +160,36 @@ export function playSound(text: string): void {
   }
 }
 
-/** Play beep sound (e.g. driver seat-booking popup, checkout/dropoff). In Flutter app: triggers native playBeepSound → app plays assets/sounds/beep.mp3. On web: uses /sounds/beep.mp3 or synthetic beep. */
+/** Play a short beep using WebView/page AudioContext only. Use this when native bridge sound is unreliable (e.g. driver seat-booked popup). Works in Flutter WebView and browser. */
+export function playBeepInPage(): void {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    if (ctx.state === "suspended") {
+      ctx.resume().then(() => playBeepInPageOnce(ctx)).catch(() => {});
+      return;
+    }
+    playBeepInPageOnce(ctx);
+  } catch (_) {}
+}
+
+function playBeepInPageOnce(ctx: AudioContext): void {
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 800;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  } catch (_) {}
+}
+
+/** Play beep sound (e.g. checkout/dropoff). In Flutter app: triggers native playBeepSound. On web: uses /sounds/beep.mp3 or synthetic beep. */
 export function playBeep(): void {
   if (isAvailable() && typeof window.FlutterBridge?.playBeepSound === 'function') {
     window.FlutterBridge.playBeepSound();
@@ -171,20 +200,7 @@ export function playBeep(): void {
     audio.volume = 0.8;
     audio.play().catch(() => {});
   } catch {
-    // fallback: synthetic beep
-    try {
-      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 800;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.15);
-    } catch (_) {}
+    playBeepInPage();
   }
 }
 

@@ -22,7 +22,7 @@ import { routeApi } from "@/modules/routes/services/routeApi";
 import { tripApi, type ActiveTrip, type CurrentStopResponse, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
 import { matchesSearch } from "@/lib/transliterate";
-import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync, playBeep, playReachedStop, refreshVehicle } from "@/lib/flutterBridge";
+import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync, playBeep, playBeepInPage, playReachedStop, refreshVehicle } from "@/lib/flutterBridge";
 import { Vehicle as ApiVehicle, Route as ApiRoute } from "@/types";
 import { vehicleScheduleApi } from "@/modules/vehicle-schedules/services/vehicleScheduleApi";
 import { vehicleTicketBookingApi } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
@@ -501,8 +501,8 @@ export default function Vehicle() {
   useEffect(() => {
     if (!showSeatsBookedModal) return;
     const t = setTimeout(() => {
-      playBeep();
-    }, 250);
+      playBeepInPage();
+    }, 200);
     return () => clearTimeout(t);
   }, [showSeatsBookedModal]);
 
