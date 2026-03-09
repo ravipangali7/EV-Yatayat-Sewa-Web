@@ -494,8 +494,8 @@ export default function Vehicle() {
       }));
       setSeatsBookedDetails(details);
       setShowSeatsBookedModal(true);
-      // In Flutter app: playBeep() triggers FlutterBridge.playBeepSound() so the app plays assets/sounds/beep.mp3
-      playBeep();
+      // Short delay so modal is shown first; then play beep (in app: Flutter plays asset or system sound)
+      setTimeout(() => playBeep(), 100);
     },
     authReady: isFlutterBridgeAvailable() ? authReadyForSocket : true,
   });
@@ -1476,25 +1476,44 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
           </DialogHeader>
           <div className="py-2 max-h-[60vh] overflow-y-auto space-y-3">
             {seatsBookedDetails.length ? (
-              seatsBookedDetails.map((item, idx) => (
-                <div key={`${item.label}-${idx}`} className="rounded-xl border border-border bg-muted/30 p-3 text-sm space-y-1.5">
-                  <p className="font-semibold text-foreground flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 rounded-md bg-primary/15 text-primary text-xs font-bold">Seat {item.label}</span>
-                  </p>
-                  <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground/90">Passenger: </span>
-                    {item.user_name?.trim() || "Guest"}
-                  </p>
-                  <p className="text-muted-foreground truncate" title={item.from_address}>
-                    <span className="font-medium text-foreground/90">From: </span>
-                    {item.from_address?.trim() || "—"}
-                  </p>
-                  <p className="text-muted-foreground truncate" title={item.to_name}>
-                    <span className="font-medium text-foreground/90">To: </span>
-                    {item.to_name?.trim() || "—"}
-                  </p>
-                </div>
-              ))
+              (() => {
+                const key = (item: { user_name?: string; from_address?: string; to_name?: string }) =>
+                  `${item.user_name?.trim() ?? "Guest"}|${item.from_address?.trim() ?? ""}|${item.to_name?.trim() ?? ""}`;
+                const groups = new Map<string, { user_name: string; from_address?: string; to_name?: string; seats: string[] }>();
+                for (const item of seatsBookedDetails) {
+                  const k = key(item);
+                  if (!groups.has(k)) {
+                    groups.set(k, {
+                      user_name: item.user_name?.trim() || "Guest",
+                      from_address: item.from_address,
+                      to_name: item.to_name,
+                      seats: [],
+                    });
+                  }
+                  groups.get(k)!.seats.push(item.label);
+                }
+                return Array.from(groups.entries()).map(([groupKey, g]) => (
+                  <div key={groupKey} className="rounded-xl border border-border bg-muted/30 p-3 text-sm space-y-1.5">
+                    <p className="font-semibold text-foreground flex flex-wrap items-center gap-2">
+                      {g.seats.map((s) => (
+                        <span key={s} className="inline-flex items-center justify-center min-w-[2rem] h-7 rounded-md bg-primary/15 text-primary text-xs font-bold">Seat {s}</span>
+                      ))}
+                    </p>
+                    <p className="text-muted-foreground">
+                      <span className="font-medium text-foreground/90">Passenger: </span>
+                      {g.user_name}
+                    </p>
+                    <p className="text-muted-foreground truncate" title={g.from_address}>
+                      <span className="font-medium text-foreground/90">From: </span>
+                      {g.from_address?.trim() || "—"}
+                    </p>
+                    <p className="text-muted-foreground truncate" title={g.to_name}>
+                      <span className="font-medium text-foreground/90">To: </span>
+                      {g.to_name?.trim() || "—"}
+                    </p>
+                  </div>
+                ));
+              })()
             ) : (
               <p className="text-sm text-muted-foreground">No seat details.</p>
             )}
