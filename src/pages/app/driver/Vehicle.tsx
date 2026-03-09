@@ -281,6 +281,7 @@ export default function Vehicle() {
   /** Live target for map (updated every Flutter push); used by DriverNavigationMap when in WebView for smooth tracking without re-renders. */
   const driverTargetRef = useRef<LiveTargetSnapshot | null>(null);
   const lastLocationUpdateTimeRef = useRef<number>(0);
+  const mapLocationRequestedRef = useRef(false);
   const DRIVER_POSITION_THROTTLE_MS = 120;
   const [showSeatsBookedModal, setShowSeatsBookedModal] = useState(false);
   const [seatsBookedDetails, setSeatsBookedDetails] = useState<Array<{ label: string; user_name?: string; from_address?: string; to_name?: string }>>([]);
@@ -463,13 +464,23 @@ export default function Vehicle() {
   useEffect(() => {
     if (driverState !== "trip_started" || tripTab !== "map") return;
     if (lastLocation) return;
+    // Only request location once per trip+map view to avoid permission popup spam
+    // (e.g. when notification is off or permission denied and effect re-runs).
+    if (mapLocationRequestedRef.current) return;
+    mapLocationRequestedRef.current = true;
     getCurrentLocation()
       .then((loc) => {
         setLastLocation({ lat: loc.lat, lng: loc.lng });
         setMapInitialCenter(loc);
       })
-      .catch(() => setMapInitialCenter(NEPAL_CENTER));
+      .catch(() => {
+        setMapInitialCenter(NEPAL_CENTER);
+        setLastLocation({ lat: NEPAL_CENTER.lat, lng: NEPAL_CENTER.lng });
+      });
   }, [driverState, tripTab, lastLocation]);
+  useEffect(() => {
+    if (driverState !== "trip_started") mapLocationRequestedRef.current = false;
+  }, [driverState]);
 
   const refetchVehicleAndSeats = async () => {
     try {
