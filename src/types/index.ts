@@ -60,6 +60,7 @@ export interface SuperSetting {
   initial_km_charge?: number | null;
   gps_threshold?: number;
   gps_threshold_second?: number;
+  point_cover_radius?: number | string | null;
   seat_layout?: string[];
   stop_point_announcement_header?: string;
   short_trip_min_distance_for_booking?: number;

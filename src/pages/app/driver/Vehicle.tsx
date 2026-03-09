@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { QrCode, MapPin, Play, RotateCcw } from "lucide-react";
+import { QrCode, MapPin, Play, RotateCcw, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VehicleCard from "@/components/app/VehicleCard";
 import type { VehicleInfo } from "@/components/app/VehicleCard";
@@ -276,6 +276,7 @@ export default function Vehicle() {
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number; course?: number } | null>(null);
   const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
+  const [pointCoverRadiusKm, setPointCoverRadiusKm] = useState(0.5);
   const prevLocationRef = useRef<{ lat: number; lng: number } | null>(null);
   /** Live target for map (updated every Flutter push); used by DriverNavigationMap when in WebView for smooth tracking without re-renders. */
   const driverTargetRef = useRef<LiveTargetSnapshot | null>(null);
@@ -333,6 +334,15 @@ export default function Vehicle() {
     };
     load();
   }, [user?.id]);
+
+  useEffect(() => {
+    if (driverState !== "trip_started") return;
+    superSettingApi.list({ per_page: 1 }).then((res) => {
+      const raw = res.results?.[0]?.point_cover_radius;
+      const km = raw != null ? (typeof raw === "number" ? raw : parseFloat(String(raw))) : 0.5;
+      setPointCoverRadiusKm(Number.isFinite(km) && km > 0 ? km : 0.5);
+    }).catch(() => {});
+  }, [driverState]);
 
   useEffect(() => {
     if (!selectedVehicle?.id || driverState !== "route_selected") return;
@@ -1258,6 +1268,56 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
     );
   }
 
+  const routePointsForAnnounce = useMemo(() => {
+    if (!selectedRoute) return [];
+    const pts: Array<{ lat: number; lng: number; name: string }> = [];
+    if (selectedRoute.startPoint && (selectedRoute.startPoint.lat !== 0 || selectedRoute.startPoint.lng !== 0)) {
+      pts.push({ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng, name: selectedRoute.startPoint.name ?? "Start" });
+    }
+    (selectedRoute.stops ?? []).forEach((s) => {
+      if (s.lat !== 0 || s.lng !== 0) pts.push({ lat: s.lat, lng: s.lng, name: s.name ?? "Stop" });
+    });
+    if (selectedRoute.endPoint && (selectedRoute.endPoint.lat !== 0 || selectedRoute.endPoint.lng !== 0)) {
+      pts.push({ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng, name: selectedRoute.endPoint.name ?? "End" });
+    }
+    return pts;
+  }, [selectedRoute]);
+
+  const inAnnounceRadius = useMemo(() => {
+    if (!lastLocation || !selectedRoute || pointCoverRadiusKm <= 0 || routePointsForAnnounce.length === 0) return false;
+    return routePointsForAnnounce.some(
+      (p) => haversineKm(lastLocation!.lat, lastLocation!.lng, p.lat, p.lng) <= pointCoverRadiusKm
+    );
+  }, [lastLocation, selectedRoute, pointCoverRadiusKm, routePointsForAnnounce]);
+
+  const showAnnounceButton =
+    driverState === "trip_started" &&
+    (tripTab === "seats" || tripTab === "map") &&
+    inAnnounceRadius &&
+    !!activeTrip?.id &&
+    !!lastLocation;
+
+  const handleAnnounceClick = () => {
+    if (!activeTrip?.id || !lastLocation) return;
+    tripApi
+      .getCurrentStop(activeTrip.id, lastLocation.lat, lastLocation.lng)
+      .then((res: CurrentStopResponse) => {
+        const at = res.at_stop;
+        const text = (at?.announcement_text?.trim() || at?.name || "We reached a stop").trim();
+        playReachedStop(text || "We reached a stop");
+      })
+      .catch(() => {
+        if (routePointsForAnnounce.length > 0) {
+          const nearest = routePointsForAnnounce.reduce((a, b) =>
+            haversineKm(lastLocation.lat, lastLocation.lng, a.lat, a.lng) <= haversineKm(lastLocation.lat, lastLocation.lng, b.lat, b.lng) ? a : b
+          );
+          playReachedStop("We reached " + nearest.name);
+        } else {
+          playReachedStop("We reached a stop");
+        }
+      });
+  };
+
   const tripMapPoints: MapPoint[] = [
     ...(selectedRoute ? [{
       name: selectedRoute.startPoint?.name ?? "Start",
@@ -1380,6 +1440,19 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
               </span>
             </div>
           )}
+        </div>
+      )}
+
+      {showAnnounceButton && (
+        <div className="fixed bottom-24 right-4 z-50">
+          <Button
+            type="button"
+            onClick={handleAnnounceClick}
+            className="rounded-full shadow-lg h-12 px-4 gap-2"
+          >
+            <Megaphone size={20} />
+            Announce
+          </Button>
         </div>
       )}
 
