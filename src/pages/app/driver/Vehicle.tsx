@@ -1444,11 +1444,11 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
       )}
 
       {showAnnounceButton && (
-        <div className="fixed bottom-24 right-4 z-50">
+        <div className="fixed bottom-20 left-4 z-[9998] flex items-center gap-2">
           <Button
             type="button"
             onClick={handleAnnounceClick}
-            className="rounded-full shadow-lg h-12 px-4 gap-2"
+            className="rounded-full shadow-xl shadow-primary/20 h-12 px-4 gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Megaphone size={20} />
             Announce
