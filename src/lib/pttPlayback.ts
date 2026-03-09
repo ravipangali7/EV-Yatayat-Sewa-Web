@@ -65,3 +65,29 @@ export function playPcmBytes(bytes: Uint8Array, sampleRate: number = FALLBACK_SA
 export function resetPttPlaybackSchedule(): void {
   nextStartTime = 0;
 }
+
+const base = typeof import.meta !== "undefined" && import.meta.env?.BASE_URL ? String(import.meta.env.BASE_URL).replace(/\/$/, "") : "";
+const PTT_START_SOUND = `${base}/sounds/walkietalkie_start.mp3`;
+const PTT_END_SOUND = `${base}/sounds/walkietalkie_end.mp3`;
+
+/** Play the "someone started speaking" sound. Call only in browser (not in WebView; Flutter plays it there). */
+export function playPttStartSound(): void {
+  try {
+    const audio = new Audio(PTT_START_SOUND);
+    audio.volume = 1;
+    audio.play().catch(() => {});
+  } catch {
+    // ignore
+  }
+}
+
+/** Play the "someone finished speaking" sound. Call only in browser (not in WebView; Flutter plays it there). */
+export function playPttEndSound(): void {
+  try {
+    const audio = new Audio(PTT_END_SOUND);
+    audio.volume = 1;
+    audio.play().catch(() => {});
+  } catch {
+    // ignore
+  }
+}

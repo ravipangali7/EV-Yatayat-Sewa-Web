@@ -16,7 +16,7 @@ import {
   pttStart as bridgePttStart,
   pttEnd as bridgePttEnd,
 } from "@/lib/flutterBridge";
-import { playPcmBase64Chunk, resetPttPlaybackSchedule } from "@/lib/pttPlayback";
+import { playPcmBase64Chunk, resetPttPlaybackSchedule, playPttStartSound, playPttEndSound } from "@/lib/pttPlayback";
 import * as recordingPlayer from "@/lib/recordingPlayer";
 import { toast } from "sonner";
 import { createPttAudioContext, startPttCapture, type PttCaptureHandle } from "@/lib/pttCapture";
@@ -415,6 +415,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
             setStatusMessage(data?.message ?? "Error");
           });
           socket.on("ptt_started", (data: { userId?: number; name?: string; groupId?: string }) => {
+            playPttStartSound();
             resetPttPlaybackSchedule();
             setSpeakingUser({
               userId: data.userId ?? 0,
@@ -429,6 +430,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
             }
           });
           socket.on("ptt_ended", () => {
+            playPttEndSound();
             setSpeakingUser(null);
             setTimeout(() => {
               const groupId = selectedGroupIdRef.current;
