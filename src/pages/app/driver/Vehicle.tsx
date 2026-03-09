@@ -494,6 +494,12 @@ export default function Vehicle() {
       }));
       setSeatsBookedDetails(details);
       setShowSeatsBookedModal(true);
+      try {
+        const audio = new Audio("/sounds/beep.mp3");
+        audio.play().catch(() => {});
+      } catch {
+        // ignore
+      }
     },
     authReady: isFlutterBridgeAvailable() ? authReadyForSocket : true,
   });

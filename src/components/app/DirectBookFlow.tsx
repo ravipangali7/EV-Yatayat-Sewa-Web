@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { SeatLayoutVisualizer, type SeatPosition } from "@/components/vehicles/SeatLayoutVisualizer";
 import { seatBookingApi } from "@/modules/seat-bookings/services/seatBookingApi";
 import type { VehicleNearby } from "@/types";
+import type { RouteStopPoint } from "@/types";
 import { toast } from "sonner";
 
 interface DirectBookFlowProps {
@@ -21,6 +22,68 @@ interface DirectBookFlowProps {
 
 function seatKey(pos: SeatPosition): string {
   return `${pos.side}${pos.number}`;
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function getUpcomingFromAndTo(vehicle: VehicleNearby): {
+  fromStops: RouteStopPoint[];
+  toOptions: Array<{ value: string; label: string }>;
+} {
+  const route = vehicle.active_route_details;
+  const allStops = route?.stop_points ?? [];
+  const endPoint = route?.end_point_details;
+
+  const lastLat = parseFloat(vehicle.last_latitude);
+  const lastLng = parseFloat(vehicle.last_longitude);
+  const hasValidLocation = !Number.isNaN(lastLat) && !Number.isNaN(lastLng);
+
+  if (!hasValidLocation || allStops.length === 0) {
+    const fromStops = allStops;
+    const toOptions = allStops.map((sp) => ({
+      value: sp.place,
+      label: sp.place_details?.name ?? sp.place,
+    }));
+    if (endPoint && !toOptions.some((o) => o.value === endPoint.id)) {
+      toOptions.push({ value: endPoint.id, label: endPoint.name ?? endPoint.id });
+    }
+    return { fromStops, toOptions };
+  }
+
+  let nearestOrder = 0;
+  let minDist = Infinity;
+  for (const sp of allStops) {
+    const lat = parseFloat(sp.place_details?.latitude as unknown as string);
+    const lng = parseFloat(sp.place_details?.longitude as unknown as string);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) continue;
+    const d = haversineKm(lastLat, lastLng, lat, lng);
+    if (d < minDist) {
+      minDist = d;
+      nearestOrder = sp.order ?? 0;
+    }
+  }
+
+  const fromStops = allStops.filter((sp) => (sp.order ?? 0) >= nearestOrder);
+  const toOptions = fromStops.map((sp) => ({
+    value: sp.place,
+    label: sp.place_details?.name ?? sp.place,
+  }));
+  if (endPoint && !toOptions.some((o) => o.value === endPoint.id)) {
+    toOptions.push({ value: endPoint.id, label: endPoint.name ?? endPoint.id });
+  }
+  return { fromStops, toOptions };
 }
 
 export function DirectBookFlow({
@@ -46,7 +109,14 @@ export function DirectBookFlow({
   const bookedSeats = new Set(
     seatsList.filter((s) => s.status === "booked").map((s) => `${s.side}${s.number}`)
   );
-  const stopPoints = vehicle.active_route_details?.stop_points ?? [];
+
+  const { fromStops, toOptions } = useMemo(() => getUpcomingFromAndTo(vehicle), [vehicle]);
+  const hasStopsList = fromStops.length > 0;
+
+  useEffect(() => {
+    if (!fromStops.some((sp) => sp.place === fromPlaceId)) setFromPlaceId("");
+    if (!toOptions.some((o) => o.value === destinationPlaceId)) setDestinationPlaceId("");
+  }, [fromStops, toOptions]);
 
   const fromSet = fromPlaceId !== "";
   const toSet = !!destinationPlaceId;
@@ -88,7 +158,7 @@ export function DirectBookFlow({
     });
   };
 
-  const hasStops = stopPoints.length > 0;
+  const hasStops = hasStopsList;
   const canProceed =
     selectedSeats.length >= 1 &&
     hasStops &&
@@ -129,7 +199,7 @@ export function DirectBookFlow({
     }
 
     const fromPlace = fromPlaceId
-      ? stopPoints.find((sp) => sp.place === fromPlaceId)?.place_details
+      ? fromStops.find((sp) => sp.place === fromPlaceId)?.place_details
       : null;
     const checkInLat = fromPlace?.latitude ?? userPosition?.lat;
     const checkInLng = fromPlace?.longitude ?? userPosition?.lng;
@@ -199,9 +269,9 @@ export function DirectBookFlow({
     : String((perSeatAmount * selectedSeats.length).toFixed(2));
 
   const fromLabel =
-    stopPoints.find((sp) => sp.place === fromPlaceId)?.place_details?.name ?? fromPlaceId ?? "—";
+    fromStops.find((sp) => sp.place === fromPlaceId)?.place_details?.name ?? fromPlaceId ?? "—";
   const toLabel =
-    stopPoints.find((sp) => sp.place === destinationPlaceId)?.place_details?.name ?? destinationPlaceId;
+    toOptions.find((o) => o.value === destinationPlaceId)?.label ?? destinationPlaceId ?? "—";
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -209,6 +279,11 @@ export function DirectBookFlow({
         <DialogHeader>
           <DialogTitle>Book seat · {vehicle.name}</DialogTitle>
         </DialogHeader>
+        {vehicle.active_route_details && (
+          <p className="text-sm text-muted-foreground -mt-2">
+            Route: {vehicle.active_route_details.start_point_details?.name ?? "—"} → {vehicle.active_route_details.end_point_details?.name ?? "—"}
+          </p>
+        )}
 
         {step === "seat" && (
           <div className="space-y-4">
@@ -224,12 +299,17 @@ export function DirectBookFlow({
                 multiSelect
               />
             </div>
-            {stopPoints.length === 0 && (
+            {selectedSeats.length > 0 && (
+              <p className="text-sm font-medium">
+                Selected Seat: {seatsLabel}
+              </p>
+            )}
+            {!hasStopsList && (
               <p className="text-sm text-amber-600">
                 This vehicle has no route stops. From and To are required for short-trip booking.
               </p>
             )}
-            {stopPoints.length > 0 && (
+            {hasStopsList && (
               <>
                 <div>
                   <Label className="text-xs text-muted-foreground">From (required)</Label>
@@ -239,7 +319,7 @@ export function DirectBookFlow({
                     onChange={(e) => setFromPlaceId(e.target.value)}
                   >
                     <option value="">— Select pick-up —</option>
-                    {stopPoints.map((sp) => (
+                    {fromStops.map((sp) => (
                       <option key={sp.id} value={sp.place}>
                         {sp.place_details?.name ?? sp.place}
                       </option>
@@ -254,9 +334,9 @@ export function DirectBookFlow({
                     onChange={(e) => setDestinationPlaceId(e.target.value)}
                   >
                     <option value="">— Select destination —</option>
-                    {stopPoints.map((sp) => (
-                      <option key={sp.id} value={sp.place}>
-                        {sp.place_details?.name ?? sp.place}
+                    {toOptions.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
                       </option>
                     ))}
                   </select>
@@ -304,7 +384,7 @@ export function DirectBookFlow({
               </p>
             )}
             <p className="text-sm">
-              Seat(s) {seatsLabel} · Rs. {totalDisplay}
+              Selected Seat: {seatsLabel} · Rs. {totalDisplay}
             </p>
             <p className="text-xs text-muted-foreground">
               Amount will be deducted from your wallet.

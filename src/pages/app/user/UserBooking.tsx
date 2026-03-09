@@ -747,7 +747,7 @@ export default function UserBooking() {
                     />
                     {checkoutSelectedSeats.length > 0 && (
                       <p className="mt-2 text-sm text-muted-foreground">
-                        Selected: {checkoutSelectedSeats.map((s) => `${s.side}${s.number}`).join(", ")} — Rs. {totalAmount}
+                        Selected Seat: {checkoutSelectedSeats.map((s) => `${s.side}${s.number}`).join(", ")} — Rs. {totalAmount}
                       </p>
                     )}
                   </div>
