@@ -97,6 +97,10 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const selectedGroupIdRef = useRef(selectedGroupId);
   const fetchRecordingsRef = useRef<(params?: { group_id?: number }) => Promise<void>>(() => Promise.resolve());
   const [connectRetryKey, setConnectRetryKey] = useState(0);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectBackoffRef = useRef(2000);
+  const RECONNECT_INITIAL_MS = 2000;
+  const RECONNECT_MAX_MS = 30000;
 
   const isWebView = isFlutterBridgeAvailable();
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
@@ -485,6 +489,31 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.is_driver, hasActiveTrip, status, isWebView]);
 
+  // Auto-reconnect when status is disconnected or error (any condition) and user may connect
+  useEffect(() => {
+    const driverMayConnect = !user?.is_driver || hasActiveTrip;
+    const mayConnect = !!token && groups.length > 0 && driverMayConnect;
+    if (status === "connected") {
+      reconnectBackoffRef.current = RECONNECT_INITIAL_MS;
+      return;
+    }
+    if (status !== "disconnected" && status !== "error" || !mayConnect) return;
+
+    const tick = () => {
+      connect();
+      reconnectBackoffRef.current = Math.min(reconnectBackoffRef.current * 2, RECONNECT_MAX_MS);
+      reconnectTimeoutRef.current = window.setTimeout(tick, reconnectBackoffRef.current);
+    };
+    reconnectTimeoutRef.current = window.setTimeout(tick, reconnectBackoffRef.current);
+
+    return () => {
+      if (reconnectTimeoutRef.current != null) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
+  }, [status, token, groups, user?.is_driver, hasActiveTrip, connect]);
+
   // Refetch groups when drawer opens; sync to socket so PTT works after groups load
   useEffect(() => {
     if (!drawerOpen || !token) return;
@@ -595,6 +624,10 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     return () => {
       hasAutoConnected.current = false;
       recordingPlayer.stop();
+      if (reconnectTimeoutRef.current != null) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current.removeAllListeners();
