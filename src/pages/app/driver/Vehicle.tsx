@@ -494,12 +494,8 @@ export default function Vehicle() {
       }));
       setSeatsBookedDetails(details);
       setShowSeatsBookedModal(true);
-      try {
-        const audio = new Audio("/sounds/beep.mp3");
-        audio.play().catch(() => {});
-      } catch {
-        // ignore
-      }
+      // In Flutter app: playBeep() triggers FlutterBridge.playBeepSound() so the app plays assets/sounds/beep.mp3
+      playBeep();
     },
     authReady: isFlutterBridgeAvailable() ? authReadyForSocket : true,
   });

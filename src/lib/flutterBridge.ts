@@ -160,7 +160,7 @@ export function playSound(text: string): void {
   }
 }
 
-/** Play beep sound when checkout/dropoff popup opens. Uses Flutter asset in WebView, else /sounds/beep.mp3 on web. */
+/** Play beep sound (e.g. driver seat-booking popup, checkout/dropoff). In Flutter app: triggers native playBeepSound → app plays assets/sounds/beep.mp3. On web: uses /sounds/beep.mp3 or synthetic beep. */
 export function playBeep(): void {
   if (isAvailable() && typeof window.FlutterBridge?.playBeepSound === 'function') {
     window.FlutterBridge.playBeepSound();
