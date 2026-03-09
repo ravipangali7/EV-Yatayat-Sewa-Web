@@ -1095,12 +1095,7 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
     );
   }, [lastLocation, selectedRoute, pointCoverRadiusKm, routePointsForAnnounce]);
 
-  const showAnnounceButton =
-    driverState === "trip_started" &&
-    (tripTab === "seats" || tripTab === "map") &&
-    inAnnounceRadius &&
-    !!activeTrip?.id &&
-    !!lastLocation;
+  const showAnnounceButton = false;
 
   const handleAnnounceClick = () => {
     if (!activeTrip?.id || !lastLocation) return;
