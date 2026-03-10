@@ -97,6 +97,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const selectedGroupIdRef = useRef(selectedGroupId);
   const fetchRecordingsRef = useRef<(params?: { group_id?: number }) => Promise<void>>(() => Promise.resolve());
   const [connectRetryKey, setConnectRetryKey] = useState(0);
+  const [flutterBridgeReady, setFlutterBridgeReady] = useState(false);
 
   const isWebView = isFlutterBridgeAvailable();
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
@@ -356,6 +357,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     [isWebView, fetchRecordings]
   );
 
+  // Re-run connect after Flutter injects bridge (e.g. after WebView refresh)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onFlutterAuthReady = () => setFlutterBridgeReady(true);
+    window.addEventListener("flutterAuthReady", onFlutterAuthReady);
+    return () => window.removeEventListener("flutterAuthReady", onFlutterAuthReady);
+  }, []);
+
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
@@ -466,7 +475,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       }
       hasAutoConnected.current = false;
     };
-  }, [token, serverUrl, isWebView, connectRetryKey, hasActiveTrip, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
+  }, [token, serverUrl, isWebView, flutterBridgeReady, connectRetryKey, hasActiveTrip, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
 
   // When driver loses active trip, disconnect so they stop receiving/sending PTT
   useEffect(() => {
