@@ -63,6 +63,23 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return Math.round(R * c * 100) / 100;
 }
 
+/** Same logic as backend _trip_amount_from_distance: initial_km + initial_km_charge then per_km for extra. */
+function tripAmountFromDistance(
+  distanceKm: number,
+  perKmCharge: number,
+  initialKm?: number | null,
+  initialKmCharge?: number | null
+): number {
+  if (initialKm != null && initialKmCharge != null && !Number.isNaN(Number(initialKm)) && !Number.isNaN(Number(initialKmCharge))) {
+    const initKm = Number(initialKm);
+    const initCharge = Number(initialKmCharge);
+    if (distanceKm <= initKm) return Math.round(initCharge * 100) / 100;
+    const extraKm = distanceKm - initKm;
+    return Math.round((initCharge + extraKm * perKmCharge) * 100) / 100;
+  }
+  return Math.round(distanceKm * perKmCharge * 100) / 100;
+}
+
 export interface DestinationOption {
   id: string;
   name: string;
@@ -776,13 +793,17 @@ export default function Vehicle() {
         superSettingApi.list({ per_page: 1 }),
         lastLocation ? Promise.resolve({ lat: lastLocation.lat, lng: lastLocation.lng }) : getCurrentLocation({ requiredBridge: true, context: "checkout" }),
       ]);
-      const perKmCharge = Number(settingsRes.results?.[0]?.per_km_charge ?? 0);
+      const setting = settingsRes.results?.[0];
+      const perKmCharge = Number(setting?.per_km_charge ?? 0);
       if (!perKmCharge) {
         toast.error("Per km charge not configured");
         return;
       }
+      const initialKm = setting?.initial_km != null && setting?.initial_km !== "" ? Number(setting.initial_km) : undefined;
+      const initialKmCharge = setting?.initial_km_charge != null && setting?.initial_km_charge !== "" ? Number(setting.initial_km_charge) : undefined;
       const distanceKm = haversineKm(loc.lat, loc.lng, selectedDestination.lat, selectedDestination.lng);
-      const totalAmount = Math.round(distanceKm * perKmCharge * availableSelected.length * 100) / 100;
+      const amountPerSeat = tripAmountFromDistance(distanceKm, perKmCharge, initialKm, initialKmCharge);
+      const totalAmount = Math.round(amountPerSeat * availableSelected.length * 100) / 100;
       setCheckinAmount({ distanceKm, totalAmount, perKmCharge });
       setCheckinStep("amount");
     } catch (e: unknown) {
