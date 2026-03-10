@@ -517,12 +517,16 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     };
   }, [status, token, groups, user?.is_driver, hasActiveTrip, connect]);
 
-  // Re-trigger connect when Flutter bridge becomes ready (e.g. after WebView refresh)
+  // Re-trigger connect when Flutter bridge becomes ready or when Flutter asks (e.g. after WebView refresh)
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const handleFlutterAuthReady = () => setConnectRetryKey((k) => k + 1);
-    window.addEventListener("flutterAuthReady", handleFlutterAuthReady);
-    return () => window.removeEventListener("flutterAuthReady", handleFlutterAuthReady);
+    const retry = () => setConnectRetryKey((k) => k + 1);
+    window.addEventListener("flutterAuthReady", retry);
+    window.addEventListener("walkieConnectRequest", retry);
+    return () => {
+      window.removeEventListener("flutterAuthReady", retry);
+      window.removeEventListener("walkieConnectRequest", retry);
+    };
   }, []);
 
   // Refetch groups when drawer opens; sync to socket so PTT works after groups load
