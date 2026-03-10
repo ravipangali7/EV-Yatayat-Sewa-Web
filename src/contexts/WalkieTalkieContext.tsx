@@ -474,19 +474,32 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
           }
         }
         const driverMayConnect = !user?.is_driver || hasActiveTrip;
-        const willCallConnect = driverMayConnect && isWebView && fullGroupIds.length > 0;
+        const skipBecauseFlutterReconnected =
+          typeof window !== "undefined" &&
+          (window as unknown as { __walkieTalkieReconnectedByFlutter?: boolean }).__walkieTalkieReconnectedByFlutter === true;
+        if (skipBecauseFlutterReconnected) {
+          (window as unknown as { __walkieTalkieReconnectedByFlutter?: boolean }).__walkieTalkieReconnectedByFlutter = false;
+        }
+        const willCallConnect =
+          driverMayConnect && isWebView && fullGroupIds.length > 0 && !skipBecauseFlutterReconnected;
         // #region agent log
         try {
           (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
             hypothesisId: "H2,H5",
             location: "WalkieTalkieContext:connect_effect_after_groups",
             message: "after groups fetch",
-            data: { driverMayConnect, isWebView, fullGroupIdsLength: fullGroupIds.length, willCallConnectWalkieTalkie: willCallConnect },
+            data: {
+              driverMayConnect,
+              isWebView,
+              fullGroupIdsLength: fullGroupIds.length,
+              willCallConnectWalkieTalkie: willCallConnect,
+              skipBecauseFlutterReconnected,
+            },
           });
         } catch (_) {}
         // #endregion
         if (driverMayConnect && isWebView) {
-          if (fullGroupIds.length > 0) {
+          if (fullGroupIds.length > 0 && !skipBecauseFlutterReconnected) {
             hasAutoConnected.current = true;
             connectWalkieTalkie(serverUrl, token, fullGroupIds);
           }
