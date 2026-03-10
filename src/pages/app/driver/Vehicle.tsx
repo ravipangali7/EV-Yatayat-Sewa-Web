@@ -70,41 +70,66 @@ export interface DestinationOption {
   lng: number;
 }
 
+interface RoutePointOption extends DestinationOption {
+  order: number;
+}
+
 function getDestinationOptions(vehicle: ApiVehicle | null): DestinationOption[] {
   const route = vehicle?.active_route_details as ApiRoute | undefined;
   if (!route) return [];
-  const opts: DestinationOption[] = [];
   const toNum = (v: unknown) => (typeof v === "number" && !Number.isNaN(v) ? v : Number(v) || 0);
+  const points: RoutePointOption[] = [];
+  let order = 0;
   if (route.start_point_details) {
     const p = route.start_point_details;
-    opts.push({
+    points.push({
       id: route.start_point,
       name: `Start: ${p.name ?? "Start"}`,
       lat: toNum(p.latitude),
       lng: toNum(p.longitude),
+      order: order++,
     });
   }
-  (route.stop_points ?? []).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach((sp) => {
+  const sortedStops = (route.stop_points ?? []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  sortedStops.forEach((sp) => {
     const p = sp.place_details;
     if (p) {
-      opts.push({
+      points.push({
         id: sp.place,
         name: p.name ?? "Stop",
         lat: toNum(p.latitude),
         lng: toNum(p.longitude),
+        order: order++,
       });
     }
   });
   if (route.end_point_details) {
     const p = route.end_point_details;
-    opts.push({
+    points.push({
       id: route.end_point,
       name: `End: ${p.name ?? "End"}`,
       lat: toNum(p.latitude),
       lng: toNum(p.longitude),
+      order: order++,
     });
   }
-  return opts;
+  const lastLat = vehicle?.last_latitude != null ? parseFloat(String(vehicle.last_latitude)) : NaN;
+  const lastLng = vehicle?.last_longitude != null ? parseFloat(String(vehicle.last_longitude)) : NaN;
+  const hasValidLocation = !Number.isNaN(lastLat) && !Number.isNaN(lastLng);
+  if (!hasValidLocation || points.length === 0) {
+    return points.map(({ id, name, lat, lng }) => ({ id, name, lat, lng }));
+  }
+  let nearestOrder = points[0].order;
+  let minDist = Infinity;
+  for (const pt of points) {
+    const d = haversineKm(lastLat, lastLng, pt.lat, pt.lng);
+    if (d < minDist) {
+      minDist = d;
+      nearestOrder = pt.order;
+    }
+  }
+  const filtered = points.filter((pt) => pt.order >= nearestOrder);
+  return filtered.map(({ id, name, lat, lng }) => ({ id, name, lat, lng }));
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";

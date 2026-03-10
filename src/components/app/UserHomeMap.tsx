@@ -42,6 +42,8 @@ export function UserHomeMap() {
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleNearby | null>(null);
   const [showDirectBook, setShowDirectBook] = useState(false);
+  const [directBookVehicle, setDirectBookVehicle] = useState<VehicleNearby | null>(null);
+  const [loadingDirectBook, setLoadingDirectBook] = useState(false);
   const [bookMinKm, setBookMinKm] = useState(DEFAULT_BOOK_MIN_KM);
   const [bookMaxKm, setBookMaxKm] = useState(DEFAULT_BOOK_MAX_KM);
 
@@ -127,6 +129,21 @@ export function UserHomeMap() {
   const handleCloseModal = () => {
     setSelectedVehicle(null);
     setShowDirectBook(false);
+    setDirectBookVehicle(null);
+  };
+
+  const handleBookSeat = async () => {
+    if (!selectedVehicle?.id) return;
+    setLoadingDirectBook(true);
+    try {
+      const vehicle = await vehicleApi.getDirectBookInfo(selectedVehicle.id);
+      setDirectBookVehicle(vehicle);
+      setShowDirectBook(true);
+    } catch {
+      toast.error("Could not load seat details. Please try again.");
+    } finally {
+      setLoadingDirectBook(false);
+    }
   };
 
   const handleBookSuccess = () => {
@@ -251,9 +268,10 @@ export function UserHomeMap() {
               {selectedVehicle.can_book ? (
                 <Button
                   className="w-full rounded-xl"
-                  onClick={() => setShowDirectBook(true)}
+                  onClick={handleBookSeat}
+                  disabled={loadingDirectBook}
                 >
-                  Book seat
+                  {loadingDirectBook ? "Loading…" : "Book seat"}
                 </Button>
               ) : (
                 <p className="text-xs text-amber-600">Only vehicles with active trip, between {bookMinKm} km and {bookMaxKm} km away, can be booked.</p>
@@ -263,9 +281,9 @@ export function UserHomeMap() {
         </DialogContent>
       </Dialog>
 
-      {selectedVehicle && showDirectBook && (
+      {showDirectBook && directBookVehicle && (
         <DirectBookFlow
-          vehicle={selectedVehicle}
+          vehicle={directBookVehicle}
           userPosition={userPosition}
           onClose={handleCloseModal}
           onSuccess={handleBookSuccess}

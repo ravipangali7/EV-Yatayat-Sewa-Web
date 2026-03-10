@@ -46,6 +46,11 @@ export const vehicleApi = {
     return api.get<{ results: VehicleNearby[]; count: number }>(`vehicles/nearby/?${q.toString()}`);
   },
 
+  // Real-time seat details and from/to for short-trip booking (call when user clicks Book seat).
+  getDirectBookInfo: async (vehicleId: string): Promise<VehicleNearby> => {
+    return api.get<VehicleNearby>(`vehicles/${vehicleId}/direct-book-info/`);
+  },
+
   // Connect to vehicle (set current user as active driver)
   connectVehicle: async (vehicleId: string): Promise<Vehicle> => {
     return api.post<Vehicle>('vehicles/connect/', { vehicle_id: vehicleId });

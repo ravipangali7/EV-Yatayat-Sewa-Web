@@ -173,6 +173,10 @@ export interface Vehicle {
   images?: VehicleImage[];
   created_at: string;
   updated_at: string;
+  /** Present when vehicle detail or my-active-vehicle includes last location (e.g. for driver destination filtering). */
+  last_latitude?: string | null;
+  last_longitude?: string | null;
+  last_location_at?: string | null;
 }
 
 export interface VehicleNearby extends Vehicle {
