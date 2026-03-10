@@ -26,6 +26,7 @@ interface TripRow {
   end_time: string | null;
   remarks: string;
   is_scheduled: boolean;
+  reverse_direction?: boolean;
   created_at: string;
 }
 
@@ -80,7 +81,7 @@ export default function Trips() {
     { key: 'trip_id', header: 'Trip ID', render: (t) => t.trip_id },
     { key: 'vehicle', header: 'Vehicle', render: (t) => t.vehicle_no || t.vehicle_name || t.vehicle },
     { key: 'driver', header: 'Driver', render: (t) => t.driver_name || t.driver_phone || t.driver },
-    { key: 'route', header: 'Route', render: (t) => t.route_name || t.route },
+    { key: 'route', header: 'Route', render: (t) => (t.route_name || t.route) + (t.reverse_direction ? ' (Return)' : '') },
     {
       key: 'start_time',
       header: 'Start',

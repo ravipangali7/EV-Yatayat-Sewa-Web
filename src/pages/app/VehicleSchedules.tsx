@@ -31,7 +31,7 @@ export default function VehicleSchedules() {
 
   const columns: Column<VehicleScheduleRecord>[] = [
     { key: 'vehicle', header: 'Vehicle', render: (s) => s.vehicle },
-    { key: 'route', header: 'Route', render: (s) => s.route },
+    { key: 'route', header: 'Route', render: (s) => s.route + (s.reverse_direction ? ' (Return)' : '') },
     { key: 'date', header: 'Date', render: (s) => format(new Date(s.date), 'MMM dd, yyyy') },
     { key: 'time', header: 'Time', render: (s) => s.time },
     { key: 'price', header: 'Price', render: (s) => `Rs. ${Number(s.price).toFixed(2)}` },

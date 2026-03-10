@@ -327,6 +327,7 @@ export default function Vehicle() {
   const DRIVER_POSITION_THROTTLE_MS = 120;
   const [showSeatsBookedModal, setShowSeatsBookedModal] = useState(false);
   const [seatsBookedDetails, setSeatsBookedDetails] = useState<Array<{ label: string; user_name?: string; from_address?: string; to_name?: string }>>([]);
+  const [tripDirectionReverse, setTripDirectionReverse] = useState(false);
 
   const NEPAL_CENTER = { lat: 27.7172, lng: 85.324 };
 
@@ -724,7 +725,11 @@ export default function Vehicle() {
     if (!selectedVehicle?.id) return;
     try {
       const loc = await getCurrentLocation({ requiredBridge: true, context: "start_trip" });
-      const res = await tripApi.startTrip(selectedVehicle.id, { latitude: loc.lat, longitude: loc.lng });
+      const res = await tripApi.startTrip(selectedVehicle.id, {
+        latitude: loc.lat,
+        longitude: loc.lng,
+        ...(selectedVehicle?.active_route_details?.is_bidirectional ? { reverse_direction: tripDirectionReverse } : {}),
+      });
       if ("need_confirm_scheduled" in res && res.need_confirm_scheduled) {
         setScheduledConfirmData(res);
         setShowScheduledConfirmModal(true);
@@ -778,7 +783,9 @@ export default function Vehicle() {
     setScheduledConfirmData(null);
     if (!selectedVehicle?.id) return;
     try {
-      const trip = await tripApi.startTrip(selectedVehicle.id);
+      const trip = await tripApi.startTrip(selectedVehicle.id, {
+        ...(selectedVehicle?.active_route_details?.is_bidirectional ? { reverse_direction: tripDirectionReverse } : {}),
+      });
       const t = trip as ActiveTrip & { vehicle?: string; driver?: string; route?: string; is_scheduled?: boolean };
       setActiveTrip({ id: t.id, trip_id: t.trip_id, start_time: t.start_time ?? null, end_time: t.end_time ?? null, is_scheduled: t.is_scheduled });
       setDriverState("trip_started");
@@ -1325,6 +1332,27 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
           </div>
           <RouteCard route={selectedRoute} active showMap />
         </div>
+        {selectedVehicle?.active_route_details?.is_bidirectional && (
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-sm font-medium">Direction:</span>
+            <div className="flex rounded-lg border border-border bg-muted/30 p-0.5">
+              <button
+                type="button"
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${!tripDirectionReverse ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setTripDirectionReverse(false)}
+              >
+                Forward
+              </button>
+              <button
+                type="button"
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${tripDirectionReverse ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setTripDirectionReverse(true)}
+              >
+                Return
+              </button>
+            </div>
+          </div>
+        )}
         <div className="mt-6">
           <SwipeButton label="Swipe to Start Trip →" onSwipe={handleStartTrip} />
         </div>

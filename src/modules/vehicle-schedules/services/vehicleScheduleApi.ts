@@ -7,6 +7,7 @@ export interface VehicleScheduleRecord {
   date: string;
   time: string;
   price: string;
+  reverse_direction?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -63,7 +64,7 @@ export const vehicleScheduleApi = {
   endPlaces: async (fromPlaceId: string) =>
     api.get<SchedulePlace[]>(`vehicle-schedules/end-places/?from=${encodeURIComponent(fromPlaceId)}`),
   get: async (id: string) => api.get<VehicleScheduleRecord>(`vehicle-schedules/${id}/`),
-  create: async (data: { vehicle: string; route: string; date: string; time: string; price: number }) =>
+  create: async (data: { vehicle: string; route: string; date: string; time: string; price: number; reverse_direction?: boolean }) =>
     api.post<VehicleScheduleRecord>('vehicle-schedules/create/', data),
   edit: async (id: string, data: Partial<VehicleScheduleRecord>) =>
     api.post<VehicleScheduleRecord>(`vehicle-schedules/${id}/edit/`, data),

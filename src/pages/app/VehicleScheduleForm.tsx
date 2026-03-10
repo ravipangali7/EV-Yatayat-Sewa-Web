@@ -16,19 +16,20 @@ export default function VehicleScheduleForm() {
   const isEdit = !!id;
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState<Array<{ id: string; name: string; vehicle_no?: string }>>([]);
-  const [routes, setRoutes] = useState<Array<{ id: string; name: string }>>([]);
+  const [routes, setRoutes] = useState<Array<{ id: string; name: string; is_bidirectional?: boolean }>>([]);
   const [formData, setFormData] = useState({
     vehicle: '',
     route: '',
     date: new Date().toISOString().slice(0, 10),
     time: '09:00',
     price: 0,
+    reverse_direction: false,
   });
 
   useEffect(() => {
     Promise.all([
       vehicleApi.list({ per_page: 500 }).then((r) => r.results.map((v) => ({ id: v.id, name: v.name, vehicle_no: v.vehicle_no }))),
-      routeApi.list({ per_page: 500 }).then((r) => r.results.map((rte) => ({ id: rte.id, name: rte.name }))),
+      routeApi.list({ per_page: 500 }).then((r) => r.results.map((rte) => ({ id: rte.id, name: rte.name, is_bidirectional: rte.is_bidirectional }))),
     ]).then(([v, r]) => {
       setVehicles(v);
       setRoutes(r);
@@ -46,6 +47,7 @@ export default function VehicleScheduleForm() {
             date: s.date,
             time: s.time?.slice(0, 5) || '09:00',
             price: Number(s.price) || 0,
+            reverse_direction: s.reverse_direction ?? false,
           });
         })
         .catch(() => toast.error('Failed to load schedule'))
@@ -58,10 +60,10 @@ export default function VehicleScheduleForm() {
     setLoading(true);
     try {
       if (isEdit && id) {
-        await vehicleScheduleApi.edit(id, formData);
+        await vehicleScheduleApi.edit(id, { ...formData, reverse_direction: formData.reverse_direction });
         toast.success('Schedule updated');
       } else {
-        await vehicleScheduleApi.create(formData);
+        await vehicleScheduleApi.create({ ...formData, reverse_direction: formData.reverse_direction });
         toast.success('Schedule created');
       }
       navigate('/admin/vehicle-schedules');
@@ -105,6 +107,27 @@ export default function VehicleScheduleForm() {
                   placeholder="Select route"
                 />
               </div>
+              {formData.route && routes.find((r) => r.id === formData.route)?.is_bidirectional && (
+                <div className="space-y-2 sm:col-span-2 flex items-center gap-4">
+                  <Label className="mb-0">Direction</Label>
+                  <div className="flex rounded-lg border border-border bg-muted/30 p-0.5">
+                    <button
+                      type="button"
+                      className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${!formData.reverse_direction ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => setFormData({ ...formData, reverse_direction: false })}
+                    >
+                      Forward
+                    </button>
+                    <button
+                      type="button"
+                      className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${formData.reverse_direction ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => setFormData({ ...formData, reverse_direction: true })}
+                    >
+                      Return
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Date</Label>
                 <Input

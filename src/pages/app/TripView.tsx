@@ -68,6 +68,7 @@ interface TripDetail {
   remarks: string;
   is_scheduled: boolean;
   vehicle_schedule: { id: string; date: string; time: string; route_name: string; vehicle_name: string; vehicle_no: string } | null;
+  reverse_direction?: boolean;
   created_at: string;
   updated_at: string;
   locations: TripLocation[];
@@ -201,6 +202,7 @@ export default function TripView() {
               <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Vehicle</span><span className="font-medium">{trip.vehicle_no || trip.vehicle_name || trip.vehicle}</span></div>
               <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Driver</span><span className="font-medium">{trip.driver_name || trip.driver_phone || trip.driver}</span></div>
               <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Route</span><span className="font-medium">{trip.route_name || trip.route}</span></div>
+              {trip.reverse_direction != null && <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Direction</span><span className="font-medium">{trip.reverse_direction ? 'Return' : 'Forward'}</span></div>}
               <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Start</span><span className="font-medium">{trip.start_time ? format(new Date(trip.start_time), 'PPpp') : '-'}</span></div>
               <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">End</span><span className="font-medium">{trip.end_time ? format(new Date(trip.end_time), 'PPpp') : 'Active'}</span></div>
               {trip.remarks && <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Remarks</span><span className="text-sm">{trip.remarks}</span></div>}

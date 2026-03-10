@@ -142,6 +142,7 @@ export interface ActiveTrip {
   trip_id: string;
   start_time: string | null;
   end_time: string | null;
+  reverse_direction?: boolean;
 }
 
 export interface Vehicle {
