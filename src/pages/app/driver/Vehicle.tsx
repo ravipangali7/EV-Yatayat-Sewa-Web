@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { QrCode, MapPin, Play, RotateCcw, Megaphone } from "lucide-react";
@@ -33,7 +33,7 @@ import AppBar from "@/components/app/AppBar";
 import { VoiceSearchButton } from "@/components/app/VoiceSearchButton";
 import { toast } from "sonner";
 import { useAuthReadyForSocket } from "@/hooks/useAuthReadyForSocket";
-import { useTripSocket } from "@/hooks/useTripSocket";
+import { useTripSocket, type TripLocationPayload } from "@/hooks/useTripSocket";
 
 const CHECKOUT_ALL_FIRST_MSG = "Check out all passengers first.";
 
@@ -543,9 +543,33 @@ export default function Vehicle() {
   };
 
   const authReadyForSocket = useAuthReadyForSocket();
+  const onTripLocation = useCallback((payload: TripLocationPayload) => {
+    const center = { lat: payload.lat, lng: payload.lng };
+    const previousCenter = driverTargetRef.current?.center ?? prevLocationRef.current ?? null;
+    driverTargetRef.current = {
+      center,
+      previousCenter:
+        previousCenter &&
+        (previousCenter.lat !== center.lat || previousCenter.lng !== center.lng)
+          ? previousCenter
+          : null,
+      heading: payload.course != null ? payload.course : null,
+    };
+    if (!isFlutterBridgeAvailable()) {
+      setLastLocation((prev) => {
+        if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
+        return {
+          lat: payload.lat,
+          lng: payload.lng,
+          speed: payload.speed,
+          course: payload.course,
+        };
+      });
+    }
+  }, []);
   useTripSocket({
-    tripId: activeTrip?.id ?? null,
-    enabled: driverState === "trip_started" && !!activeTrip?.id,
+    tripId: activeTrip?.trip_id ?? null,
+    enabled: driverState === "trip_started" && !!activeTrip?.trip_id,
     onSeatBooked: (payload) => {
       refetchVehicleAndSeats();
       toast.success("New seat(s) booked – remember to pick up");
@@ -558,6 +582,7 @@ export default function Vehicle() {
       setSeatsBookedDetails(details);
       setShowSeatsBookedModal(true);
     },
+    onTripLocation,
     authReady: isFlutterBridgeAvailable() ? authReadyForSocket : true,
   });
 
