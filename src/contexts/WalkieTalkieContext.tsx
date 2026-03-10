@@ -522,6 +522,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("flutterAuthReady", handleFlutterAuthReady);
   }, []);
 
+  // Fallback: if we're in WebView with token but still disconnected after mount, re-trigger connect
+  // (e.g. if flutterAuthReady was dispatched before we subscribed).
+  useEffect(() => {
+    if (typeof window === "undefined" || !isFlutterBridgeAvailable() || !token) return;
+    const t = window.setTimeout(() => setConnectRetryKey((k) => k + 1), 2500);
+    return () => window.clearTimeout(t);
+  }, [token]);
+
   // Refetch groups when drawer opens; sync to socket so PTT works after groups load
   useEffect(() => {
     if (!drawerOpen || !token) return;
