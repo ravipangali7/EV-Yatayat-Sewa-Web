@@ -369,7 +369,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined" || isFlutterBridgeAvailable()) return;
     const intervalMs = 200;
-    const maxTries = 5;
+    const maxTries = 15;
     let tries = 0;
     const id = window.setInterval(() => {
       tries += 1;
@@ -550,8 +550,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       });
   }, [drawerOpen, token, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
 
+  // Register callbacks even when isWebView is false so Flutter's status push after inject is received
   useEffect(() => {
-    if (!isWebView) return;
     const onStatus = (jsonStr: string) => {
       try {
         const data = JSON.parse(jsonStr) as { status: WalkieTalkieStatus; message?: string };
