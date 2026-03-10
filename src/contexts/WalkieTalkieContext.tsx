@@ -489,7 +489,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.is_driver, hasActiveTrip, status, isWebView]);
 
-  // Auto-reconnect when status is disconnected or error (any condition) and user may connect
+  // Auto-reconnect when status is disconnected or error (any condition) and user may connect.
+  // Use initial delay so we don't race with the main connect effect (which sets status to "disconnected" at start).
   useEffect(() => {
     const driverMayConnect = !user?.is_driver || hasActiveTrip;
     const mayConnect = !!token && groups.length > 0 && driverMayConnect;
@@ -504,7 +505,9 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       reconnectBackoffRef.current = Math.min(reconnectBackoffRef.current * 2, RECONNECT_MAX_MS);
       reconnectTimeoutRef.current = window.setTimeout(tick, reconnectBackoffRef.current);
     };
-    reconnectTimeoutRef.current = window.setTimeout(tick, reconnectBackoffRef.current);
+    // First attempt after 3s to avoid racing with initial connect from main effect
+    const initialDelayMs = 3000;
+    reconnectTimeoutRef.current = window.setTimeout(tick, initialDelayMs);
 
     return () => {
       if (reconnectTimeoutRef.current != null) {
