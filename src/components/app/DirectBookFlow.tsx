@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { SeatLayoutVisualizer, type SeatPosition } from "@/components/vehicles/SeatLayoutVisualizer";
 import { seatBookingApi } from "@/modules/seat-bookings/services/seatBookingApi";
 import type { VehicleNearby } from "@/types";
-import type { RouteStopPoint } from "@/types";
 import { toast } from "sonner";
 
 interface DirectBookFlowProps {
@@ -38,51 +37,84 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * c;
 }
 
+/** Route point with order for unified start + stop_points + end (same logic as driver getDestinationOptions). */
+interface RoutePointWithOrder {
+  place: string;
+  place_details?: { name?: string; latitude?: string; longitude?: string };
+  order: number;
+  isEnd: boolean;
+}
+
 function getUpcomingFromAndTo(vehicle: VehicleNearby): {
-  fromStops: RouteStopPoint[];
+  fromStops: Array<{ place: string; place_details?: { name?: string } }>;
   toOptions: Array<{ value: string; label: string }>;
 } {
   const route = vehicle.active_route_details;
   const allStops = route?.stop_points ?? [];
+  const startPoint = route?.start_point_details;
   const endPoint = route?.end_point_details;
+
+  const toNum = (v: unknown) => (typeof v === "number" && !Number.isNaN(v) ? v : Number(v) || 0);
+  const points: RoutePointWithOrder[] = [];
+  let order = 0;
+  if (startPoint && route?.start_point) {
+    points.push({
+      place: route.start_point,
+      place_details: startPoint,
+      order: order++,
+      isEnd: false,
+    });
+  }
+  const sortedStops = allStops.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  sortedStops.forEach((sp) => {
+    points.push({
+      place: sp.place,
+      place_details: sp.place_details,
+      order: order++,
+      isEnd: false,
+    });
+  });
+  if (endPoint && route?.end_point) {
+    points.push({
+      place: route.end_point,
+      place_details: endPoint,
+      order: order++,
+      isEnd: true,
+    });
+  }
 
   const lastLat = parseFloat(vehicle.last_latitude);
   const lastLng = parseFloat(vehicle.last_longitude);
   const hasValidLocation = !Number.isNaN(lastLat) && !Number.isNaN(lastLng);
 
-  if (!hasValidLocation || allStops.length === 0) {
-    const fromStops = allStops;
-    const toOptions = allStops.map((sp) => ({
-      value: sp.place,
-      label: sp.place_details?.name ?? sp.place,
+  if (!hasValidLocation || points.length === 0) {
+    const fromStops = points.filter((p) => !p.isEnd);
+    const toOptions = points.map((p) => ({
+      value: p.place,
+      label: p.place_details?.name ?? p.place,
     }));
-    if (endPoint && !toOptions.some((o) => o.value === endPoint.id)) {
-      toOptions.push({ value: endPoint.id, label: endPoint.name ?? endPoint.id });
-    }
     return { fromStops, toOptions };
   }
 
-  let nearestOrder = 0;
+  let nearestOrder = points[0].order;
   let minDist = Infinity;
-  for (const sp of allStops) {
-    const lat = parseFloat(sp.place_details?.latitude as unknown as string);
-    const lng = parseFloat(sp.place_details?.longitude as unknown as string);
+  for (const p of points) {
+    const lat = toNum(p.place_details?.latitude);
+    const lng = toNum(p.place_details?.longitude);
     if (Number.isNaN(lat) || Number.isNaN(lng)) continue;
     const d = haversineKm(lastLat, lastLng, lat, lng);
     if (d < minDist) {
       minDist = d;
-      nearestOrder = sp.order ?? 0;
+      nearestOrder = p.order;
     }
   }
 
-  const fromStops = allStops.filter((sp) => (sp.order ?? 0) >= nearestOrder);
-  const toOptions = fromStops.map((sp) => ({
-    value: sp.place,
-    label: sp.place_details?.name ?? sp.place,
+  const fromNearest = points.filter((p) => p.order >= nearestOrder);
+  const fromStops = fromNearest.filter((p) => !p.isEnd);
+  const toOptions = fromNearest.map((p) => ({
+    value: p.place,
+    label: p.place_details?.name ?? p.place,
   }));
-  if (endPoint && !toOptions.some((o) => o.value === endPoint.id)) {
-    toOptions.push({ value: endPoint.id, label: endPoint.name ?? endPoint.id });
-  }
   return { fromStops, toOptions };
 }
 
