@@ -57,6 +57,8 @@ declare global {
     __onPTTStarted?: (jsonStr: string) => void;
     __onPTTEnded?: (jsonStr: string) => void;
     __onPTTAudio?: (jsonStr: string) => void;
+    /** Called by Flutter after inject so React re-runs walkie-talkie connect (e.g. after refresh). */
+    __reconnectWalkieTalkie?: () => void;
   }
 }
 

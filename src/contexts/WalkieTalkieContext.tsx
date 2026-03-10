@@ -365,6 +365,15 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("flutterAuthReady", onFlutterAuthReady);
   }, []);
 
+  // Let Flutter explicitly trigger reconnect after inject (in case event was missed)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.__reconnectWalkieTalkie = () => setFlutterBridgeReady(true);
+    return () => {
+      delete window.__reconnectWalkieTalkie;
+    };
+  }, []);
+
   // Fallback: if bridge appears after mount (event missed), set ready so connect effect re-runs
   useEffect(() => {
     if (typeof window === "undefined" || isFlutterBridgeAvailable()) return;
@@ -426,6 +435,12 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
             connectWalkieTalkie(serverUrl, token, fullGroupIds);
           }
         } else if (driverMayConnect && !isWebView) {
+          // Bridge may appear late (e.g. after refresh); re-check so we connect via Flutter if it appears
+          if (fullGroupIds.length > 0) {
+            window.setTimeout(() => {
+              if (isFlutterBridgeAvailable()) setFlutterBridgeReady(true);
+            }, 400);
+          }
           const socket = io(serverUrl, { path: "/socket.io/", transports: ["websocket", "polling"] });
           socketRef.current = socket;
           socket.on("connect", () => {
