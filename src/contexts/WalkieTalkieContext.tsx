@@ -84,10 +84,12 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     (window as unknown as { __debugLog?: (p: object) => void }).__debugLog = (p: object) => {
+      const payload = { sessionId: DEBUG_SESSION, ...p, timestamp: Date.now() };
+      if (typeof console !== "undefined" && console.log) console.log("[WT-debug]", payload);
       fetch(DEBUG_LOG_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Debug-Session-Id": DEBUG_SESSION },
-        body: JSON.stringify({ sessionId: DEBUG_SESSION, ...p, timestamp: Date.now() }),
+        body: JSON.stringify(payload),
       }).catch(() => {});
     };
     return () => {
