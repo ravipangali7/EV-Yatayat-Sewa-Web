@@ -365,6 +365,24 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("flutterAuthReady", onFlutterAuthReady);
   }, []);
 
+  // Fallback: if bridge appears after mount (event missed), set ready so connect effect re-runs
+  useEffect(() => {
+    if (typeof window === "undefined" || isFlutterBridgeAvailable()) return;
+    const intervalMs = 200;
+    const maxTries = 5;
+    let tries = 0;
+    const id = window.setInterval(() => {
+      tries += 1;
+      if (isFlutterBridgeAvailable()) {
+        setFlutterBridgeReady(true);
+        window.clearInterval(id);
+        return;
+      }
+      if (tries >= maxTries) window.clearInterval(id);
+    }, intervalMs);
+    return () => window.clearInterval(id);
+  }, []);
+
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
