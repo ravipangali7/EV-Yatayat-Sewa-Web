@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAuthReadyForSocket } from "@/hooks/useAuthReadyForSocket";
 import { useDriverActiveTrip } from "@/hooks/useDriverActiveTrip";
 import {
   isAvailable as isFlutterBridgeAvailable,
@@ -75,6 +76,7 @@ const WalkieTalkieContext = createContext<WalkieTalkieContextType | undefined>(u
 
 export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const authReady = useAuthReadyForSocket();
   const { hasActiveTrip } = useDriverActiveTrip();
   const [status, setStatus] = useState<WalkieTalkieStatus>("disconnected");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -357,6 +359,8 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    // In WebView, wait for Flutter to inject auth (flutterAuthReady) so token is in localStorage after refresh
+    if (isWebView && !authReady) return;
     if (!token) return;
     let cancelled = false;
     setStatus("disconnected");
@@ -466,7 +470,7 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       }
       hasAutoConnected.current = false;
     };
-  }, [token, serverUrl, isWebView, connectRetryKey, hasActiveTrip, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
+  }, [token, serverUrl, isWebView, authReady, connectRetryKey, hasActiveTrip, user?.id, user?.is_driver, user?.is_staff, user?.is_superuser]);
 
   // When driver loses active trip, disconnect so they stop receiving/sending PTT
   useEffect(() => {
