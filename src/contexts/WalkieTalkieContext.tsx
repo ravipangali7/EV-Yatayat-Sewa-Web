@@ -84,13 +84,15 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     (window as unknown as { __debugLog?: (p: object) => void }).__debugLog = (p: object) => {
-      const payload = { sessionId: DEBUG_SESSION, ...p, timestamp: Date.now() };
-      if (typeof console !== "undefined" && console.log) console.log("[WT-debug]", payload);
-      fetch(DEBUG_LOG_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": DEBUG_SESSION },
-        body: JSON.stringify(payload),
-      }).catch(() => {});
+      try {
+        const payload = { sessionId: DEBUG_SESSION, ...p, timestamp: Date.now() };
+        if (typeof console !== "undefined" && console.log) console.log("[WT-debug]", JSON.stringify(payload));
+        fetch(DEBUG_LOG_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": DEBUG_SESSION },
+          body: JSON.stringify(payload),
+        }).catch(() => {});
+      } catch (_) {}
     };
     return () => {
       delete (window as unknown as { __debugLog?: (p: object) => void }).__debugLog;
@@ -391,12 +393,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return;
     window.__reconnectWalkieTalkie = () => {
       // #region agent log
-      (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
-        hypothesisId: "H2",
-        location: "WalkieTalkieContext:__reconnectWalkieTalkie",
-        message: "reconnect invoked from Flutter",
-        data: {},
-      });
+      try {
+        (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
+          hypothesisId: "H2",
+          location: "WalkieTalkieContext:__reconnectWalkieTalkie",
+          message: "reconnect invoked from Flutter",
+          data: {},
+        });
+      } catch (_) {}
       // #endregion
       setFlutterBridgeReady(true);
     };
@@ -425,12 +429,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // #region agent log
-    (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
-      hypothesisId: "H2",
-      location: "WalkieTalkieContext:connect_effect_start",
-      message: "connect effect ran",
-      data: { hasToken: !!token, isWebView },
-    });
+    try {
+      (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
+        hypothesisId: "H2",
+        location: "WalkieTalkieContext:connect_effect_start",
+        message: "connect effect ran",
+        data: { hasToken: !!token, isWebView },
+      });
+    } catch (_) {}
     // #endregion
     if (!token) return;
     let cancelled = false;
@@ -470,12 +476,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
         const driverMayConnect = !user?.is_driver || hasActiveTrip;
         const willCallConnect = driverMayConnect && isWebView && fullGroupIds.length > 0;
         // #region agent log
-        (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
-          hypothesisId: "H2,H5",
-          location: "WalkieTalkieContext:connect_effect_after_groups",
-          message: "after groups fetch",
-          data: { driverMayConnect, isWebView, fullGroupIdsLength: fullGroupIds.length, willCallConnectWalkieTalkie: willCallConnect },
-        });
+        try {
+          (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
+            hypothesisId: "H2,H5",
+            location: "WalkieTalkieContext:connect_effect_after_groups",
+            message: "after groups fetch",
+            data: { driverMayConnect, isWebView, fullGroupIdsLength: fullGroupIds.length, willCallConnectWalkieTalkie: willCallConnect },
+          });
+        } catch (_) {}
         // #endregion
         if (driverMayConnect && isWebView) {
           if (fullGroupIds.length > 0) {
@@ -619,12 +627,14 @@ export function WalkieTalkieProvider({ children }: { children: ReactNode }) {
       try {
         const data = JSON.parse(jsonStr) as { status: WalkieTalkieStatus; message?: string };
         // #region agent log
-        (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
-          hypothesisId: "H1,H3,H4",
-          location: "WalkieTalkieContext:onStatus",
-          message: "status from Flutter",
-          data: { status: data.status, message: data.message ?? null },
-        });
+        try {
+          (window as unknown as { __debugLog?: (p: object) => void }).__debugLog?.({
+            hypothesisId: "H1,H3,H4",
+            location: "WalkieTalkieContext:onStatus",
+            message: "status from Flutter",
+            data: { status: data.status, message: data.message ?? null },
+          });
+        } catch (_) {}
         // #endregion
         setStatus(data.status);
         setStatusMessage(data.message ?? null);
