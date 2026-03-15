@@ -31,14 +31,26 @@ export interface VehicleTicketBookingRecord {
 }
 
 export const vehicleTicketBookingApi = {
-  list: async (params?: ListParams & { vehicle_schedule?: string; user?: string; booked_by?: string; expand?: boolean }) => {
+  list: async (params?: ListParams & {
+    vehicle_schedule?: string;
+    user?: string;
+    booked_by?: string;
+    expand?: boolean;
+    is_paid?: boolean;
+    date_from?: string;
+    date_to?: string;
+  }) => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.search) queryParams.append('search', params.search);
     if (params?.vehicle_schedule) queryParams.append('vehicle_schedule', params.vehicle_schedule);
     if (params?.user) queryParams.append('user', params.user);
     if (params?.booked_by) queryParams.append('booked_by', params.booked_by);
     if (params?.expand) queryParams.append('expand', '1');
+    if (params?.is_paid !== undefined) queryParams.append('is_paid', params.is_paid.toString());
+    if (params?.date_from) queryParams.append('date_from', params.date_from);
+    if (params?.date_to) queryParams.append('date_to', params.date_to);
     const q = queryParams.toString();
     return api.get<PaginatedResponse<VehicleTicketBookingRecord>>(`vehicle-ticket-bookings/${q ? `?${q}` : ''}`);
   },

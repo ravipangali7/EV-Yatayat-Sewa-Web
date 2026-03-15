@@ -6,12 +6,13 @@ export interface CardWithUserDetails extends Card {
 }
 
 export const cardApi = {
-  list: async (params?: ListParams & { user?: string; search?: string }): Promise<PaginatedResponse<CardWithUserDetails>> => {
+  list: async (params?: ListParams & { user?: string; search?: string; is_active?: boolean }): Promise<PaginatedResponse<CardWithUserDetails>> => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
     if (params?.user) queryParams.append('user', params.user);
     if (params?.search) queryParams.append('search', params.search);
+    if (params?.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
     const q = queryParams.toString();
     return api.get<PaginatedResponse<CardWithUserDetails>>(`cards/${q ? `?${q}` : ''}`);
   },

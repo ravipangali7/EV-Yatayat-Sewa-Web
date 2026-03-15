@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Check, X, Users as UsersIcon } from 'lucide-react';
+import { Plus, Check, X, Users as UsersIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
 import { StatusBadge } from '@/components/common/StatusBadge';
@@ -14,26 +17,34 @@ export default function Users() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [stats, setStats] = useState<{ total_count?: number } | null>(null);
   const perPage = 25;
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => setSearch(searchInput), 300);
-    return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    };
-  }, [searchInput]);
+  // Input state
+  const [searchInput, setSearchInput] = useState('');
+  const [isDriverInput, setIsDriverInput] = useState<'all' | 'true' | 'false'>('all');
+  const [isActiveInput, setIsActiveInput] = useState<'all' | 'true' | 'false'>('all');
+  const [isTicketDealerInput, setIsTicketDealerInput] = useState<'all' | 'true' | 'false'>('all');
+
+  // Applied state
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [appliedIsDriver, setAppliedIsDriver] = useState<'all' | 'true' | 'false'>('all');
+  const [appliedIsActive, setAppliedIsActive] = useState<'all' | 'true' | 'false'>('all');
+  const [appliedIsTicketDealer, setAppliedIsTicketDealer] = useState<'all' | 'true' | 'false'>('all');
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await userApi.list({ search, page, per_page: perPage });
+      const response = await userApi.list({
+        search: appliedSearch || undefined,
+        is_driver: appliedIsDriver !== 'all' ? appliedIsDriver === 'true' : undefined,
+        is_active: appliedIsActive !== 'all' ? appliedIsActive === 'true' : undefined,
+        is_ticket_dealer: appliedIsTicketDealer !== 'all' ? appliedIsTicketDealer === 'true' : undefined,
+        page,
+        per_page: perPage,
+      });
       setUsers(response.results);
       setTotalCount(response.count);
       setStats((response as { stats?: { total_count?: number } }).stats ?? null);
@@ -43,11 +54,23 @@ export default function Users() {
     } finally {
       setLoading(false);
     }
-  }, [search, page]);
+  }, [appliedSearch, appliedIsDriver, appliedIsActive, appliedIsTicketDealer, page]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  const handleSearch = () => {
+    setAppliedSearch(searchInput);
+    setAppliedIsDriver(isDriverInput);
+    setAppliedIsActive(isActiveInput);
+    setAppliedIsTicketDealer(isTicketDealerInput);
+    setPage(1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch();
+  };
 
   const columns: Column<User>[] = [
     { key: 'name', header: 'Name' },
@@ -56,7 +79,22 @@ export default function Users() {
     {
       key: 'is_driver',
       header: 'Driver',
-      render: (user) => user.is_driver ? <Check className="w-4 h-4 text-success" /> : <X className="w-4 h-4 text-muted-foreground" />,
+      render: (user) =>
+        user.is_driver ? (
+          <Check className="w-4 h-4 text-success" />
+        ) : (
+          <X className="w-4 h-4 text-muted-foreground" />
+        ),
+    },
+    {
+      key: 'is_ticket_dealer',
+      header: 'Dealer',
+      render: (user) =>
+        user.is_ticket_dealer ? (
+          <Check className="w-4 h-4 text-success" />
+        ) : (
+          <X className="w-4 h-4 text-muted-foreground" />
+        ),
     },
     {
       key: 'is_active',
@@ -77,7 +115,7 @@ export default function Users() {
 
   const handleBulkDelete = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => userApi.delete(id)));
+      await Promise.all(ids.map((id) => userApi.delete(id)));
       toast.success(`${ids.length} users deleted successfully`);
       fetchUsers();
     } catch (error) {
@@ -112,6 +150,71 @@ export default function Users() {
         </div>
       )}
 
+      {/* Filter Bar */}
+      <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/30 rounded-lg border">
+        <div className="flex flex-col gap-1 min-w-[220px]">
+          <Label className="text-xs">Search</Label>
+          <Input
+            placeholder="Name, phone, email…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Role</Label>
+          <Select
+            value={isDriverInput}
+            onValueChange={(v) => setIsDriverInput(v as 'all' | 'true' | 'false')}
+          >
+            <SelectTrigger className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All roles</SelectItem>
+              <SelectItem value="true">Drivers</SelectItem>
+              <SelectItem value="false">Passengers</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Status</Label>
+          <Select
+            value={isActiveInput}
+            onValueChange={(v) => setIsActiveInput(v as 'all' | 'true' | 'false')}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="true">Active</SelectItem>
+              <SelectItem value="false">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Ticket Dealer</Label>
+          <Select
+            value={isTicketDealerInput}
+            onValueChange={(v) => setIsTicketDealerInput(v as 'all' | 'true' | 'false')}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="true">Dealers</SelectItem>
+              <SelectItem value="false">Non-dealers</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={handleSearch} className="gap-2">
+          <Search className="w-4 h-4" />
+          Search
+        </Button>
+      </div>
+
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading users...</div>
       ) : (
@@ -125,7 +228,7 @@ export default function Users() {
           onBulkDelete={handleBulkDelete}
           serverSide
           searchValue={searchInput}
-          onSearchChange={(v) => { setSearchInput(v); setPage(1); }}
+          onSearchChange={(v) => setSearchInput(v)}
           totalCount={totalCount}
           page={page}
           onPageChange={setPage}

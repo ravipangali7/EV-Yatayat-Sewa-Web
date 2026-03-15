@@ -1,73 +1,90 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
 import { walletApi } from '@/modules/wallets/services/walletApi';
-import { userApi } from '@/modules/users/services/userApi';
-import { Wallet, User } from '@/types';
+import { Wallet } from '@/types';
 import { toast } from 'sonner';
 import { toNumber } from '@/lib/utils';
 
 export default function Wallets() {
   const navigate = useNavigate();
   const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const perPage = 25;
+
+  // Input state
+  const [searchInput, setSearchInput] = useState('');
+
+  // Applied state
+  const [appliedSearch, setAppliedSearch] = useState('');
+
+  const fetchWallets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await walletApi.list({
+        search: appliedSearch || undefined,
+        page,
+        per_page: perPage,
+      });
+      setWallets(response.results);
+      setTotalCount(response.count);
+    } catch (error) {
+      console.error('Failed to load wallets:', error);
+      toast.error('Failed to load wallets');
+    } finally {
+      setLoading(false);
+    }
+  }, [appliedSearch, page]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [walletsResponse, usersResponse] = await Promise.all([
-          walletApi.list({ per_page: 1000 }),
-          userApi.list({ per_page: 1000 }),
-        ]);
-        setWallets(walletsResponse.results);
-        setUsers(usersResponse.results);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+    fetchWallets();
+  }, [fetchWallets]);
 
-  const getUserName = (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    return user?.name || 'Unknown';
+  const handleSearch = () => {
+    setAppliedSearch(searchInput);
+    setPage(1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch();
   };
 
   const columns: Column<Wallet>[] = [
     {
       key: 'user',
       header: 'User',
-      render: (wallet) => getUserName(wallet.user),
+      render: (wallet) =>
+        wallet.user_details?.name || wallet.user_details?.phone || wallet.user || '-',
     },
     {
       key: 'balance',
       header: 'Balance',
-      render: (wallet) => `$${toNumber(wallet.balance, 0).toLocaleString()}`,
+      render: (wallet) => `Rs. ${toNumber(wallet.balance, 0).toLocaleString()}`,
     },
     {
       key: 'to_pay',
       header: 'To Pay',
-      render: (wallet) => `$${toNumber(wallet.to_pay, 0).toLocaleString()}`,
+      render: (wallet) => `Rs. ${toNumber(wallet.to_pay, 0).toLocaleString()}`,
     },
     {
       key: 'to_receive',
       header: 'To Receive',
-      render: (wallet) => `$${toNumber(wallet.to_receive, 0).toLocaleString()}`,
+      render: (wallet) => `Rs. ${toNumber(wallet.to_receive, 0).toLocaleString()}`,
     },
   ];
 
   const handleDelete = async (id: string) => {
     try {
       await walletApi.delete(id);
-      setWallets(wallets.filter(wallet => wallet.id !== id));
       toast.success('Wallet deleted successfully');
+      fetchWallets();
     } catch (error) {
       console.error('Failed to delete wallet:', error);
     }
@@ -75,16 +92,16 @@ export default function Wallets() {
 
   const handleBulkDelete = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => walletApi.delete(id)));
-      setWallets(wallets.filter(wallet => !ids.includes(wallet.id)));
+      await Promise.all(ids.map((id) => walletApi.delete(id)));
       toast.success(`${ids.length} wallets deleted successfully`);
+      fetchWallets();
     } catch (error) {
       console.error('Failed to delete wallets:', error);
     }
   };
 
   return (
-    <div>
+    <div className="space-y-4">
       <PageHeader
         title="Wallets"
         subtitle="Manage user wallets"
@@ -95,6 +112,23 @@ export default function Wallets() {
           </Button>
         }
       />
+
+      {/* Filter Bar */}
+      <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/30 rounded-lg border">
+        <div className="flex flex-col gap-1 min-w-[220px]">
+          <Label className="text-xs">Search</Label>
+          <Input
+            placeholder="User name or phone…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+        <Button onClick={handleSearch} className="gap-2">
+          <Search className="w-4 h-4" />
+          Search
+        </Button>
+      </div>
 
       {loading ? (
         <div className="text-center py-12">
@@ -109,6 +143,13 @@ export default function Wallets() {
           onEdit={(wallet) => navigate(`/admin/wallets/${wallet.id}/edit`)}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
+          serverSide
+          searchValue={searchInput}
+          onSearchChange={(v) => setSearchInput(v)}
+          totalCount={totalCount}
+          page={page}
+          onPageChange={setPage}
+          perPage={perPage}
         />
       )}
     </div>

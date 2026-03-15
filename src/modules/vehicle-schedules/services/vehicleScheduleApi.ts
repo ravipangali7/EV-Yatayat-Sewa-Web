@@ -41,6 +41,8 @@ export const vehicleScheduleApi = {
     vehicle?: string;
     route?: string;
     date?: string;
+    date_from?: string;
+    date_to?: string;
     from_place?: string;
     to_place?: string;
     expand?: boolean;
@@ -48,9 +50,12 @@ export const vehicleScheduleApi = {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.search) queryParams.append('search', params.search);
     if (params?.vehicle) queryParams.append('vehicle', params.vehicle);
     if (params?.route) queryParams.append('route', params.route);
     if (params?.date) queryParams.append('date', params.date);
+    if (params?.date_from) queryParams.append('date_from', params.date_from);
+    if (params?.date_to) queryParams.append('date_to', params.date_to);
     if (params?.from_place) queryParams.append('from_place', params.from_place);
     if (params?.to_place) queryParams.append('to_place', params.to_place);
     if (params?.expand) queryParams.append('expand', '1');

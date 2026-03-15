@@ -1,15 +1,20 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Calendar } from 'lucide-react';
+import { Car, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
 import { tripApi } from '@/modules/trips/services/tripApi';
+import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
+import { userApi } from '@/modules/users/services/userApi';
+import { routeApi } from '@/modules/routes/services/routeApi';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import type { Vehicle, User, Route } from '@/types';
 
 interface TripRow {
   id: string;
@@ -34,31 +39,54 @@ export default function Trips() {
   const navigate = useNavigate();
   const [trips, setTrips] = useState<TripRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
   const [stats, setStats] = useState<{ total_count?: number } | null>(null);
   const perPage = 25;
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Dropdown options
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<User[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+
+  // Input state
+  const [searchInput, setSearchInput] = useState('');
+  const [dateFromInput, setDateFromInput] = useState('');
+  const [dateToInput, setDateToInput] = useState('');
+  const [vehicleInput, setVehicleInput] = useState('');
+  const [driverInput, setDriverInput] = useState('');
+  const [routeInput, setRouteInput] = useState('');
+  const [isScheduledInput, setIsScheduledInput] = useState<'all' | 'true' | 'false'>('all');
+
+  // Applied state
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [appliedDateFrom, setAppliedDateFrom] = useState('');
+  const [appliedDateTo, setAppliedDateTo] = useState('');
+  const [appliedVehicle, setAppliedVehicle] = useState('');
+  const [appliedDriver, setAppliedDriver] = useState('');
+  const [appliedRoute, setAppliedRoute] = useState('');
+  const [appliedIsScheduled, setAppliedIsScheduled] = useState<'all' | 'true' | 'false'>('all');
+
+  // Load dropdown options once
   useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => setSearch(searchInput), 300);
-    return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    };
-  }, [searchInput]);
+    vehicleApi.list({ per_page: 500 }).then((r) => setVehicles(r.results)).catch(() => {});
+    userApi.list({ is_driver: true, per_page: 500 }).then((r) => setDrivers(r.results)).catch(() => {});
+    routeApi.list({ per_page: 500 }).then((r) => setRoutes(r.results)).catch(() => {});
+  }, []);
 
   const fetchTrips = useCallback(async () => {
     setLoading(true);
     try {
       const response = await tripApi.list({
-        search: search || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
+        search: appliedSearch || undefined,
+        date_from: appliedDateFrom || undefined,
+        date_to: appliedDateTo || undefined,
+        vehicle: appliedVehicle || undefined,
+        driver: appliedDriver || undefined,
+        route: appliedRoute || undefined,
+        ...(appliedIsScheduled !== 'all'
+          ? { is_scheduled: appliedIsScheduled === 'true' }
+          : {}),
         page,
         per_page: perPage,
       });
@@ -71,17 +99,45 @@ export default function Trips() {
     } finally {
       setLoading(false);
     }
-  }, [search, dateFrom, dateTo, page]);
+  }, [
+    appliedSearch,
+    appliedDateFrom,
+    appliedDateTo,
+    appliedVehicle,
+    appliedDriver,
+    appliedRoute,
+    appliedIsScheduled,
+    page,
+  ]);
 
   useEffect(() => {
     fetchTrips();
   }, [fetchTrips]);
 
+  const handleSearch = () => {
+    setAppliedSearch(searchInput);
+    setAppliedDateFrom(dateFromInput);
+    setAppliedDateTo(dateToInput);
+    setAppliedVehicle(vehicleInput);
+    setAppliedDriver(driverInput);
+    setAppliedRoute(routeInput);
+    setAppliedIsScheduled(isScheduledInput);
+    setPage(1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
   const columns: Column<TripRow>[] = [
     { key: 'trip_id', header: 'Trip ID', render: (t) => t.trip_id },
     { key: 'vehicle', header: 'Vehicle', render: (t) => t.vehicle_no || t.vehicle_name || t.vehicle },
     { key: 'driver', header: 'Driver', render: (t) => t.driver_name || t.driver_phone || t.driver },
-    { key: 'route', header: 'Route', render: (t) => (t.route_name || t.route) + (t.reverse_direction ? ' (Return)' : '') },
+    {
+      key: 'route',
+      header: 'Route',
+      render: (t) => (t.route_name || t.route) + (t.reverse_direction ? ' (Return)' : ''),
+    },
     {
       key: 'start_time',
       header: 'Start',
@@ -113,15 +169,103 @@ export default function Trips() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="flex items-center gap-2">
-          <Label className="text-xs whitespace-nowrap">From</Label>
-          <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="w-[140px]" />
+      {/* Filter Bar */}
+      <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/30 rounded-lg border">
+        <div className="flex flex-col gap-1 min-w-[200px]">
+          <Label className="text-xs">Search</Label>
+          <Input
+            placeholder="Trip ID, remarks…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <Label className="text-xs whitespace-nowrap">To</Label>
-          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="w-[140px]" />
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">From Date</Label>
+          <Input
+            type="date"
+            value={dateFromInput}
+            onChange={(e) => setDateFromInput(e.target.value)}
+            className="w-[145px]"
+          />
         </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">To Date</Label>
+          <Input
+            type="date"
+            value={dateToInput}
+            onChange={(e) => setDateToInput(e.target.value)}
+            className="w-[145px]"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Vehicle</Label>
+          <Select value={vehicleInput} onValueChange={setVehicleInput}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All vehicles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All vehicles</SelectItem>
+              {vehicles.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.vehicle_no} — {v.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Driver</Label>
+          <Select value={driverInput} onValueChange={setDriverInput}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All drivers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All drivers</SelectItem>
+              {drivers.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name || d.phone}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Route</Label>
+          <Select value={routeInput} onValueChange={setRouteInput}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All routes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All routes</SelectItem>
+              {routes.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Type</Label>
+          <Select
+            value={isScheduledInput}
+            onValueChange={(v) => setIsScheduledInput(v as 'all' | 'true' | 'false')}
+          >
+            <SelectTrigger className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="true">Scheduled</SelectItem>
+              <SelectItem value="false">On-demand</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={handleSearch} className="gap-2">
+          <Search className="w-4 h-4" />
+          Search
+        </Button>
       </div>
 
       {loading ? (
@@ -134,7 +278,7 @@ export default function Trips() {
           onView={(t) => navigate(`/admin/trips/${t.id}`)}
           serverSide
           searchValue={searchInput}
-          onSearchChange={(v) => { setSearchInput(v); setPage(1); }}
+          onSearchChange={(v) => setSearchInput(v)}
           totalCount={totalCount}
           page={page}
           onPageChange={setPage}

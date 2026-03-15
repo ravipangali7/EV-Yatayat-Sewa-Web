@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Receipt, Calendar } from 'lucide-react';
+import { Receipt, Search } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { transactionApi } from '@/modules/transactions/services/transactionApi';
 import { Transaction } from '@/types';
 import { toast } from 'sonner';
@@ -22,34 +24,37 @@ export default function Transactions() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<TransactionWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
   const [stats, setStats] = useState<{ total_count?: number; sum_amount?: string } | null>(null);
   const perPage = 25;
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => setSearch(searchInput), 300);
-    return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    };
-  }, [searchInput]);
+  // Input state
+  const [searchInput, setSearchInput] = useState('');
+  const [dateFromInput, setDateFromInput] = useState('');
+  const [dateToInput, setDateToInput] = useState('');
+  const [statusInput, setStatusInput] = useState<'all' | 'pending' | 'success' | 'failed'>('all');
+  const [typeInput, setTypeInput] = useState<'all' | 'add' | 'deducted'>('all');
+
+  // Applied state
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [appliedDateFrom, setAppliedDateFrom] = useState('');
+  const [appliedDateTo, setAppliedDateTo] = useState('');
+  const [appliedStatus, setAppliedStatus] = useState<'all' | 'pending' | 'success' | 'failed'>('all');
+  const [appliedType, setAppliedType] = useState<'all' | 'add' | 'deducted'>('all');
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await transactionApi.list({
-        search: search || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
+      const response = (await transactionApi.list({
+        search: appliedSearch || undefined,
+        date_from: appliedDateFrom || undefined,
+        date_to: appliedDateTo || undefined,
+        status: appliedStatus !== 'all' ? appliedStatus : undefined,
+        type: appliedType !== 'all' ? appliedType : undefined,
         page,
         per_page: perPage,
-      }) as { results: TransactionWithDetails[]; count: number; stats?: { total_count?: number; sum_amount?: string } };
+      })) as { results: TransactionWithDetails[]; count: number; stats?: { total_count?: number; sum_amount?: string } };
       setTransactions(response.results);
       setTotalCount(response.count);
       setStats(response.stats ?? null);
@@ -59,17 +64,33 @@ export default function Transactions() {
     } finally {
       setLoading(false);
     }
-  }, [search, dateFrom, dateTo, page]);
+  }, [appliedSearch, appliedDateFrom, appliedDateTo, appliedStatus, appliedType, page]);
 
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  const handleSearch = () => {
+    setAppliedSearch(searchInput);
+    setAppliedDateFrom(dateFromInput);
+    setAppliedDateTo(dateToInput);
+    setAppliedStatus(statusInput);
+    setAppliedType(typeInput);
+    setPage(1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
   const columns: Column<TransactionWithDetails>[] = [
     {
       key: 'user',
       header: 'User',
-      render: (tx) => (tx as TransactionWithDetails).user_details?.name || (tx as TransactionWithDetails).user_details?.phone || tx.user,
+      render: (tx) =>
+        (tx as TransactionWithDetails).user_details?.name ||
+        (tx as TransactionWithDetails).user_details?.phone ||
+        tx.user,
     },
     {
       key: 'type',
@@ -94,7 +115,9 @@ export default function Transactions() {
       header: 'Status',
       render: (tx) => <StatusBadge status={tx.status} />,
     },
-    { key: 'remarks', header: 'Remarks', render: (tx) => tx.remarks || '-' },
+    { key: 'remarks', header: 'Remarks', render: (tx) => (
+      <span className="line-clamp-2 max-w-xs text-xs">{tx.remarks || '-'}</span>
+    )},
   ];
 
   const handleDelete = async (id: string) => {
@@ -109,7 +132,7 @@ export default function Transactions() {
 
   const handleBulkDelete = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => transactionApi.delete(id)));
+      await Promise.all(ids.map((id) => transactionApi.delete(id)));
       toast.success(`${ids.length} transactions deleted successfully`);
       fetchTransactions();
     } catch (error) {
@@ -143,15 +166,72 @@ export default function Transactions() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="flex items-center gap-2">
-          <Label className="text-xs whitespace-nowrap">From</Label>
-          <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="w-[140px]" />
+      {/* Filter Bar */}
+      <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/30 rounded-lg border">
+        <div className="flex flex-col gap-1 min-w-[220px]">
+          <Label className="text-xs">Search</Label>
+          <Input
+            placeholder="Remarks, user name or phone…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <Label className="text-xs whitespace-nowrap">To</Label>
-          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="w-[140px]" />
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">From Date</Label>
+          <Input
+            type="date"
+            value={dateFromInput}
+            onChange={(e) => setDateFromInput(e.target.value)}
+            className="w-[145px]"
+          />
         </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">To Date</Label>
+          <Input
+            type="date"
+            value={dateToInput}
+            onChange={(e) => setDateToInput(e.target.value)}
+            className="w-[145px]"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Status</Label>
+          <Select
+            value={statusInput}
+            onValueChange={(v) => setStatusInput(v as 'all' | 'pending' | 'success' | 'failed')}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="success">Success</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Type</Label>
+          <Select
+            value={typeInput}
+            onValueChange={(v) => setTypeInput(v as 'all' | 'add' | 'deducted')}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="add">Credit</SelectItem>
+              <SelectItem value="deducted">Debit</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={handleSearch} className="gap-2">
+          <Search className="w-4 h-4" />
+          Search
+        </Button>
       </div>
 
       {loading ? (
@@ -167,7 +247,7 @@ export default function Transactions() {
           onBulkDelete={handleBulkDelete}
           serverSide
           searchValue={searchInput}
-          onSearchChange={(v) => { setSearchInput(v); setPage(1); }}
+          onSearchChange={(v) => setSearchInput(v)}
           totalCount={totalCount}
           page={page}
           onPageChange={setPage}
