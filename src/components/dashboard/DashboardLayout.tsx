@@ -24,6 +24,7 @@ import {
   Mail,
   BookOpen,
   Sliders,
+  MonitorDot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,6 +51,7 @@ const navSections: NavSection[] = [
     title: 'Main',
     items: [
       { label: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
+      { label: 'Monitoring', path: '/admin/monitoring', icon: <MonitorDot className="w-5 h-5" /> },
       { label: 'Users', path: '/admin/users', icon: <Users className="w-5 h-5" /> },
       { label: 'Wallets', path: '/admin/wallets', icon: <Wallet className="w-5 h-5" /> },
       { label: 'Cards', path: '/admin/cards', icon: <CreditCard className="w-5 h-5" /> },

@@ -88,6 +88,7 @@ const AppForgotPassword = lazyWithChunkErrorReload(() => import("./pages/app/App
 const AppResetPassword = lazyWithChunkErrorReload(() => import("./pages/app/AppResetPassword"));
 const AppRoleLayout = lazyWithChunkErrorReload(() => import("./pages/app/AppRoleLayout"));
 const PaymentCallbackPage = lazyWithChunkErrorReload(() => import("./pages/app/PaymentCallbackPage"));
+const Monitoring = lazyWithChunkErrorReload(() => import("./pages/app/Monitoring"));
 import { getAppRoles, getAppRoleConfig, getHomePathForUser } from "@/config/appRoles";
 
 const queryClient = new QueryClient();
@@ -112,6 +113,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;
+}
+
+function SuperuserOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="animate-pulse text-slate-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!user?.is_superuser) {
+    return <Navigate to={getHomePathForUser(user)} replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function AppProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -193,6 +216,7 @@ function AppRoutes() {
       
       {/* Admin Dashboard Routes */}
       <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/admin/monitoring" element={<SuperuserOnlyRoute><Monitoring /></SuperuserOnlyRoute>} />
       
       {/* Users */}
       <Route path="/admin/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
