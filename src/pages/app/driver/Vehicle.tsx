@@ -523,10 +523,13 @@ export default function Vehicle() {
     mapLocationRequestedRef.current = true;
     getCurrentLocation()
       .then((loc) => {
+        const center = { lat: loc.lat, lng: loc.lng };
+        driverTargetRef.current = { center, previousCenter: null, heading: null };
         setLastLocation({ lat: loc.lat, lng: loc.lng });
         setMapInitialCenter(loc);
       })
       .catch(() => {
+        driverTargetRef.current = { center: NEPAL_CENTER, previousCenter: null, heading: null };
         setMapInitialCenter(NEPAL_CENTER);
         setLastLocation({ lat: NEPAL_CENTER.lat, lng: NEPAL_CENTER.lng });
       });

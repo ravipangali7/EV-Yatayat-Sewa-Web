@@ -101,6 +101,8 @@ export default function DriverNavigationMap({
   const targetHeadingRef = useRef<number>(targetHeading);
   const lastTickTimeRef = useRef<number>(performance.now());
   const rafRef = useRef<number | null>(null);
+  /** When liveTargetRef is provided, freeze center so GoogleMap does not override RAF-driven setCenter on re-renders. */
+  const initialCenterRef = useRef<{ lat: number; lng: number }>({ lat: center.lat, lng: center.lng });
 
   const { isLoaded } = useGoogleMaps();
   const mapId = GOOGLE_MAPS_CONFIG.mapId;
@@ -108,6 +110,12 @@ export default function DriverNavigationMap({
   // Update target refs from props when not using live ref
   targetCenterRef.current = { lat: center.lat, lng: center.lng };
   targetHeadingRef.current = targetHeading;
+
+  // When using live ref, keep initial center stable; otherwise sync so prop-driven updates work
+  if (!liveTargetRef) {
+    initialCenterRef.current = { lat: center.lat, lng: center.lng };
+  }
+  const centerForMap = liveTargetRef ? initialCenterRef.current : center;
 
   const routeWaypointsKey = useMemo(
     () => routeWaypoints.map((w) => `${w.lat},${w.lng}`).join("|"),
@@ -174,7 +182,7 @@ export default function DriverNavigationMap({
       map.setCenter({ lat: displayLat, lng: displayLng });
       if (setHeadingFn) setHeadingFn.call(map, displayHeading);
 
-      if (overlayRef.current && !mapId) {
+      if (overlayRef.current) {
         overlayRef.current.style.transform = `translate(-50%, -50%) rotate(${displayHeading}deg)`;
       }
 
@@ -231,7 +239,7 @@ export default function DriverNavigationMap({
     <div className={`relative rounded-xl overflow-hidden h-full min-h-[200px] ${className}`} style={{ height: "100%" }}>
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "100%", minHeight: 200 }}
-        center={center}
+        center={centerForMap}
         zoom={NAV_ZOOM}
         onLoad={onMapLoad}
         onUnmount={onMapUnmount}
@@ -266,7 +274,7 @@ export default function DriverNavigationMap({
         style={{
           width: NAVIGATION_MARKER_SIZE,
           height: NAVIGATION_MARKER_SIZE,
-          transform: `translate(-50%, -50%) rotate(${mapId ? 0 : displayHeadingRef.current}deg)`,
+          transform: `translate(-50%, -50%) rotate(${displayHeadingRef.current}deg)`,
         }}
         aria-hidden
       >
