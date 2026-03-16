@@ -15,11 +15,12 @@ import DriverNavigationMap, { type LiveTargetSnapshot } from "@/components/app/D
 import TransactionCard from "@/components/app/TransactionCard";
 import type { AppTransaction } from "@/components/app/TransactionCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { vehicleApi } from "@/modules/vehicles/services/vehicleApi";
 import { routeApi } from "@/modules/routes/services/routeApi";
-import { tripApi, type ActiveTrip, type CurrentStopResponse, type TripStartConfirmScheduled } from "@/modules/trips/services/tripApi";
+import { tripApi, type ActiveTrip, type CurrentStopResponse, type TripStartConfirmScheduled, type TripSeatBookingDetail } from "@/modules/trips/services/tripApi";
 import { routeToRouteInfo } from "@/lib/routeMap";
 import { matchesSearch } from "@/lib/transliterate";
 import { isAvailable as isFlutterBridgeAvailable, requestScan as requestNativeScan, requestLocation, startLocationStream, stopLocationStream, authSync as flutterAuthSync, playBeep, playBeepInPage, playReachedStop, refreshVehicle } from "@/lib/flutterBridge";
@@ -315,11 +316,13 @@ export default function Vehicle() {
   const [destinationSearch, setDestinationSearch] = useState("");
   const [tripTab, setTripTab] = useState<"seats" | "map">("seats");
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
+  const [currentTripBookings, setCurrentTripBookings] = useState<TripSeatBookingDetail[]>([]);
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number; course?: number } | null>(null);
   const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
   const [pointCoverRadiusKm, setPointCoverRadiusKm] = useState(0.5);
   const prevLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const activeTripRef = useRef<ActiveTrip | null>(null);
   /** Live target for map (updated every Flutter push); used by DriverNavigationMap when in WebView for smooth tracking without re-renders. */
   const driverTargetRef = useRef<LiveTargetSnapshot | null>(null);
   const lastLocationUpdateTimeRef = useRef<number>(0);
@@ -465,6 +468,13 @@ export default function Vehicle() {
               speed: loc.speed ? Number(loc.speed) : undefined,
               course: loc.course != null && loc.course !== "" ? Number(loc.course) : undefined,
             };
+            const center = { lat: next.lat, lng: next.lng };
+            const previousCenter = driverTargetRef.current?.center ?? prevLocationRef.current ?? null;
+            driverTargetRef.current = {
+              center,
+              previousCenter: previousCenter && (previousCenter.lat !== center.lat || previousCenter.lng !== center.lng) ? previousCenter : null,
+              heading: next.course ?? null,
+            };
             setLastLocation((prev) => {
               if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
               return next;
@@ -525,6 +535,24 @@ export default function Vehicle() {
     if (driverState !== "trip_started") mapLocationRequestedRef.current = false;
   }, [driverState]);
 
+  useEffect(() => {
+    activeTripRef.current = activeTrip;
+  }, [activeTrip]);
+
+  const fetchCurrentTripBookings = useCallback(() => {
+    const id = activeTripRef.current?.id;
+    if (!id) return;
+    tripApi.getDetail(id).then((data) => setCurrentTripBookings(data.seat_bookings ?? [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (driverState !== "trip_started" || !activeTrip?.id) {
+      setCurrentTripBookings([]);
+      return;
+    }
+    fetchCurrentTripBookings();
+  }, [driverState, activeTrip?.id, fetchCurrentTripBookings]);
+
   const refetchVehicleAndSeats = async () => {
     try {
       const res = await vehicleApi.getMyActiveVehicle();
@@ -573,6 +601,7 @@ export default function Vehicle() {
     enabled: driverState === "trip_started" && !!activeTrip?.trip_id,
     onSeatBooked: (payload) => {
       refetchVehicleAndSeats();
+      fetchCurrentTripBookings();
       toast.success("New seat(s) booked – remember to pick up");
       const details = (payload.seats || []).map((s) => ({
         label: `${s.side}${s.number}`,
@@ -890,6 +919,7 @@ export default function Vehicle() {
       setCheckinStep(null);
       setSelectedDestination(null);
       setCheckinAmount(null);
+      fetchCurrentTripBookings();
       toast.success("Check-in successful!");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -948,6 +978,7 @@ export default function Vehicle() {
         setDropoffData(null);
         lastDropoffPlaceIdRef.current = null;
         await refetchVehicleAndSeats();
+        fetchCurrentTripBookings();
         refreshVehicle();
         toast.success("Check-out successful!");
       } catch (e: unknown) {
@@ -998,6 +1029,7 @@ export default function Vehicle() {
         setSelectedSeats([]);
         setShowCheckoutModal(false);
         await refetchVehicleAndSeats();
+        fetchCurrentTripBookings();
         refreshVehicle();
         toast.success("Check-out successful!");
       } catch {
@@ -1054,6 +1086,7 @@ export default function Vehicle() {
         setShowCheckoutModal(false);
       }
       await refetchVehicleAndSeats();
+      fetchCurrentTripBookings();
       refreshVehicle();
       toast.success("Check-out confirmed.");
     } catch (e: unknown) {
@@ -1504,6 +1537,39 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         </motion.div>
       )}
 
+      {(() => {
+        const activeBookings = currentTripBookings.filter((b) => !b.check_out_datetime);
+        if (activeBookings.length === 0) return null;
+        return (
+          <section className="mt-6">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2">Current trip bookings</h3>
+            <div className="space-y-2">
+              {activeBookings.map((b) => {
+                const seatLabel = b.vehicle_seat_details ? `${b.vehicle_seat_details.side}${b.vehicle_seat_details.number}` : "—";
+                const userLabel = b.is_guest ? "Guest" : (b.user_details?.name || b.user_details?.phone || "—");
+                const destination = b.destination_place_details?.name ?? "—";
+                const amount = b.trip_amount != null ? `Rs. ${Number(b.trip_amount).toFixed(2)}` : "—";
+                const bookedBy = b.is_guest ? "Driver (walk-in)" : "Customer";
+                return (
+                  <Card key={b.id} className="p-3">
+                    <CardContent className="p-0 space-y-1.5 text-sm">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-medium">Seat {seatLabel}</span>
+                        <span className="text-muted-foreground text-xs">{bookedBy}</span>
+                      </div>
+                      <p className="text-muted-foreground">{userLabel}</p>
+                      <p className="line-clamp-2">{b.check_in_address || "—"}</p>
+                      <p className="text-muted-foreground">→ {destination}</p>
+                      <p className="font-medium">{amount}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
+
       <div className="mt-8 mb-4">
         <SwipeButton label="Swipe to End Trip →" onSwipe={() => setShowEndTripModal(true)} variant="destructive" />
       </div>
@@ -1530,7 +1596,7 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
                   center={navCenterPoint}
                   previousCenter={prevLocationRef.current}
                   heading={lastLocation?.course}
-                  liveTargetRef={isFlutterBridgeAvailable() ? driverTargetRef : undefined}
+                  liveTargetRef={driverTargetRef}
                   routeWaypoints={routeWaypoints.length >= 2 ? routeWaypoints : []}
                   routeMarkers={routeMarkers}
                   className="h-full w-full min-h-0"

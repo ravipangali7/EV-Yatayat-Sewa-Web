@@ -33,6 +33,23 @@ export interface TripStartConfirmScheduled {
   tickets: Array<{ id: string; pnr: string; name: string; phone: string; seat: unknown; price: string }>;
 }
 
+/** Seat booking as returned in trip detail (for driver current-trip cards). */
+export interface TripSeatBookingDetail {
+  id: string;
+  is_guest: boolean;
+  user_details?: { name?: string; phone?: string };
+  vehicle_seat_details?: { side: string; number: number };
+  check_in_address: string;
+  check_out_datetime?: string | null;
+  destination_place_details?: { name?: string } | null;
+  trip_amount?: number | string | null;
+  is_paid: boolean;
+}
+
+export interface TripDetailResponse extends ActiveTrip {
+  seat_bookings?: TripSeatBookingDetail[];
+}
+
 export const tripApi = {
   startTrip: async (
     vehicleId: string,
@@ -81,6 +98,8 @@ export const tripApi = {
   },
 
   get: async (id: string) => api.get<ActiveTrip>(`trips/${id}/`),
+
+  getDetail: async (id: string) => api.get<TripDetailResponse>(`trips/${id}/`),
 
   getCurrentStop: async (tripId: string, lat: number, lng: number) =>
     api.get<CurrentStopResponse>(`trips/current-stop/?trip=${tripId}&latitude=${lat}&longitude=${lng}`),
