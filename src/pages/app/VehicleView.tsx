@@ -77,6 +77,7 @@ export default function VehicleView() {
         const data = await vehicleApi.getAnalytics(id, analyticsParams);
         setAnalyticsData(data);
       } catch (err) {
+        setAnalyticsData(null);
         toast.error('Failed to load vehicle analytics');
         console.error(err);
       } finally {
@@ -560,43 +561,43 @@ export default function VehicleView() {
           <CardContent className="space-y-6">
             {analyticsLoading ? (
               <div className="text-center py-12 text-muted-foreground">Loading analytics...</div>
-            ) : analyticsData ? (
+            ) : analyticsData?.summary ? (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Seat revenue</p>
-                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary.total_seat_revenue, 0).toLocaleString()}</p>
+                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary?.total_seat_revenue, 0).toLocaleString()}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Ticket revenue</p>
-                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary.total_ticket_revenue, 0).toLocaleString()}</p>
+                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary?.total_ticket_revenue, 0).toLocaleString()}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Total revenue</p>
-                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary.total_revenue, 0).toLocaleString()}</p>
+                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary?.total_revenue, 0).toLocaleString()}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Trips</p>
-                      <p className="text-lg font-semibold">{analyticsData.summary.trip_count}</p>
+                      <p className="text-lg font-semibold">{analyticsData.summary?.trip_count ?? 0}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Seat bookings</p>
-                      <p className="text-lg font-semibold">{analyticsData.summary.seat_booking_count}</p>
+                      <p className="text-lg font-semibold">{analyticsData.summary?.seat_booking_count ?? 0}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Ticket bookings</p>
-                      <p className="text-lg font-semibold">{analyticsData.summary.ticket_booking_count}</p>
+                      <p className="text-lg font-semibold">{analyticsData.summary?.ticket_booking_count ?? 0}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -614,7 +615,7 @@ export default function VehicleView() {
                           </tr>
                         </thead>
                         <tbody>
-                          {analyticsData.by_seat
+                          {(analyticsData.by_seat ?? [])
                             .filter((s) => s.booking_count > 0)
                             .map((s) => (
                               <tr key={s.seat_id} className="border-b">
@@ -625,16 +626,16 @@ export default function VehicleView() {
                             ))}
                         </tbody>
                       </table>
-                      {analyticsData.by_seat.every((s) => s.booking_count === 0) && (
+                      {(analyticsData.by_seat ?? []).every((s) => s.booking_count === 0) && (
                         <p className="p-4 text-center text-muted-foreground text-sm">No seat bookings in period.</p>
                       )}
                     </div>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium mb-2">Most booked by side (A/B/C)</h4>
-                    {analyticsData.most_booked_by_side.length > 0 ? (
+                    {(analyticsData.most_booked_by_side ?? []).length > 0 ? (
                       <div className="space-y-2">
-                        {analyticsData.most_booked_by_side.map((row) => (
+                        {(analyticsData.most_booked_by_side ?? []).map((row) => (
                           <div key={row.side} className="flex justify-between items-center p-2 rounded border">
                             <span className="font-medium">Side {row.side}</span>
                             <span>{row.booking_count} bookings, Rs. {toNumber(row.revenue, 0).toLocaleString()}</span>
@@ -645,9 +646,9 @@ export default function VehicleView() {
                       <p className="text-muted-foreground text-sm">No data in period.</p>
                     )}
                     <h4 className="text-sm font-medium mt-4 mb-2">Top seats by revenue</h4>
-                    {analyticsData.top_seats_by_revenue.length > 0 ? (
+                    {(analyticsData.top_seats_by_revenue ?? []).length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {analyticsData.top_seats_by_revenue.slice(0, 5).map((s) => (
+                        {(analyticsData.top_seats_by_revenue ?? []).slice(0, 5).map((s) => (
                           <Badge key={s.seat_id} variant="secondary">
                             {s.seat_label}: Rs.{toNumber(s.total_revenue, 0).toLocaleString()}
                           </Badge>
@@ -665,9 +666,9 @@ export default function VehicleView() {
                       <CardTitle className="text-base">Daily trips</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {analyticsData.daily_trips.length > 0 ? (
+                      {(analyticsData.daily_trips ?? []).length > 0 ? (
                         <ChartContainer config={{ count: { label: 'Trips' } }} className="h-[220px] w-full">
-                          <BarChart data={analyticsData.daily_trips} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+                          <BarChart data={analyticsData.daily_trips ?? []} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                             <XAxis dataKey="date" tickLine={false} />
                             <YAxis allowDecimals={false} tickLine={false} />
@@ -685,10 +686,10 @@ export default function VehicleView() {
                       <CardTitle className="text-base">Daily revenue</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {analyticsData.daily_revenue.length > 0 ? (
+                      {(analyticsData.daily_revenue ?? []).length > 0 ? (
                         <ChartContainer config={{ amount: { label: 'Revenue' } }} className="h-[220px] w-full">
                           <LineChart
-                            data={analyticsData.daily_revenue.map((d) => ({ ...d, amount: Number(d.amount) }))}
+                            data={(analyticsData.daily_revenue ?? []).map((d) => ({ ...d, amount: Number(d.amount) }))}
                             margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -705,7 +706,7 @@ export default function VehicleView() {
                   </Card>
                 </div>
 
-                {analyticsData.by_driver.length > 0 && (
+                {(analyticsData.by_driver ?? []).length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium mb-2">By driver</h4>
                     <div className="border rounded-md overflow-auto">
@@ -718,7 +719,7 @@ export default function VehicleView() {
                           </tr>
                         </thead>
                         <tbody>
-                          {analyticsData.by_driver.map((d) => (
+                          {(analyticsData.by_driver ?? []).map((d) => (
                             <tr key={d.driver_id} className="border-b">
                               <td className="p-2 font-medium">{d.driver_name}</td>
                               <td className="p-2 text-right">{d.trip_count}</td>

@@ -60,6 +60,7 @@ export default function UserView() {
         const data = await userApi.getAnalytics(id, analyticsParams);
         setAnalyticsData(data);
       } catch (err) {
+        setAnalyticsData(null);
         toast.error('Failed to load user analytics');
         console.error(err);
       } finally {
@@ -266,42 +267,42 @@ export default function UserView() {
           <CardContent className="space-y-6">
             {analyticsLoading ? (
               <div className="text-center py-12 text-muted-foreground">Loading analytics...</div>
-            ) : analyticsData ? (
+            ) : analyticsData?.summary ? (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Trips (as driver)</p>
-                      <p className="text-lg font-semibold">{analyticsData.summary.trip_count_as_driver}</p>
+                      <p className="text-lg font-semibold">{analyticsData.summary?.trip_count_as_driver ?? 0}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Seat revenue (driver)</p>
-                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary.total_seat_revenue_as_driver, 0).toLocaleString()}</p>
+                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary?.total_seat_revenue_as_driver, 0).toLocaleString()}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Ticket revenue (driver)</p>
-                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary.total_ticket_revenue_as_driver, 0).toLocaleString()}</p>
+                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary?.total_ticket_revenue_as_driver, 0).toLocaleString()}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Bookings (passenger)</p>
-                      <p className="text-lg font-semibold">{analyticsData.summary.seat_booking_count_as_passenger}</p>
+                      <p className="text-lg font-semibold">{analyticsData.summary?.seat_booking_count_as_passenger ?? 0}</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <p className="text-xs text-muted-foreground">Spend (passenger)</p>
-                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary.total_spend_as_passenger, 0).toLocaleString()}</p>
+                      <p className="text-lg font-semibold">Rs. {toNumber(analyticsData.summary?.total_spend_as_passenger, 0).toLocaleString()}</p>
                     </CardContent>
                   </Card>
                 </div>
 
-                {user.is_driver && analyticsData.as_driver.by_vehicle.length > 0 && (
+                {user.is_driver && (analyticsData.as_driver?.by_vehicle ?? []).length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium mb-2">As driver — by vehicle</h4>
                     <div className="border rounded-md overflow-auto">
@@ -314,7 +315,7 @@ export default function UserView() {
                           </tr>
                         </thead>
                         <tbody>
-                          {analyticsData.as_driver.by_vehicle.map((v) => (
+                          {(analyticsData.as_driver?.by_vehicle ?? []).map((v) => (
                             <tr key={v.vehicle_id} className="border-b">
                               <td className="p-2 font-medium">{v.vehicle_name}</td>
                               <td className="p-2 text-right">{v.trip_count}</td>
@@ -327,13 +328,13 @@ export default function UserView() {
                   </div>
                 )}
 
-                {user.is_driver && (analyticsData.as_driver.most_booked_by_side.length > 0 || analyticsData.as_driver.top_seats.length > 0) && (
+                {user.is_driver && ((analyticsData.as_driver?.most_booked_by_side ?? []).length > 0 || (analyticsData.as_driver?.top_seats ?? []).length > 0) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {analyticsData.as_driver.most_booked_by_side.length > 0 && (
+                    {(analyticsData.as_driver?.most_booked_by_side ?? []).length > 0 && (
                       <div>
                         <h4 className="text-sm font-medium mb-2">Most booked seat type (by side, as driver)</h4>
                         <div className="space-y-2">
-                          {analyticsData.as_driver.most_booked_by_side.map((row) => (
+                          {(analyticsData.as_driver?.most_booked_by_side ?? []).map((row) => (
                             <div key={row.side} className="flex justify-between items-center p-2 rounded border">
                               <span className="font-medium">Side {row.side}</span>
                               <span>{row.booking_count} bookings, Rs. {toNumber(row.revenue, 0).toLocaleString()}</span>
@@ -342,11 +343,11 @@ export default function UserView() {
                         </div>
                       </div>
                     )}
-                    {analyticsData.as_driver.top_seats.length > 0 && (
+                    {(analyticsData.as_driver?.top_seats ?? []).length > 0 && (
                       <div>
                         <h4 className="text-sm font-medium mb-2">Top seats (as driver)</h4>
                         <div className="flex flex-wrap gap-2">
-                          {analyticsData.as_driver.top_seats.map((s) => (
+                          {(analyticsData.as_driver?.top_seats ?? []).map((s) => (
                             <span key={s.seat_label} className="text-sm px-2 py-1 rounded bg-muted">
                               {s.seat_label}: {s.booking_count} bookings, Rs.{toNumber(s.total_revenue, 0).toLocaleString()}
                             </span>
@@ -357,16 +358,16 @@ export default function UserView() {
                   </div>
                 )}
 
-                {user.is_driver && (analyticsData.as_driver.daily_trips.length > 0 || analyticsData.as_driver.daily_revenue.length > 0) && (
+                {user.is_driver && ((analyticsData.as_driver?.daily_trips ?? []).length > 0 || (analyticsData.as_driver?.daily_revenue ?? []).length > 0) && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-base">Daily trips (as driver)</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {analyticsData.as_driver.daily_trips.length > 0 ? (
+                        {(analyticsData.as_driver?.daily_trips ?? []).length > 0 ? (
                           <ChartContainer config={{ count: { label: 'Trips' } }} className="h-[220px] w-full">
-                            <BarChart data={analyticsData.as_driver.daily_trips} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+                            <BarChart data={analyticsData.as_driver?.daily_trips ?? []} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                               <XAxis dataKey="date" tickLine={false} />
                               <YAxis allowDecimals={false} tickLine={false} />
@@ -384,10 +385,10 @@ export default function UserView() {
                         <CardTitle className="text-base">Daily revenue (as driver)</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {analyticsData.as_driver.daily_revenue.length > 0 ? (
+                        {(analyticsData.as_driver?.daily_revenue ?? []).length > 0 ? (
                           <ChartContainer config={{ amount: { label: 'Revenue' } }} className="h-[220px] w-full">
                             <LineChart
-                              data={analyticsData.as_driver.daily_revenue.map((d) => ({ ...d, amount: Number(d.amount) }))}
+                              data={(analyticsData.as_driver?.daily_revenue ?? []).map((d) => ({ ...d, amount: Number(d.amount) }))}
                               margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
                             >
                               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -405,7 +406,7 @@ export default function UserView() {
                   </div>
                 )}
 
-                {analyticsData.as_passenger.by_vehicle.length > 0 && (
+                {(analyticsData.as_passenger?.by_vehicle ?? []).length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium mb-2">As passenger — by vehicle</h4>
                     <div className="border rounded-md overflow-auto">
@@ -418,7 +419,7 @@ export default function UserView() {
                           </tr>
                         </thead>
                         <tbody>
-                          {analyticsData.as_passenger.by_vehicle.map((v) => (
+                          {(analyticsData.as_passenger?.by_vehicle ?? []).map((v) => (
                             <tr key={v.vehicle_id} className="border-b">
                               <td className="p-2 font-medium">{v.vehicle_name}</td>
                               <td className="p-2 text-right">{v.booking_count}</td>
