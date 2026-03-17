@@ -1,5 +1,5 @@
 import { api, PaginatedResponse, ListParams } from '@/lib/api';
-import { User } from '@/types';
+import { User, UserAnalyticsParams, UserAnalyticsResponse } from '@/types';
 
 export const userApi = {
   // List users with pagination and filters
@@ -54,5 +54,15 @@ export const userApi = {
   // Delete user (using GET)
   delete: async (id: string): Promise<void> => {
     return api.get<void>(`users/${id}/delete/`);
+  },
+
+  // Analytics
+  getAnalytics: async (userId: string, params?: UserAnalyticsParams): Promise<UserAnalyticsResponse> => {
+    const search = new URLSearchParams();
+    if (params?.date_from) search.append('date_from', params.date_from);
+    if (params?.date_to) search.append('date_to', params.date_to);
+    if (params?.preset) search.append('preset', params.preset);
+    const q = search.toString();
+    return api.get<UserAnalyticsResponse>(`users/${userId}/analytics/${q ? `?${q}` : ''}`);
   },
 };

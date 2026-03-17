@@ -1,5 +1,5 @@
 import { api, PaginatedResponse, ListParams } from '@/lib/api';
-import { Vehicle, VehicleSeat, VehicleImage, VehicleNearby } from '@/types';
+import { Vehicle, VehicleSeat, VehicleImage, VehicleNearby, VehicleAnalyticsParams, VehicleAnalyticsResponse } from '@/types';
 
 export const vehicleApi = {
   // List vehicles with pagination and filters
@@ -196,5 +196,15 @@ export const vehicleApi = {
 
   deleteImage: async (vehicleId: string, imageId: string): Promise<void> => {
     return api.get<void>(`vehicles/${vehicleId}/images/${imageId}/delete/`);
+  },
+
+  // Analytics
+  getAnalytics: async (vehicleId: string, params?: VehicleAnalyticsParams): Promise<VehicleAnalyticsResponse> => {
+    const search = new URLSearchParams();
+    if (params?.date_from) search.append('date_from', params.date_from);
+    if (params?.date_to) search.append('date_to', params.date_to);
+    if (params?.preset) search.append('preset', params.preset);
+    const q = search.toString();
+    return api.get<VehicleAnalyticsResponse>(`vehicles/${vehicleId}/analytics/${q ? `?${q}` : ''}`);
   },
 };

@@ -232,3 +232,72 @@ export interface FilterState {
   search: string;
   [key: string]: string | number | boolean | undefined;
 }
+
+// --- Analytics (vehicle & user) ---
+export type AnalyticsDatePreset = 'all' | 'last_day' | 'last_week' | 'last_month' | 'custom';
+
+export interface VehicleAnalyticsParams {
+  date_from?: string;
+  date_to?: string;
+  preset?: AnalyticsDatePreset;
+}
+
+export interface VehicleAnalyticsResponse {
+  date_from: string;
+  date_to: string;
+  preset: string;
+  summary: {
+    total_seat_revenue: string;
+    total_ticket_revenue: string;
+    total_revenue: string;
+    trip_count: number;
+    seat_booking_count: number;
+    ticket_booking_count: number;
+  };
+  by_seat: Array<{
+    seat_id: string;
+    seat_label: string;
+    side: string;
+    number: number;
+    booking_count: number;
+    total_revenue: string;
+  }>;
+  most_booked_by_side: Array<{ side: string; booking_count: number; revenue: string }>;
+  top_seats_by_count: Array<{ seat_id: string; seat_label: string; side: string; number: number; booking_count: number; total_revenue: string }>;
+  top_seats_by_revenue: Array<{ seat_id: string; seat_label: string; side: string; number: number; booking_count: number; total_revenue: string }>;
+  daily_revenue: Array<{ date: string; amount: string }>;
+  daily_trips: Array<{ date: string; count: number }>;
+  daily_seat_bookings: Array<{ date: string; count: number }>;
+  by_driver: Array<{ driver_id: string; driver_name: string; trip_count: number; seat_revenue: string }>;
+}
+
+export interface UserAnalyticsParams {
+  date_from?: string;
+  date_to?: string;
+  preset?: AnalyticsDatePreset;
+}
+
+export interface UserAnalyticsResponse {
+  date_from: string;
+  date_to: string;
+  preset: string;
+  user_id: string;
+  is_driver: boolean;
+  summary: {
+    trip_count_as_driver: number;
+    total_seat_revenue_as_driver: string;
+    total_ticket_revenue_as_driver: string;
+    seat_booking_count_as_passenger: number;
+    total_spend_as_passenger: string;
+  };
+  as_driver: {
+    by_vehicle: Array<{ vehicle_id: string; vehicle_name: string; trip_count: number; seat_revenue: string }>;
+    most_booked_by_side: Array<{ side: string; booking_count: number; revenue: string }>;
+    top_seats: Array<{ seat_label: string; booking_count: number; total_revenue: string }>;
+    daily_trips: Array<{ date: string; count: number }>;
+    daily_revenue: Array<{ date: string; amount: string }>;
+  };
+  as_passenger: {
+    by_vehicle: Array<{ vehicle_id: string; vehicle_name: string; booking_count: number; total_spend: string }>;
+  };
+}
