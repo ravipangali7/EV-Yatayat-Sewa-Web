@@ -53,18 +53,18 @@ export default function Trips() {
   const [searchInput, setSearchInput] = useState('');
   const [dateFromInput, setDateFromInput] = useState('');
   const [dateToInput, setDateToInput] = useState('');
-  const [vehicleInput, setVehicleInput] = useState('');
-  const [driverInput, setDriverInput] = useState('');
-  const [routeInput, setRouteInput] = useState('');
+  const [vehicleInput, setVehicleInput] = useState<string>('__all__');
+  const [driverInput, setDriverInput] = useState<string>('__all__');
+  const [routeInput, setRouteInput] = useState<string>('__all__');
   const [isScheduledInput, setIsScheduledInput] = useState<'all' | 'true' | 'false'>('all');
 
   // Applied state
   const [appliedSearch, setAppliedSearch] = useState('');
   const [appliedDateFrom, setAppliedDateFrom] = useState('');
   const [appliedDateTo, setAppliedDateTo] = useState('');
-  const [appliedVehicle, setAppliedVehicle] = useState('');
-  const [appliedDriver, setAppliedDriver] = useState('');
-  const [appliedRoute, setAppliedRoute] = useState('');
+  const [appliedVehicle, setAppliedVehicle] = useState<string>('__all__');
+  const [appliedDriver, setAppliedDriver] = useState<string>('__all__');
+  const [appliedRoute, setAppliedRoute] = useState<string>('__all__');
   const [appliedIsScheduled, setAppliedIsScheduled] = useState<'all' | 'true' | 'false'>('all');
 
   // Load dropdown options once
@@ -81,9 +81,9 @@ export default function Trips() {
         search: appliedSearch || undefined,
         date_from: appliedDateFrom || undefined,
         date_to: appliedDateTo || undefined,
-        vehicle: appliedVehicle || undefined,
-        driver: appliedDriver || undefined,
-        route: appliedRoute || undefined,
+        vehicle: appliedVehicle && appliedVehicle !== '__all__' ? appliedVehicle : undefined,
+        driver: appliedDriver && appliedDriver !== '__all__' ? appliedDriver : undefined,
+        route: appliedRoute && appliedRoute !== '__all__' ? appliedRoute : undefined,
         ...(appliedIsScheduled !== 'all'
           ? { is_scheduled: appliedIsScheduled === 'true' }
           : {}),
@@ -205,7 +205,7 @@ export default function Trips() {
               <SelectValue placeholder="All vehicles" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All vehicles</SelectItem>
+              <SelectItem value="__all__">All vehicles</SelectItem>
               {vehicles.map((v) => (
                 <SelectItem key={v.id} value={v.id}>
                   {v.vehicle_no} — {v.name}
@@ -221,7 +221,7 @@ export default function Trips() {
               <SelectValue placeholder="All drivers" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All drivers</SelectItem>
+              <SelectItem value="__all__">All drivers</SelectItem>
               {drivers.map((d) => (
                 <SelectItem key={d.id} value={d.id}>
                   {d.name || d.phone}
@@ -237,7 +237,7 @@ export default function Trips() {
               <SelectValue placeholder="All routes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All routes</SelectItem>
+              <SelectItem value="__all__">All routes</SelectItem>
               {routes.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
                   {r.name}
