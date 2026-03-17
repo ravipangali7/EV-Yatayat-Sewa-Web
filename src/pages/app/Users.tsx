@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { userApi } from '@/modules/users/services/userApi';
 import { User } from '@/types';
@@ -22,26 +23,30 @@ export default function Users() {
   const [stats, setStats] = useState<{ total_count?: number } | null>(null);
   const perPage = 25;
 
+  // Tab: All | Driver | Dealer | Customer
+  type RoleTab = 'all' | 'driver' | 'dealer' | 'customer';
+  const [roleTab, setRoleTab] = useState<RoleTab>('all');
+
   // Input state
   const [searchInput, setSearchInput] = useState('');
-  const [isDriverInput, setIsDriverInput] = useState<'all' | 'true' | 'false'>('all');
   const [isActiveInput, setIsActiveInput] = useState<'all' | 'true' | 'false'>('all');
   const [isTicketDealerInput, setIsTicketDealerInput] = useState<'all' | 'true' | 'false'>('all');
 
   // Applied state
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [appliedIsDriver, setAppliedIsDriver] = useState<'all' | 'true' | 'false'>('all');
   const [appliedIsActive, setAppliedIsActive] = useState<'all' | 'true' | 'false'>('all');
   const [appliedIsTicketDealer, setAppliedIsTicketDealer] = useState<'all' | 'true' | 'false'>('all');
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
+      const isDriver = roleTab === 'driver' ? true : roleTab === 'customer' ? false : undefined;
+      const isTicketDealer = roleTab === 'dealer' ? true : roleTab === 'customer' ? false : undefined;
       const response = await userApi.list({
         search: appliedSearch || undefined,
-        is_driver: appliedIsDriver !== 'all' ? appliedIsDriver === 'true' : undefined,
+        is_driver: isDriver,
+        is_ticket_dealer: isTicketDealer,
         is_active: appliedIsActive !== 'all' ? appliedIsActive === 'true' : undefined,
-        is_ticket_dealer: appliedIsTicketDealer !== 'all' ? appliedIsTicketDealer === 'true' : undefined,
         page,
         per_page: perPage,
       });
@@ -54,7 +59,7 @@ export default function Users() {
     } finally {
       setLoading(false);
     }
-  }, [appliedSearch, appliedIsDriver, appliedIsActive, appliedIsTicketDealer, page]);
+  }, [appliedSearch, appliedIsActive, appliedIsTicketDealer, roleTab, page]);
 
   useEffect(() => {
     fetchUsers();
@@ -62,7 +67,6 @@ export default function Users() {
 
   const handleSearch = () => {
     setAppliedSearch(searchInput);
-    setAppliedIsDriver(isDriverInput);
     setAppliedIsActive(isActiveInput);
     setAppliedIsTicketDealer(isTicketDealerInput);
     setPage(1);
@@ -150,6 +154,15 @@ export default function Users() {
         </div>
       )}
 
+      <Tabs value={roleTab} onValueChange={(v) => { setRoleTab(v as RoleTab); setPage(1); }}>
+        <TabsList className="grid w-full max-w-md grid-cols-4">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="driver">Driver</TabsTrigger>
+          <TabsTrigger value="dealer">Dealer</TabsTrigger>
+          <TabsTrigger value="customer">Customer</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/30 rounded-lg border">
         <div className="flex flex-col gap-1 min-w-[220px]">
@@ -160,22 +173,6 @@ export default function Users() {
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label className="text-xs">Role</Label>
-          <Select
-            value={isDriverInput}
-            onValueChange={(v) => setIsDriverInput(v as 'all' | 'true' | 'false')}
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All roles</SelectItem>
-              <SelectItem value="true">Drivers</SelectItem>
-              <SelectItem value="false">Passengers</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs">Status</Label>

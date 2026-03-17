@@ -10,6 +10,7 @@ export const userApi = {
     if (params?.search) queryParams.append('search', params.search);
     if (params?.phone) queryParams.append('phone', params.phone);
     if (params?.is_driver !== undefined) queryParams.append('is_driver', params.is_driver.toString());
+    if (params?.is_ticket_dealer !== undefined) queryParams.append('is_ticket_dealer', params.is_ticket_dealer.toString());
     if (params?.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
 
     const queryString = queryParams.toString();

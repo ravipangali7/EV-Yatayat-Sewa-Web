@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { walletApi } from '@/modules/wallets/services/walletApi';
 import { Wallet } from '@/types';
 import { toast } from 'sonner';
@@ -19,6 +20,10 @@ export default function Wallets() {
   const [totalCount, setTotalCount] = useState(0);
   const perPage = 25;
 
+  // Tab: All | Driver | Dealer | Customer
+  type RoleTab = 'all' | 'driver' | 'dealer' | 'customer';
+  const [roleTab, setRoleTab] = useState<RoleTab>('all');
+
   // Input state
   const [searchInput, setSearchInput] = useState('');
 
@@ -28,8 +33,12 @@ export default function Wallets() {
   const fetchWallets = useCallback(async () => {
     setLoading(true);
     try {
+      const isDriver = roleTab === 'driver' ? true : roleTab === 'customer' ? false : undefined;
+      const isTicketDealer = roleTab === 'dealer' ? true : roleTab === 'customer' ? false : undefined;
       const response = await walletApi.list({
         search: appliedSearch || undefined,
+        is_driver: isDriver,
+        is_ticket_dealer: isTicketDealer,
         page,
         per_page: perPage,
       });
@@ -41,7 +50,7 @@ export default function Wallets() {
     } finally {
       setLoading(false);
     }
-  }, [appliedSearch, page]);
+  }, [appliedSearch, roleTab, page]);
 
   useEffect(() => {
     fetchWallets();
@@ -112,6 +121,15 @@ export default function Wallets() {
           </Button>
         }
       />
+
+      <Tabs value={roleTab} onValueChange={(v) => { setRoleTab(v as RoleTab); setPage(1); }}>
+        <TabsList className="grid w-full max-w-md grid-cols-4">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="driver">Driver</TabsTrigger>
+          <TabsTrigger value="dealer">Dealer</TabsTrigger>
+          <TabsTrigger value="customer">Customer</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/30 rounded-lg border">

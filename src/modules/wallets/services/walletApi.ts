@@ -9,7 +9,9 @@ export const walletApi = {
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
     if (params?.search) queryParams.append('search', params.search);
     if (params?.user) queryParams.append('user', params.user);
-    
+    if (params?.is_driver !== undefined) queryParams.append('is_driver', params.is_driver.toString());
+    if (params?.is_ticket_dealer !== undefined) queryParams.append('is_ticket_dealer', params.is_ticket_dealer.toString());
+
     const queryString = queryParams.toString();
     const url = `wallets/${queryString ? `?${queryString}` : ''}`;
     return api.get<PaginatedResponse<Wallet>>(url);
