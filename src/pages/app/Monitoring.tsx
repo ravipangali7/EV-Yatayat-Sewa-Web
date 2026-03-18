@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Wallet,
   ChevronRight,
+  Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { monitoringApi } from '@/modules/monitoring/services/monitoringApi';
@@ -192,6 +193,7 @@ export default function Monitoring() {
   const [heavyDues, setHeavyDues] = useState<HeavyDue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fleetSearch, setFleetSearch] = useState('');
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [infoWindowVehicleId, setInfoWindowVehicleId] = useState<string | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -253,6 +255,16 @@ export default function Monitoring() {
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId);
   const infoWindowVehicle = vehicles.find((v) => v.id === infoWindowVehicleId);
   const vehiclesWithLocation = vehicles.filter((v) => v.lat != null && v.lng != null && (v.lat !== 0 || v.lng !== 0));
+
+  const fleetFiltered = fleetSearch.trim()
+    ? vehicles.filter((v) => {
+        const q = fleetSearch.trim().toLowerCase();
+        return (
+          (v.name && v.name.toLowerCase().includes(q)) ||
+          (v.vehicle_no && v.vehicle_no.toLowerCase().includes(q))
+        );
+      })
+    : vehicles;
 
   const totalRevenue = vehicles.reduce((s, v) => s + v.today_revenue, 0);
   const onTripCount = vehicles.filter((v) => v.status === 'on_trip').length;
@@ -342,12 +354,28 @@ export default function Monitoring() {
                 Fleet Status
               </span>
             </div>
-            <span className="text-xs text-slate-600">{vehicles.length} vehicles</span>
+            <span className="text-xs text-slate-600">
+              {fleetFiltered.length}{vehicles.length !== fleetFiltered.length ? ` / ${vehicles.length}` : ''} vehicles
+            </span>
+          </div>
+
+          {/* Search by name or vehicle no */}
+          <div className="px-3 py-2 border-b border-slate-700/40 flex-shrink-0">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search by name or number"
+                value={fleetSearch}
+                onChange={(e) => setFleetSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 text-sm bg-slate-800 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
 
           {/* Cards list */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-            {vehicles
+            {fleetFiltered
               .slice()
               .sort((a, b) => (b.status === 'on_trip' ? 1 : 0) - (a.status === 'on_trip' ? 1 : 0))
               .map(vehicle => (
