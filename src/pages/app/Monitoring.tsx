@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { monitoringApi } from '@/modules/monitoring/services/monitoringApi';
 import type { MonitoringVehicle, HeavyDue } from '@/types';
 import { toast } from 'sonner';
+import { VehicleDetailSheet } from '@/components/monitoring/VehicleDetailSheet';
 
 // ---------------------------------------------------------------------------
 // Types (display vehicle = API vehicle + color + today_revenue as number)
@@ -194,6 +195,8 @@ export default function Monitoring() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fleetSearch, setFleetSearch] = useState('');
+  const [detailVehicleId, setDetailVehicleId] = useState<string | null>(null);
+  const [vehicleDetailOpen, setVehicleDetailOpen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [infoWindowVehicleId, setInfoWindowVehicleId] = useState<string | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -245,6 +248,12 @@ export default function Monitoring() {
       mapRef.current.panTo({ lat: vehicle.lat, lng: vehicle.lng });
       mapRef.current.setZoom(15);
     }
+  };
+
+  const handleVehicleCardClick = (vehicle: DisplayVehicle) => {
+    focusVehicle(vehicle);
+    setDetailVehicleId(vehicle.id);
+    setVehicleDetailOpen(true);
   };
 
   const handleMarkerClick = (vehicle: DisplayVehicle) => {
@@ -383,7 +392,7 @@ export default function Monitoring() {
                   key={vehicle.id}
                   vehicle={vehicle}
                   selected={selectedVehicleId === vehicle.id}
-                  onClick={() => focusVehicle(vehicle)}
+                  onClick={() => handleVehicleCardClick(vehicle)}
                 />
               ))}
           </div>
@@ -534,6 +543,17 @@ export default function Monitoring() {
           </div>
         </aside>
       </div>
+
+      <VehicleDetailSheet
+        vehicleId={detailVehicleId}
+        open={vehicleDetailOpen}
+        onClose={() => {
+          setVehicleDetailOpen(false);
+          setDetailVehicleId(null);
+        }}
+        vehicleName={vehicles.find((v) => v.id === detailVehicleId)?.name}
+        vehicleNo={vehicles.find((v) => v.id === detailVehicleId)?.vehicle_no}
+      />
     </div>
   );
 }

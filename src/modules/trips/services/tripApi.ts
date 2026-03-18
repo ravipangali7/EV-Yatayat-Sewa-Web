@@ -40,6 +40,7 @@ export interface TripSeatBookingDetail {
   user_details?: { name?: string; phone?: string };
   vehicle_seat_details?: { side: string; number: number };
   check_in_address: string;
+  check_in_datetime?: string | null;
   check_out_datetime?: string | null;
   destination_place_details?: { name?: string } | null;
   trip_amount?: number | string | null;
