@@ -599,11 +599,11 @@ export default function Monitoring() {
         {/* ---------------------------------------------------------------- */}
         {/* RIGHT PANEL                                                       */}
         {/* ---------------------------------------------------------------- */}
-        <aside className="w-80 flex-shrink-0 border-l border-slate-700/60 bg-slate-900 flex flex-col min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <aside className="w-80 flex-shrink-0 border-l border-slate-700/60 bg-slate-900 flex flex-col min-h-0">
 
-          {/* --- Drivers with Heavy Dues ----------------------------------- */}
-          <div className="border-b border-slate-700/40">
-            <div className="px-4 py-3 flex items-center justify-between">
+          {/* --- Drivers with Heavy Dues (full height, list scrolls) ------- */}
+          <div className="flex-1 flex flex-col min-h-0 border-b border-slate-700/40">
+            <div className="px-4 py-3 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-red-400" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -613,7 +613,7 @@ export default function Monitoring() {
               <span className="text-xs text-slate-600">{MOCK_DRIVER_DUES.length} drivers</span>
             </div>
 
-            <div className="px-3 pb-3 space-y-2">
+            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent min-h-0">
               {MOCK_DRIVER_DUES.sort((a, b) => b.to_pay - a.to_pay).map(driver => (
                 <div
                   key={driver.id}
