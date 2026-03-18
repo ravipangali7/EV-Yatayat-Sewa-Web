@@ -96,6 +96,7 @@ function getUpcomingFromAndTo(vehicle: VehicleNearby): {
     return { fromStops, toOptions };
   }
 
+  const STOPS_AHEAD_MIN = 2;
   let nearestOrder = points[0].order;
   let minDist = Infinity;
   for (const p of points) {
@@ -109,7 +110,8 @@ function getUpcomingFromAndTo(vehicle: VehicleNearby): {
     }
   }
 
-  const fromNearest = points.filter((p) => p.order >= nearestOrder);
+  const minFromOrder = nearestOrder + STOPS_AHEAD_MIN;
+  const fromNearest = points.filter((p) => p.order >= minFromOrder);
   const fromStops = fromNearest.filter((p) => !p.isEnd);
   const toOptions = fromNearest.map((p) => ({
     value: p.place,
@@ -260,6 +262,7 @@ export function DirectBookFlow({
         check_in_datetime: new Date().toISOString(),
         check_in_address: fromPlace?.name ?? "Pick-up location",
         trip_amount: seatIds.length === 1 ? perSeatAmount : totalAmount,
+        ...(fromPlaceId ? { origin_place: fromPlaceId } : {}),
         ...(destinationPlaceId ? { destination_place: destinationPlaceId } : {}),
       };
 

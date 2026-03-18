@@ -303,6 +303,9 @@ export default function Vehicle() {
   const [dropoffData, setDropoffData] = useState<{ placeId: string; placeName: string; dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string; trip_amount?: string }> } | null>(null);
   const lastDropoffPlaceIdRef = useRef<string | null>(null);
   const lastAnnouncedPlaceIdRef = useRef<string | null>(null);
+  const [showPickupModal, setShowPickupModal] = useState(false);
+  const [pickupData, setPickupData] = useState<{ placeId: string; placeName: string; pickups: Array<{ pnr: string; name: string; phone?: string; seat: string }> } | null>(null);
+  const lastPickupPlaceIdRef = useRef<string | null>(null);
   type OutOfRangeItem = {
     vehicle_seat_id: string;
     seat_label: string;
@@ -506,13 +509,18 @@ export default function Vehicle() {
         setShowDropoffModal(true);
         setSelectedSeats(seats.filter((s) => labels.has(s.id)));
       }
+      if (at?.pickups?.length && at.place_id !== lastPickupPlaceIdRef.current) {
+        lastPickupPlaceIdRef.current = at.place_id;
+        setPickupData({ placeId: at.place_id, placeName: at.name, pickups: at.pickups });
+        setShowPickupModal(true);
+      }
     }).catch(() => {});
   }, [activeTrip?.id, driverState, lastLocation?.lat, lastLocation?.lng, seats]);
 
   useEffect(() => {
-    // Beep only when checkout modal opens; no beep for dropoff modal (stop arrival uses announcement.mp3 then TTS).
-    if (showCheckoutModal) playBeep();
-  }, [showDropoffModal, showCheckoutModal]);
+    // Beep when checkout or pickup modal opens; no beep for dropoff modal (stop arrival uses announcement.mp3 then TTS).
+    if (showCheckoutModal || showPickupModal) playBeep();
+  }, [showDropoffModal, showCheckoutModal, showPickupModal]);
 
   useEffect(() => {
     if (driverState !== "trip_started" || tripTab !== "map") return;
@@ -1716,6 +1724,35 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
                 labelLeft="Swipe left to cancel"
                 onSwipe={() => confirmCheckOut()}
                 onCancel={() => { setShowDropoffModal(false); setDropoffData(null); }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showPickupModal} onOpenChange={(open) => { if (!open) { setShowPickupModal(false); setPickupData(null); } }}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Pick up at {pickupData?.placeName ?? "stop"}</DialogTitle>
+            <DialogDescription>
+              {pickupData && pickupData.pickups.length > 0
+                ? `Passenger(s) to pick up from this stop:`
+                : "Passenger(s) to pick up from this stop."}
+            </DialogDescription>
+          </DialogHeader>
+          {pickupData && (
+            <div className="space-y-3 py-2">
+              <div className="text-sm">
+                {pickupData.pickups.map((p, i) => (
+                  <div key={`${p.seat}-${i}`} className="flex justify-between py-0.5">
+                    <span>Seat {p.seat} – {p.name}{p.phone ? ` · ${p.phone}` : ""}</span>
+                  </div>
+                ))}
+              </div>
+              <SwipeButton
+                labelRight="Slide to Pickup"
+                labelLeft="Swipe left to cancel"
+                onSwipe={() => { setShowPickupModal(false); setPickupData(null); }}
+                onCancel={() => { setShowPickupModal(false); setPickupData(null); }}
               />
             </div>
           )}
