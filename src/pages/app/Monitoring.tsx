@@ -10,14 +10,8 @@ import {
   Phone,
   TrendingUp,
   Zap,
-  WifiOff,
-  FileWarning,
   Wallet,
-  Mic,
-  AlertTriangle,
-  Info,
   ChevronRight,
-  Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -53,26 +47,6 @@ interface MockDriverDue {
   to_pay: number;
   last_trip_date: string;
   trips_this_month: number;
-}
-
-type AlertType = 'overspeed' | 'gps_offline' | 'doc_expiry' | 'low_balance';
-type AlertSeverity = 'critical' | 'warning' | 'info';
-
-interface MockAlert {
-  id: string;
-  type: AlertType;
-  severity: AlertSeverity;
-  message: string;
-  vehicle_name: string;
-  triggered_at: string;
-}
-
-interface MockPttActivity {
-  id: string;
-  sender_name: string;
-  group_name: string;
-  duration_seconds: number;
-  created_at: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -225,80 +199,6 @@ const MOCK_DRIVER_DUES: MockDriverDue[] = [
   },
 ];
 
-const MOCK_ALERTS: MockAlert[] = [
-  {
-    id: 'a1',
-    type: 'overspeed',
-    severity: 'critical',
-    message: 'Speed 78 km/h — limit 60 km/h',
-    vehicle_name: 'EV Bus 03',
-    triggered_at: '2026-03-16T10:42:00Z',
-  },
-  {
-    id: 'a2',
-    type: 'gps_offline',
-    severity: 'warning',
-    message: 'No GPS ping for 4 minutes',
-    vehicle_name: 'Green Ride 04',
-    triggered_at: '2026-03-16T10:38:00Z',
-  },
-  {
-    id: 'a3',
-    type: 'doc_expiry',
-    severity: 'warning',
-    message: 'Insurance expires in 8 days',
-    vehicle_name: 'Sajha Yatayat 01',
-    triggered_at: '2026-03-16T09:00:00Z',
-  },
-  {
-    id: 'a4',
-    type: 'doc_expiry',
-    severity: 'critical',
-    message: 'Bill book expired 2 days ago',
-    vehicle_name: 'EV Connect 05',
-    triggered_at: '2026-03-16T08:30:00Z',
-  },
-  {
-    id: 'a5',
-    type: 'low_balance',
-    severity: 'info',
-    message: 'Driver wallet balance Rs. 12 remaining',
-    vehicle_name: 'Sajha Yatayat 02',
-    triggered_at: '2026-03-16T10:15:00Z',
-  },
-];
-
-const MOCK_PTT: MockPttActivity[] = [
-  {
-    id: 'p1',
-    sender_name: 'Ram Bahadur Thapa',
-    group_name: 'Kalanki Route',
-    duration_seconds: 8,
-    created_at: '2026-03-16T10:41:00Z',
-  },
-  {
-    id: 'p2',
-    sender_name: 'Sita Kumari Sharma',
-    group_name: 'All Drivers',
-    duration_seconds: 14,
-    created_at: '2026-03-16T10:38:00Z',
-  },
-  {
-    id: 'p3',
-    sender_name: 'Admin',
-    group_name: 'All Drivers',
-    duration_seconds: 22,
-    created_at: '2026-03-16T10:30:00Z',
-  },
-  {
-    id: 'p4',
-    sender_name: 'Gopal Khadka',
-    group_name: 'Chabahil Route',
-    duration_seconds: 5,
-    created_at: '2026-03-16T10:20:00Z',
-  },
-];
-
 // ---------------------------------------------------------------------------
 // Map config
 // ---------------------------------------------------------------------------
@@ -330,13 +230,6 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function timeAgo(isoString: string): string {
-  const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  return `${Math.floor(diff / 3600)}h ago`;
-}
-
 function formatRs(amount: number): string {
   return `Rs. ${amount.toLocaleString('en-IN')}`;
 }
@@ -346,31 +239,6 @@ function occupancyColor(booked: number, total: number): string {
   if (pct >= 0.85) return 'bg-red-500';
   if (pct >= 0.6) return 'bg-amber-500';
   return 'bg-emerald-500';
-}
-
-function alertIcon(type: AlertType) {
-  switch (type) {
-    case 'overspeed': return <Zap className="w-4 h-4" />;
-    case 'gps_offline': return <WifiOff className="w-4 h-4" />;
-    case 'doc_expiry': return <FileWarning className="w-4 h-4" />;
-    case 'low_balance': return <Wallet className="w-4 h-4" />;
-  }
-}
-
-function alertSeverityClasses(severity: AlertSeverity): string {
-  switch (severity) {
-    case 'critical': return 'border-red-500/40 bg-red-500/10 text-red-400';
-    case 'warning': return 'border-amber-500/40 bg-amber-500/10 text-amber-400';
-    case 'info': return 'border-blue-500/40 bg-blue-500/10 text-blue-400';
-  }
-}
-
-function alertIconClasses(severity: AlertSeverity): string {
-  switch (severity) {
-    case 'critical': return 'text-red-400';
-    case 'warning': return 'text-amber-400';
-    case 'info': return 'text-blue-400';
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -764,91 +632,6 @@ export default function Monitoring() {
                   <div className="text-right flex-shrink-0">
                     <div className="text-xs font-bold text-red-400">{formatRs(driver.to_pay)}</div>
                     <div className="text-xs text-slate-600">{driver.trips_this_month} trips</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* --- System Alerts --------------------------------------------- */}
-          <div className="border-b border-slate-700/40">
-            <div className="px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  System Alerts
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-red-500" />
-                <span className="text-xs text-slate-600">
-                  {MOCK_ALERTS.filter(a => a.severity === 'critical').length} critical
-                </span>
-              </div>
-            </div>
-
-            <div className="px-3 pb-3 space-y-2">
-              {MOCK_ALERTS.sort((a, b) => {
-                const order = { critical: 0, warning: 1, info: 2 };
-                return order[a.severity] - order[b.severity];
-              }).map(alert => (
-                <div
-                  key={alert.id}
-                  className={cn(
-                    'flex items-start gap-2.5 rounded-xl border p-2.5',
-                    alertSeverityClasses(alert.severity)
-                  )}
-                >
-                  <div className={cn('mt-0.5 flex-shrink-0', alertIconClasses(alert.severity))}>
-                    {alertIcon(alert.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold truncate">{alert.vehicle_name}</div>
-                    <div className="text-xs opacity-80 mt-0.5">{alert.message}</div>
-                    <div className="text-xs opacity-50 mt-1">{timeAgo(alert.triggered_at)}</div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    {alert.severity === 'critical' ? (
-                      <Zap className="w-3 h-3 text-red-500 animate-pulse" />
-                    ) : alert.severity === 'warning' ? (
-                      <AlertTriangle className="w-3 h-3 text-amber-500" />
-                    ) : (
-                      <Info className="w-3 h-3 text-blue-400" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* --- PTT Activity ----------------------------------------------- */}
-          <div>
-            <div className="px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Radio className="w-4 h-4 text-purple-400" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  PTT Activity
-                </span>
-              </div>
-              <span className="text-xs text-slate-600">Recent</span>
-            </div>
-
-            <div className="px-3 pb-4 space-y-2">
-              {MOCK_PTT.map(ptt => (
-                <div
-                  key={ptt.id}
-                  className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/60 rounded-xl p-2.5"
-                >
-                  <div className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
-                    <Mic className="w-3 h-3 text-purple-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-white truncate">{ptt.sender_name}</div>
-                    <div className="text-xs text-slate-500 truncate">{ptt.group_name}</div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-xs text-purple-400 font-mono">{ptt.duration_seconds}s</div>
-                    <div className="text-xs text-slate-600">{timeAgo(ptt.created_at)}</div>
                   </div>
                 </div>
               ))}
