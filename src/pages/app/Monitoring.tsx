@@ -9,195 +9,25 @@ import {
   User,
   Phone,
   TrendingUp,
-  Zap,
   Wallet,
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { monitoringApi } from '@/modules/monitoring/services/monitoringApi';
+import type { MonitoringVehicle, HeavyDue } from '@/types';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types (display vehicle = API vehicle + color + today_revenue as number)
 // ---------------------------------------------------------------------------
 
-interface MockVehicle {
-  id: string;
-  name: string;
-  vehicle_no: string;
-  route_name: string;
-  start_point: string;
-  end_point: string;
-  active_driver_name: string;
-  active_driver_phone: string;
-  seats_booked: number;
-  seats_total: number;
+interface DisplayVehicle extends Omit<MonitoringVehicle, 'today_revenue'> {
   today_revenue: number;
-  today_trips: number;
-  lat: number;
-  lng: number;
-  speed_kmh: number;
-  status: 'on_trip' | 'idle';
   color: string;
 }
 
-interface MockDriverDue {
-  id: string;
-  name: string;
-  phone: string;
-  avatar_initial: string;
-  to_pay: number;
-  last_trip_date: string;
-  trips_this_month: number;
-}
-
-// ---------------------------------------------------------------------------
-// Static Mock Data
-// ---------------------------------------------------------------------------
-
-const BASE_VEHICLES: MockVehicle[] = [
-  {
-    id: 'v1',
-    name: 'Sajha Yatayat 01',
-    vehicle_no: 'BA 1 KHA 2345',
-    route_name: 'Kalanki - Koteshwor',
-    start_point: 'Kalanki',
-    end_point: 'Koteshwor',
-    active_driver_name: 'Ram Bahadur Thapa',
-    active_driver_phone: '9841234567',
-    seats_booked: 18,
-    seats_total: 24,
-    today_revenue: 4320,
-    today_trips: 6,
-    lat: 27.6939,
-    lng: 85.2869,
-    speed_kmh: 32,
-    status: 'on_trip',
-    color: '#22c55e',
-  },
-  {
-    id: 'v2',
-    name: 'Sajha Yatayat 02',
-    vehicle_no: 'BA 2 KHA 6789',
-    route_name: 'Ratnapark - Bhaktapur',
-    start_point: 'Ratnapark',
-    end_point: 'Bhaktapur',
-    active_driver_name: 'Sita Kumari Sharma',
-    active_driver_phone: '9851098765',
-    seats_booked: 22,
-    seats_total: 24,
-    today_revenue: 6750,
-    today_trips: 9,
-    lat: 27.7041,
-    lng: 85.3131,
-    speed_kmh: 28,
-    status: 'on_trip',
-    color: '#3b82f6',
-  },
-  {
-    id: 'v3',
-    name: 'EV Bus 03',
-    vehicle_no: 'BA 3 CHA 1122',
-    route_name: 'Lagankhel - Thankot',
-    start_point: 'Lagankhel',
-    end_point: 'Thankot',
-    active_driver_name: 'Hari Prasad Koirala',
-    active_driver_phone: '9803456789',
-    seats_booked: 9,
-    seats_total: 24,
-    today_revenue: 2100,
-    today_trips: 4,
-    lat: 27.6671,
-    lng: 85.3095,
-    speed_kmh: 41,
-    status: 'on_trip',
-    color: '#f59e0b',
-  },
-  {
-    id: 'v4',
-    name: 'Green Ride 04',
-    vehicle_no: 'BA 4 JHA 3344',
-    route_name: 'Balaju - Naikap',
-    start_point: 'Balaju',
-    end_point: 'Naikap',
-    active_driver_name: 'Bishnu Maya Gurung',
-    active_driver_phone: '9860112233',
-    seats_booked: 0,
-    seats_total: 24,
-    today_revenue: 3890,
-    today_trips: 5,
-    lat: 27.7368,
-    lng: 85.2944,
-    speed_kmh: 0,
-    status: 'idle',
-    color: '#6b7280',
-  },
-  {
-    id: 'v5',
-    name: 'EV Connect 05',
-    vehicle_no: 'BA 5 TA 5566',
-    route_name: 'Chabahil - Budhanilkantha',
-    start_point: 'Chabahil',
-    end_point: 'Budhanilkantha',
-    active_driver_name: 'Gopal Khadka',
-    active_driver_phone: '9845678901',
-    seats_booked: 16,
-    seats_total: 20,
-    today_revenue: 5200,
-    today_trips: 7,
-    lat: 27.7196,
-    lng: 85.3493,
-    speed_kmh: 25,
-    status: 'on_trip',
-    color: '#a855f7',
-  },
-];
-
-const MOCK_DRIVER_DUES: MockDriverDue[] = [
-  {
-    id: 'd1',
-    name: 'Ram Bahadur Thapa',
-    phone: '9841234567',
-    avatar_initial: 'R',
-    to_pay: 12400,
-    last_trip_date: '2026-03-15',
-    trips_this_month: 42,
-  },
-  {
-    id: 'd2',
-    name: 'Sita Kumari Sharma',
-    phone: '9851098765',
-    avatar_initial: 'S',
-    to_pay: 8750,
-    last_trip_date: '2026-03-16',
-    trips_this_month: 38,
-  },
-  {
-    id: 'd3',
-    name: 'Deepak Rana',
-    phone: '9812345678',
-    avatar_initial: 'D',
-    to_pay: 6200,
-    last_trip_date: '2026-03-14',
-    trips_this_month: 29,
-  },
-  {
-    id: 'd4',
-    name: 'Anjana Tamang',
-    phone: '9867890123',
-    avatar_initial: 'A',
-    to_pay: 4900,
-    last_trip_date: '2026-03-13',
-    trips_this_month: 22,
-  },
-  {
-    id: 'd5',
-    name: 'Bikash Magar',
-    phone: '9823456789',
-    avatar_initial: 'B',
-    to_pay: 3300,
-    last_trip_date: '2026-03-16',
-    trips_this_month: 18,
-  },
-];
+const POLL_INTERVAL_MS = 10_000;
+const VEHICLE_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#6b7280', '#a855f7', '#ec4899', '#14b8a6', '#eab308'];
 
 // ---------------------------------------------------------------------------
 // Map config
@@ -259,7 +89,7 @@ function LiveClock() {
 }
 
 interface VehicleCardProps {
-  vehicle: MockVehicle;
+  vehicle: DisplayVehicle;
   selected: boolean;
   onClick: () => void;
 }
@@ -309,9 +139,9 @@ function VehicleCard({ vehicle, selected, onClick }: VehicleCardProps) {
       {/* Driver */}
       <div className="flex items-center gap-1.5 mb-3">
         <User className="w-3 h-3 text-slate-500 flex-shrink-0" />
-        <span className="text-xs text-slate-400 truncate">{vehicle.active_driver_name}</span>
+        <span className="text-xs text-slate-400 truncate">{vehicle.active_driver_name ?? '—'}</span>
         <Phone className="w-3 h-3 text-slate-600 flex-shrink-0 ml-auto" />
-        <span className="text-xs text-slate-500">{vehicle.active_driver_phone}</span>
+        <span className="text-xs text-slate-500">{vehicle.active_driver_phone ?? '—'}</span>
       </div>
 
       {/* Seat occupancy bar */}
@@ -358,58 +188,91 @@ export default function Monitoring() {
   const navigate = useNavigate();
   const { isLoaded } = useGoogleMaps();
 
-  const [vehicles, setVehicles] = useState<MockVehicle[]>(BASE_VEHICLES);
+  const [vehicles, setVehicles] = useState<DisplayVehicle[]>([]);
+  const [heavyDues, setHeavyDues] = useState<HeavyDue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [infoWindowVehicleId, setInfoWindowVehicleId] = useState<string | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const colorByVehicleIdRef = useRef<Map<string, string>>(new Map());
 
-  // Simulate vehicle movement every 3 seconds
-  useEffect(() => {
-    const id = setInterval(() => {
-      setVehicles(prev =>
-        prev.map(v => {
-          if (v.status !== 'on_trip') return v;
-          const deltaLat = (Math.random() - 0.5) * 0.0008;
-          const deltaLng = (Math.random() - 0.5) * 0.0008;
-          return {
-            ...v,
-            lat: v.lat + deltaLat,
-            lng: v.lng + deltaLng,
-            speed_kmh: Math.floor(20 + Math.random() * 40),
-          };
-        })
-      );
-    }, 3000);
-    return () => clearInterval(id);
+  const fetchSnapshot = useCallback(async () => {
+    try {
+      setError(null);
+      const snapshot = await monitoringApi.getSnapshot();
+      const withColors = snapshot.vehicles.map((v) => {
+        let color = colorByVehicleIdRef.current.get(v.id);
+        if (!color) {
+          color = VEHICLE_COLORS[colorByVehicleIdRef.current.size % VEHICLE_COLORS.length];
+          colorByVehicleIdRef.current.set(v.id, color);
+        }
+        return {
+          ...v,
+          today_revenue: parseFloat(v.today_revenue) || 0,
+          color,
+          lat: v.lat ?? 0,
+          lng: v.lng ?? 0,
+        } as DisplayVehicle;
+      });
+      setVehicles(withColors);
+      setHeavyDues(snapshot.heavy_dues ?? []);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to load monitoring data';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchSnapshot();
+    const id = setInterval(fetchSnapshot, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [fetchSnapshot]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
   }, []);
 
-  const focusVehicle = (vehicle: MockVehicle) => {
+  const focusVehicle = (vehicle: DisplayVehicle) => {
     setSelectedVehicleId(vehicle.id);
     setInfoWindowVehicleId(vehicle.id);
-    if (mapRef.current) {
+    if (mapRef.current && vehicle.lat != null && vehicle.lng != null) {
       mapRef.current.panTo({ lat: vehicle.lat, lng: vehicle.lng });
       mapRef.current.setZoom(15);
     }
   };
 
-  const handleMarkerClick = (vehicle: MockVehicle) => {
+  const handleMarkerClick = (vehicle: DisplayVehicle) => {
     setSelectedVehicleId(vehicle.id);
     setInfoWindowVehicleId(vehicle.id);
   };
 
-  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
-  const infoWindowVehicle = vehicles.find(v => v.id === infoWindowVehicleId);
+  const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId);
+  const infoWindowVehicle = vehicles.find((v) => v.id === infoWindowVehicleId);
+  const vehiclesWithLocation = vehicles.filter((v) => v.lat != null && v.lng != null && (v.lat !== 0 || v.lng !== 0));
 
   const totalRevenue = vehicles.reduce((s, v) => s + v.today_revenue, 0);
-  const onTripCount = vehicles.filter(v => v.status === 'on_trip').length;
+  const onTripCount = vehicles.filter((v) => v.status === 'on_trip').length;
   const totalSeatsBooked = vehicles.reduce((s, v) => s + v.seats_booked, 0);
+
+  if (loading && vehicles.length === 0) {
+    return (
+      <div className="h-screen flex flex-col bg-slate-900 text-white items-center justify-center">
+        <div className="text-slate-400 animate-pulse">Loading monitoring…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden text-white">
+      {error && (
+        <div className="flex-shrink-0 bg-amber-500/20 border-b border-amber-500/40 px-4 py-2 text-amber-200 text-sm">
+          {error}
+        </div>
+      )}
       {/* ------------------------------------------------------------------ */}
       {/* HEADER                                                              */}
       {/* ------------------------------------------------------------------ */}
@@ -510,7 +373,7 @@ export default function Monitoring() {
               options={MAP_OPTIONS}
               onLoad={onMapLoad}
             >
-              {vehicles.map(vehicle => (
+              {vehiclesWithLocation.map((vehicle) => (
                 <Marker
                   key={vehicle.id}
                   position={{ lat: vehicle.lat, lng: vehicle.lng }}
@@ -528,7 +391,7 @@ export default function Monitoring() {
                 />
               ))}
 
-              {infoWindowVehicle && (
+              {infoWindowVehicle && vehiclesWithLocation.some((v) => v.id === infoWindowVehicle.id) && (
                 <InfoWindow
                   position={{ lat: infoWindowVehicle.lat, lng: infoWindowVehicle.lng }}
                   onCloseClick={() => setInfoWindowVehicleId(null)}
@@ -542,7 +405,7 @@ export default function Monitoring() {
                       {infoWindowVehicle.start_point} → {infoWindowVehicle.end_point}
                     </div>
                     <div className="text-xs text-slate-600 mb-0.5">
-                      Driver: {infoWindowVehicle.active_driver_name}
+                      Driver: {infoWindowVehicle.active_driver_name ?? '—'}
                     </div>
                     <div className="text-xs text-slate-600 mb-0.5">
                       Seats: {infoWindowVehicle.seats_booked}/{infoWindowVehicle.seats_total}
@@ -590,7 +453,7 @@ export default function Monitoring() {
                 style={{ backgroundColor: selectedVehicle.color }}
               />
               <span className="text-xs font-semibold text-white">{selectedVehicle.name}</span>
-              <span className="text-xs text-slate-400">{selectedVehicle.active_driver_name}</span>
+              <span className="text-xs text-slate-400">{selectedVehicle.active_driver_name ?? '—'}</span>
               <span className="text-sm font-bold text-blue-400">{selectedVehicle.speed_kmh} km/h</span>
             </div>
           )}
@@ -610,31 +473,35 @@ export default function Monitoring() {
                   Heavy Dues
                 </span>
               </div>
-              <span className="text-xs text-slate-600">{MOCK_DRIVER_DUES.length} drivers</span>
+              <span className="text-xs text-slate-600">{heavyDues.length} drivers</span>
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent min-h-0">
-              {MOCK_DRIVER_DUES.sort((a, b) => b.to_pay - a.to_pay).map(driver => (
-                <div
-                  key={driver.id}
-                  className="flex items-center gap-3 bg-slate-800/60 border border-slate-700 rounded-xl p-2.5"
-                >
-                  <div className="w-8 h-8 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-red-400">{driver.avatar_initial}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-white truncate">{driver.name}</div>
-                    <div className="flex items-center gap-1 text-xs text-slate-500">
-                      <Phone className="w-2.5 h-2.5" />
-                      <span>{driver.phone}</span>
+              {[...heavyDues]
+                .sort((a, b) => parseFloat(b.to_pay) - parseFloat(a.to_pay))
+                .map((driver) => (
+                  <div
+                    key={driver.id}
+                    className="flex items-center gap-3 bg-slate-800/60 border border-slate-700 rounded-xl p-2.5"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-red-400">{driver.avatar_initial}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-white truncate">{driver.name}</div>
+                      <div className="flex items-center gap-1 text-xs text-slate-500">
+                        <Phone className="w-2.5 h-2.5" />
+                        <span>{driver.phone}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xs font-bold text-red-400">
+                        {formatRs(parseFloat(driver.to_pay) || 0)}
+                      </div>
+                      <div className="text-xs text-slate-600">{driver.trips_this_month} trips</div>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-xs font-bold text-red-400">{formatRs(driver.to_pay)}</div>
-                    <div className="text-xs text-slate-600">{driver.trips_this_month} trips</div>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </aside>

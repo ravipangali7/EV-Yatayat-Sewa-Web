@@ -301,3 +301,46 @@ export interface UserAnalyticsResponse {
     by_vehicle: Array<{ vehicle_id: string; vehicle_name: string; booking_count: number; total_spend: string }>;
   };
 }
+
+// --- Monitoring (control room snapshot) ---
+export interface MonitoringSummary {
+  total_vehicles: number;
+  on_trip_count: number;
+  total_seats_booked: number;
+  total_revenue_today: string;
+}
+
+export interface MonitoringVehicle {
+  id: string;
+  name: string;
+  vehicle_no: string;
+  start_point: string;
+  end_point: string;
+  active_driver_name: string | null;
+  active_driver_phone: string | null;
+  seats_booked: number;
+  seats_total: number;
+  today_revenue: string;
+  today_trips: number;
+  lat: number | null;
+  lng: number | null;
+  speed_kmh: number;
+  last_location_at: string | null;
+  status: 'on_trip' | 'idle';
+}
+
+export interface HeavyDue {
+  id: string;
+  name: string;
+  phone: string;
+  avatar_initial: string;
+  to_pay: string;
+  trips_this_month: number;
+}
+
+export interface MonitoringSnapshot {
+  fetched_at: string;
+  summary: MonitoringSummary;
+  vehicles: MonitoringVehicle[];
+  heavy_dues: HeavyDue[];
+}
