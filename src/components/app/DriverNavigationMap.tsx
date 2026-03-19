@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
+import { Crosshair } from "lucide-react";
 import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
 import {
   MARKER_ICONS,
@@ -85,6 +86,9 @@ export default function DriverNavigationMap({
 }: DriverNavigationMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const listenerRef = useRef<google.maps.MapsEventListener[]>([]);
+  const [followMode, setFollowMode] = useState(true);
+  const [zoomState, setZoomState] = useState(NAV_ZOOM);
   const [roadPath, setRoadPath] = useState<Array<{ lat: number; lng: number }> | null>(null);
   const computedHeading =
     previousCenter && (previousCenter.lat !== center.lat || previousCenter.lng !== center.lng)
@@ -106,6 +110,24 @@ export default function DriverNavigationMap({
 
   const { isLoaded } = useGoogleMaps();
   const mapId = GOOGLE_MAPS_CONFIG.mapId;
+
+  const handleFollowPress = useCallback(() => {
+    const map = mapRef.current;
+    const targetC = targetCenterRef.current;
+    const targetH = targetHeadingRef.current;
+    displayCenterRef.current = { lat: targetC.lat, lng: targetC.lng };
+    displayHeadingRef.current = targetH;
+    setZoomState(NAV_ZOOM);
+    setFollowMode(true);
+    if (map) {
+      map.setCenter(displayCenterRef.current);
+      map.setZoom(NAV_ZOOM);
+      const setHeadingFn = typeof (map as google.maps.Map & { setHeading?: (n: number) => void }).setHeading === "function"
+        ? (map as google.maps.Map & { setHeading: (n: number) => void }).setHeading
+        : null;
+      if (setHeadingFn) setHeadingFn.call(map, targetH);
+    }
+  }, []);
 
   // Update target refs from props when not using live ref
   targetCenterRef.current = { lat: center.lat, lng: center.lng };
@@ -129,13 +151,26 @@ export default function DriverNavigationMap({
       displayHeadingRef.current = targetHeading;
       lastTickTimeRef.current = performance.now();
       map.setCenter(center);
+      map.setZoom(NAV_ZOOM);
       if (typeof (map as google.maps.Map & { setHeading?: (n: number) => void }).setHeading === "function") {
         (map as google.maps.Map & { setHeading: (n: number) => void }).setHeading(targetHeading);
       }
+      listenerRef.current.forEach((l) => l.remove());
+      listenerRef.current = [];
+      const dragListener = map.addListener("dragend", () => setFollowMode(false));
+      listenerRef.current.push(dragListener);
+      const zoomListener = map.addListener("zoom_changed", () => {
+        const z = map.getZoom();
+        if (typeof z === "number") setZoomState(z);
+        setFollowMode(false);
+      });
+      listenerRef.current.push(zoomListener);
     },
     [center.lat, center.lng, targetHeading]
   );
   const onMapUnmount = useCallback(() => {
+    listenerRef.current.forEach((l) => l.remove());
+    listenerRef.current = [];
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     mapRef.current = null;
@@ -179,8 +214,10 @@ export default function DriverNavigationMap({
       displayCenterRef.current = { lat: displayLat, lng: displayLng };
       displayHeadingRef.current = displayHeading;
 
-      map.setCenter({ lat: displayLat, lng: displayLng });
-      if (setHeadingFn) setHeadingFn.call(map, displayHeading);
+      if (followMode) {
+        map.setCenter({ lat: displayLat, lng: displayLng });
+        if (setHeadingFn) setHeadingFn.call(map, displayHeading);
+      }
 
       if (overlayRef.current) {
         overlayRef.current.style.transform = `translate(-50%, -50%) rotate(${displayHeading}deg)`;
@@ -193,7 +230,7 @@ export default function DriverNavigationMap({
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [isLoaded, liveTargetRef, mapId]);
+  }, [isLoaded, liveTargetRef, mapId, followMode]);
 
   useEffect(() => {
     if (!isLoaded || routeWaypoints.length < 2) {
@@ -240,7 +277,7 @@ export default function DriverNavigationMap({
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "100%", minHeight: 200 }}
         center={centerForMap}
-        zoom={NAV_ZOOM}
+        zoom={zoomState}
         onLoad={onMapLoad}
         onUnmount={onMapUnmount}
         options={mapOptions}
@@ -284,6 +321,15 @@ export default function DriverNavigationMap({
           className="object-contain drop-shadow-md w-full h-full"
         />
       </div>
+      <button
+        type="button"
+        onClick={handleFollowPress}
+        className="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur-sm hover:bg-muted aria-pressed:bg-muted"
+        title="Center on vehicle"
+        aria-label="Center on vehicle"
+      >
+        <Crosshair className="h-5 w-5 text-foreground" />
+      </button>
     </div>
   );
 }

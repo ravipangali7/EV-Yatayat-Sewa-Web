@@ -485,7 +485,7 @@ export default function Vehicle() {
           }
         })
         .catch(() => {});
-    }, 5000);
+    }, 2500);
     return () => clearInterval(interval);
   }, [activeTrip?.id, driverState]);
 

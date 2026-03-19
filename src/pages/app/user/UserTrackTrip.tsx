@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { Crosshair } from "lucide-react";
 import AppBar from "@/components/app/AppBar";
 import { api } from "@/lib/api";
 import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
@@ -14,6 +15,7 @@ import {
 
 const POLL_INTERVAL_MS = 3000;
 const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
+const DEFAULT_ZOOM = 14;
 /** Time constant for exponential follow; slightly slower than driver map for polling. */
 const SMOOTH_FOLLOW_SPEED = 4;
 
@@ -108,6 +110,9 @@ export default function UserTrackTrip() {
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const vehicleOverlayRef = useRef<HTMLDivElement | null>(null);
+  const listenerRef = useRef<google.maps.MapsEventListener[]>([]);
+  const [followMode, setFollowMode] = useState(true);
+  const [zoomState, setZoomState] = useState(DEFAULT_ZOOM);
   const displayCenterRef = useRef<{ lat: number; lng: number }>({ ...targetCenter });
   const displayHeadingRef = useRef<number>(targetHeading);
   const targetCenterRef = useRef<{ lat: number; lng: number }>({ ...targetCenter });
@@ -136,13 +141,40 @@ export default function UserTrackTrip() {
     displayHeadingRef.current = targetHeadingRef.current;
     lastTickTimeRef.current = performance.now();
     map.setCenter(targetCenterRef.current);
+    map.setZoom(DEFAULT_ZOOM);
+    listenerRef.current.forEach((l) => l.remove());
+    listenerRef.current = [];
+    const dragListener = map.addListener("dragend", () => setFollowMode(false));
+    listenerRef.current.push(dragListener);
+    const zoomListener = map.addListener("zoom_changed", () => {
+      const z = map.getZoom();
+      if (typeof z === "number") setZoomState(z);
+      setFollowMode(false);
+    });
+    listenerRef.current.push(zoomListener);
   }, []);
 
   const onMapUnmount = useCallback(() => {
+    listenerRef.current.forEach((l) => l.remove());
+    listenerRef.current = [];
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     mapRef.current = null;
     vehicleOverlayRef.current = null;
+  }, []);
+
+  const handleFollowPress = useCallback(() => {
+    const map = mapRef.current;
+    const targetC = targetCenterRef.current;
+    const targetH = targetHeadingRef.current;
+    displayCenterRef.current = { lat: targetC.lat, lng: targetC.lng };
+    displayHeadingRef.current = targetH;
+    setZoomState(DEFAULT_ZOOM);
+    setFollowMode(true);
+    if (map) {
+      map.setCenter(displayCenterRef.current);
+      map.setZoom(DEFAULT_ZOOM);
+    }
   }, []);
 
   useEffect(() => {
@@ -166,7 +198,9 @@ export default function UserTrackTrip() {
       displayCenterRef.current = { lat: displayLat, lng: displayLng };
       displayHeadingRef.current = displayHeading;
 
-      map.setCenter({ lat: displayLat, lng: displayLng });
+      if (followMode) {
+        map.setCenter({ lat: displayLat, lng: displayLng });
+      }
       if (vehicleOverlayRef.current) {
         vehicleOverlayRef.current.style.transform = `translate(-50%, -50%) rotate(${displayHeading}deg)`;
       }
@@ -178,7 +212,7 @@ export default function UserTrackTrip() {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [isLoaded]);
+  }, [isLoaded, followMode]);
 
   const initialCenter = path.length ? path[0] : DEFAULT_CENTER;
 
@@ -209,10 +243,10 @@ export default function UserTrackTrip() {
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
             center={initialCenter}
-            zoom={path.length > 1 ? 14 : 12}
+            zoom={zoomState}
             onLoad={onMapLoad}
             onUnmount={onMapUnmount}
-            options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false }}
+            options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false, gestureHandling: "greedy" }}
           >
             {path.length > 0 && (
               <Polyline path={path} options={{ strokeColor: "#2563eb", strokeWeight: 4, strokeOpacity: 0.8 }} />
@@ -244,6 +278,17 @@ export default function UserTrackTrip() {
           <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-muted-foreground">
             Loading map...
           </div>
+        )}
+        {isLoaded && (
+          <button
+            type="button"
+            onClick={handleFollowPress}
+            className="absolute bottom-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur-sm hover:bg-muted aria-pressed:bg-muted"
+            title="Follow vehicle"
+            aria-label="Follow vehicle"
+          >
+            <Crosshair className="h-5 w-5 text-foreground" />
+          </button>
         )}
       </div>
       <AppBar
