@@ -1,10 +1,9 @@
 import { Outlet } from 'react-router-dom';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
+/**
+ * Full-screen monitoring routes (no dashboard sidebar/header).
+ * Vehicle + camera monitoring each fill the viewport with their own back bar.
+ */
 export default function MonitoringLayout() {
-  return (
-    <DashboardLayout>
-      <Outlet />
-    </DashboardLayout>
-  );
+  return <Outlet />;
 }

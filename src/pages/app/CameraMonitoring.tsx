@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Video } from 'lucide-react';
-import { PageHeader } from '@/components/common/PageHeader';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Video } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { monitoringApi } from '@/modules/monitoring/services/monitoringApi';
 import { superSettingApi } from '@/modules/settings/services/superSettingApi';
 import { cn } from '@/lib/utils';
@@ -39,21 +39,21 @@ function LunaCameraCell({ cell, src }: { cell: CameraCell; src: string }) {
   }, [src]);
 
   return (
-    <div className="relative flex flex-col min-h-[220px] rounded-lg border border-slate-700 bg-slate-900/80 overflow-hidden">
+    <div className="relative flex flex-col min-h-0 rounded-lg border border-slate-700 bg-slate-900/80 overflow-hidden h-full">
       <div className="flex-shrink-0 px-3 py-2 border-b border-slate-700/80 bg-slate-950/50">
         <p className="text-xs font-semibold text-slate-200 truncate">{cell.vehicleName}</p>
         <p className="text-[11px] text-slate-500 truncate">
           {cell.vehicleNo} · {cell.sideLabel} · IMEI {cell.imei}
         </p>
       </div>
-      <div className="relative flex-1 min-h-[200px] bg-black">
+      <div className="relative flex-1 min-h-[140px] bg-black">
         {!loaded && (
           <div
             className="absolute inset-0 z-10 flex flex-col gap-2 p-3 bg-slate-950"
             aria-hidden
           >
             <div className="h-3 w-2/3 rounded bg-slate-800 animate-pulse" />
-            <div className="flex-1 min-h-[160px] rounded-md bg-slate-800/80 animate-pulse" />
+            <div className="flex-1 min-h-[100px] rounded-md bg-slate-800/80 animate-pulse" />
           </div>
         )}
         <iframe
@@ -70,6 +70,7 @@ function LunaCameraCell({ cell, src }: { cell: CameraCell; src: string }) {
 }
 
 export default function CameraMonitoring() {
+  const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<MonitoringVehicle[]>([]);
   const [lunaOrigin, setLunaOrigin] = useState('');
   const [lunaToken, setLunaToken] = useState('');
@@ -132,70 +133,85 @@ export default function CameraMonitoring() {
   const showGrid = !loading && !error && !missingConfig && cells.length > 0;
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Camera monitoring"
-        subtitle="Live dashcam embeds per vehicle (Luna). Front and rear load in separate iframes."
-      />
-
-      {loading && (
-        <div className="grid grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="min-h-[220px] rounded-lg border border-slate-700 bg-slate-900/60 animate-pulse"
-            />
-          ))}
-        </div>
-      )}
-
-      {!loading && error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
-
-      {!loading && !error && missingConfig && (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
-          <p className="font-medium">Luna embed is not configured</p>
-          <p className="mt-1 text-muted-foreground dark:text-amber-200/80">
-            Set <strong>Luna web origin</strong> and <strong>Luna API token</strong> in{' '}
-            <Link to="/admin/settings" className="underline font-medium">
-              Settings
-            </Link>
-            .
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && !missingConfig && cells.length === 0 && (
-        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm">
-          <p className="font-medium flex items-center gap-2">
-            <Video className="w-4 h-4" />
-            No vehicles with IMEI
-          </p>
-          <p className="mt-1 text-muted-foreground">
-            Add an IMEI on each vehicle in{' '}
-            <Link to="/admin/vehicles" className="underline">
-              Vehicles
-            </Link>{' '}
-            to show cameras here.
-          </p>
-        </div>
-      )}
-
-      {showGrid && (
-        <div
-          className="grid grid-cols-2 gap-3"
-          style={{ gridAutoRows: 'minmax(240px, 1fr)' }}
+    <div className="h-dvh min-h-[100dvh] flex flex-col bg-slate-900 overflow-hidden text-white">
+      <header className="h-14 flex-shrink-0 border-b border-slate-700/60 bg-slate-900/95 backdrop-blur flex items-center px-4 gap-4 z-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/admin')}
+          className="text-slate-400 hover:text-white hover:bg-slate-800 gap-1.5 flex-shrink-0"
         >
-          {cells.map((cell) => (
-            <LunaCameraCell
-              key={cell.key}
-              cell={cell}
-              src={buildEmbedSrc(lunaOrigin, cell.imei, cell.channel, lunaToken)}
-            />
-          ))}
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Back</span>
+        </Button>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Video className="w-5 h-5 text-blue-400 flex-shrink-0" />
+          <h1 className="text-sm font-bold tracking-widest uppercase text-slate-100 truncate">
+            Camera monitoring
+          </h1>
         </div>
-      )}
+      </header>
+
+      <div className="flex-1 min-h-0 overflow-auto p-3">
+        {loading && (
+          <div className="grid grid-cols-2 gap-3 h-full min-h-[200px] auto-rows-fr">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="min-h-[180px] rounded-lg border border-slate-700 bg-slate-900/60 animate-pulse"
+              />
+            ))}
+          </div>
+        )}
+
+        {!loading && error && (
+          <p className="text-sm text-red-300">{error}</p>
+        )}
+
+        {!loading && !error && missingConfig && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            <p className="font-medium">Luna embed is not configured</p>
+            <p className="mt-1 text-amber-200/80">
+              Set <strong>Luna web origin</strong> and <strong>Luna API token</strong> in{' '}
+              <Link to="/admin/settings" className="underline font-medium">
+                Settings
+              </Link>
+              .
+            </p>
+          </div>
+        )}
+
+        {!loading && !error && !missingConfig && cells.length === 0 && (
+          <div className="rounded-lg border border-slate-700 bg-slate-800/40 px-4 py-3 text-sm text-slate-200">
+            <p className="font-medium flex items-center gap-2">
+              <Video className="w-4 h-4" />
+              No vehicles with IMEI
+            </p>
+            <p className="mt-1 text-slate-400">
+              Add an IMEI on each vehicle in{' '}
+              <Link to="/admin/vehicles" className="underline text-blue-400">
+                Vehicles
+              </Link>{' '}
+              to show cameras here.
+            </p>
+          </div>
+        )}
+
+        {showGrid && (
+          <div
+            className="grid grid-cols-2 gap-3 h-full min-h-0"
+            style={{ gridAutoRows: 'minmax(0, 1fr)' }}
+          >
+            {cells.map((cell) => (
+              <LunaCameraCell
+                key={cell.key}
+                cell={cell}
+                src={buildEmbedSrc(lunaOrigin, cell.imei, cell.channel, lunaToken)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
