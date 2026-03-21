@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Video, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,36 +30,6 @@ function buildEmbedSrc(origin: string, imei: string, channel: Channel, apiToken:
   return url.toString();
 }
 
-function computeGridDims(count: number, width: number, height: number): { cols: number; rows: number } {
-  if (count <= 0) return { cols: 1, rows: 1 };
-  const w = Math.max(width, 1);
-  const h = Math.max(height, 1);
-  const viewportRatio = w / h;
-  let cols = Math.round(Math.sqrt(count * viewportRatio));
-  cols = Math.max(1, Math.min(count, cols));
-  const rows = Math.ceil(count / cols);
-  return { cols, rows };
-}
-
-function useGridContainerSize() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ w: 0, h: 0 });
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const cr = entries[0]?.contentRect;
-      if (cr) setSize({ w: cr.width, h: cr.height });
-    });
-    ro.observe(el);
-    setSize({ w: el.clientWidth, h: el.clientHeight });
-    return () => ro.disconnect();
-  }, []);
-
-  return { ref, width: size.w, height: size.h };
-}
-
 function LiveClock() {
   const [t, setT] = useState(() => new Date());
   useEffect(() => {
@@ -76,30 +46,33 @@ function LiveClock() {
 /** Simple view: no iframe — partner UI never loads, so nothing can bleed through. */
 function VehicleSimplePanel({ v }: { v: VehicleCam }) {
   return (
-    <div className="flex h-full min-h-0 w-full flex-col bg-zinc-950 outline outline-1 outline-zinc-800">
-      <div className="flex min-h-0 flex-1 flex-col justify-center p-2 sm:p-3">
-        <div className="mx-auto w-full max-w-[280px] rounded-md border border-zinc-700 bg-zinc-900 px-3 py-3 shadow-md">
-          <p className="text-sm font-semibold leading-tight text-zinc-100">{v.name}</p>
-          <p className="mt-1 font-mono text-[11px] text-cyan-600/90">
-            {v.vehicle_no} · IMEI {v.imei}
-          </p>
-          <p className="mt-3 text-xs font-medium leading-relaxed text-zinc-200">
-            This wall is in <span className="text-zinc-100">Simple view</span> — live camera video is not loaded
-            here on purpose (no partner player, no technical error text).
-          </p>
-          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-            Tap <span className="font-medium text-zinc-400">Live view</span> in the top bar to watch front and
-            rear feeds when your Luna token and network allow it.
-          </p>
-          <p className="mt-2 text-[10px] leading-relaxed text-zinc-600">
-            If feeds still fail in Live view, check Luna API client permissions and allowed origins for dashcam.
-          </p>
-        </div>
+    <div className="flex min-h-[160px] flex-col justify-center py-1">
+      <div className="mx-auto w-full max-w-md rounded-md border border-zinc-700 bg-zinc-900/90 px-3 py-3 shadow-md">
+        <p className="text-sm font-semibold leading-tight text-zinc-100">{v.name}</p>
+        <p className="mt-1 font-mono text-[11px] text-cyan-600/90">
+          {v.vehicle_no} · IMEI {v.imei}
+        </p>
+        <p className="mt-3 text-xs font-medium leading-relaxed text-zinc-200">
+          This wall is in <span className="text-zinc-100">Simple view</span> — live camera video is not loaded
+          here on purpose (no partner player, no technical error text).
+        </p>
+        <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+          Tap <span className="font-medium text-zinc-400">Live view</span> in the top bar to watch front and
+          rear feeds when your Luna token and network allow it.
+        </p>
+        <p className="mt-2 text-[10px] leading-relaxed text-zinc-600">
+          If feeds still fail in Live view, check Luna API client permissions and allowed origins for dashcam.
+        </p>
       </div>
     </div>
   );
 }
 
+/**
+ * Luna embeds often paint red status banners at the top; we cannot remove them from JS (cross-origin).
+ * Slightly oversized iframe + upward shift clips typical banner rows; a thin top bar covers residual bleed.
+ * Real fixes: Luna domain whitelist, camera/dashcam service on the API client, device + HLS infra.
+ */
 function LiveStreamPane({
   src,
   cornerLabel,
@@ -114,34 +87,62 @@ function LiveStreamPane({
   }, [src]);
 
   return (
-    <div className="relative min-h-0 min-w-0 h-full w-full overflow-hidden bg-black">
+    <div className="relative w-full aspect-[6/4] overflow-hidden rounded-md border border-zinc-800 bg-black">
+      <div className="absolute inset-0 overflow-hidden">
+        <iframe
+          title={cornerLabel}
+          src={src}
+          className={cn(
+            'absolute left-1/2 top-[52%] box-border block h-[124%] w-[103%] max-w-none -translate-x-1/2 -translate-y-1/2 border-0',
+            !loaded && 'opacity-0'
+          )}
+          referrerPolicy="strict-origin-when-cross-origin"
+          allow="camera; microphone; fullscreen"
+          onLoad={() => setLoaded(true)}
+        />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-[11] h-10 bg-gradient-to-b from-zinc-950 from-40% to-transparent"
+        aria-hidden
+      />
       {!loaded && (
         <div
-          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-zinc-950"
+          className="absolute inset-0 z-[20] flex flex-col items-center justify-center gap-2 bg-zinc-950"
           aria-hidden
         >
           <div className="h-5 w-5 rounded-full border-2 border-zinc-700 border-t-cyan-500/80 animate-spin" />
         </div>
       )}
-      <iframe
-        title={cornerLabel}
-        src={src}
-        className={cn(
-          'absolute inset-0 z-0 box-border block h-full w-full max-h-full max-w-full border-0',
-          !loaded && 'opacity-0'
-        )}
-        referrerPolicy="strict-origin-when-cross-origin"
-        allow="camera; microphone; fullscreen"
-        onLoad={() => setLoaded(true)}
-      />
-      <div className="pointer-events-none absolute bottom-1 left-1 z-20 rounded bg-black px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-cyan-400">
+      <div className="pointer-events-none absolute bottom-1.5 left-1.5 z-[21] rounded bg-black/85 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-cyan-400 shadow-sm">
         {cornerLabel}
       </div>
     </div>
   );
 }
 
-/** One grid cell: vehicle header + front | rear (live only). */
+function CameraWallSkeleton() {
+  return (
+    <div className="space-y-4 p-3">
+      {[0, 1].map((i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-3 shadow-sm"
+        >
+          <div className="mb-3 space-y-2 border-b border-zinc-800/80 pb-2">
+            <div className="h-3.5 w-40 animate-pulse rounded bg-zinc-800" />
+            <div className="h-2.5 w-56 animate-pulse rounded bg-zinc-800/80" />
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="aspect-[6/4] w-full animate-pulse rounded-md bg-zinc-900" />
+            <div className="aspect-[6/4] w-full animate-pulse rounded-md bg-zinc-900" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** One vehicle: header + front / rear tiles (6:4), stacked section in scroll list. */
 function VehicleCameraCard({
   v,
   lunaOrigin,
@@ -154,27 +155,31 @@ function VehicleCameraCard({
   simpleView: boolean;
 }) {
   if (simpleView) {
-    return <VehicleSimplePanel v={v} />;
+    return (
+      <section className="rounded-xl border border-zinc-800 bg-zinc-950/90 p-3 shadow-sm">
+        <VehicleSimplePanel v={v} />
+      </section>
+    );
   }
 
   const frontSrc = buildEmbedSrc(lunaOrigin, v.imei, 1, lunaToken);
   const rearSrc = buildEmbedSrc(lunaOrigin, v.imei, 2, lunaToken);
 
   return (
-    <div className="flex min-h-0 min-w-0 h-full w-full flex-col overflow-hidden bg-black outline outline-1 outline-zinc-800">
-      <div className="flex flex-shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-2 py-1">
+    <section className="rounded-xl border border-zinc-800 bg-zinc-950/90 p-3 shadow-sm">
+      <div className="mb-3 flex flex-shrink-0 items-center gap-2 border-b border-zinc-800/80 pb-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-semibold text-zinc-200">{v.name}</p>
-          <p className="truncate font-mono text-[10px] text-zinc-500">
-            {v.vehicle_no} · {v.imei}
+          <p className="truncate text-sm font-semibold text-zinc-100">{v.name}</p>
+          <p className="truncate font-mono text-[11px] text-zinc-500">
+            {v.vehicle_no} · IMEI {v.imei}
           </p>
         </div>
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-2 gap-px bg-zinc-800">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <LiveStreamPane src={frontSrc} cornerLabel="Front" />
         <LiveStreamPane src={rearSrc} cornerLabel="Rear" />
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -185,7 +190,6 @@ export default function CameraMonitoring() {
   const [lunaToken, setLunaToken] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { ref: gridContainerRef, width: gridW, height: gridH } = useGridContainerSize();
 
   const [simpleView, setSimpleView] = useState(() => {
     try {
@@ -248,11 +252,6 @@ export default function CameraMonitoring() {
   const missingConfig = !normalizeLunaOrigin(lunaOrigin) || !lunaToken;
   const showGrid = !loading && !error && !missingConfig && vehicleCams.length > 0;
 
-  const { cols, rows } = useMemo(
-    () => computeGridDims(vehicleCams.length, gridW, gridH),
-    [vehicleCams.length, gridW, gridH]
-  );
-
   return (
     <div className="flex h-dvh min-h-[100dvh] flex-col overflow-hidden bg-black text-zinc-100">
       <header className="z-10 flex h-11 flex-shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-2 sm:gap-3 sm:px-3">
@@ -265,13 +264,8 @@ export default function CameraMonitoring() {
           <ArrowLeft className="h-4 w-4" />
           <span className="hidden font-mono text-xs sm:inline">Back</span>
         </Button>
-        <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 sm:flex-row sm:gap-3">
+        <div className="flex min-w-0 flex-1 flex-col items-center justify-center sm:flex-row sm:gap-3">
           <LiveClock />
-          {!simpleView && (
-            <span className="hidden max-w-[200px] truncate text-center font-mono text-[9px] text-zinc-600 sm:inline sm:max-w-none">
-              Technical messages may appear inside each feed (video partner)
-            </span>
-          )}
         </div>
         <Button
           variant="ghost"
@@ -295,23 +289,14 @@ export default function CameraMonitoring() {
             <span className="hidden sm:inline">{simpleView ? 'Simple view' : 'Live view'}</span>
           </span>
         </Button>
-        <Video className="h-4 w-4 flex-shrink-0 text-cyan-600" />
+        <Video
+          className="h-4 w-4 flex-shrink-0 text-cyan-600"
+          title="Video feeds are provided by Luna. If a tile stays blank, confirm Luna web origin and API token under Settings, API client domain whitelist, and that the device is online."
+        />
       </header>
 
-      <div ref={gridContainerRef} className="min-h-0 flex-1 overflow-hidden bg-zinc-950 p-px">
-        {loading && (
-          <div
-            className="grid h-full w-full gap-px bg-zinc-800"
-            style={{
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
-            }}
-          >
-            {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="min-h-0 animate-pulse bg-zinc-900" />
-            ))}
-          </div>
-        )}
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-zinc-950">
+        {loading && <CameraWallSkeleton />}
 
         {!loading && error && (
           <div className="m-4 max-w-md rounded border border-amber-900/50 bg-amber-950 p-4 text-sm text-amber-100">
@@ -346,14 +331,8 @@ export default function CameraMonitoring() {
           </div>
         )}
 
-        {showGrid && gridW > 0 && gridH > 0 && (
-          <div
-            className="grid h-full w-full gap-px bg-zinc-800"
-            style={{
-              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-            }}
-          >
+        {showGrid && (
+          <div className="space-y-4 p-3 pb-6">
             {vehicleCams.map((v) => (
               <VehicleCameraCard
                 key={v.id}
@@ -364,10 +343,6 @@ export default function CameraMonitoring() {
               />
             ))}
           </div>
-        )}
-
-        {showGrid && (gridW === 0 || gridH === 0) && (
-          <div className="flex h-full items-center justify-center font-mono text-sm text-zinc-600">…</div>
         )}
       </div>
     </div>
