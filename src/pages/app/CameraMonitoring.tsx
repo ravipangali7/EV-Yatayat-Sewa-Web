@@ -9,11 +9,11 @@ import type { MonitoringVehicle } from '@/types';
 
 type Channel = 1 | 2;
 
-interface VehicleWithImei {
-  id: string;
-  name: string;
-  vehicle_no: string;
-  imei: string;
+interface CameraStream {
+  key: string;
+  /** Short label like CCTV id (bottom-left overlay) */
+  label: string;
+  src: string;
 }
 
 function normalizeLunaOrigin(origin: string): string {
@@ -28,7 +28,7 @@ function buildEmbedSrc(origin: string, imei: string, channel: Channel, apiToken:
   return url.toString();
 }
 
-/** Pick columns × rows so N vehicle cards fill the viewport; wider screens get more columns. */
+/** Uniform N×M grid from stream count + viewport aspect (CCTV wall style). */
 function computeGridDims(count: number, width: number, height: number): { cols: number; rows: number } {
   if (count <= 0) return { cols: 1, rows: 1 };
   const w = Math.max(width, 1);
@@ -59,13 +59,20 @@ function useGridContainerSize() {
   return { ref, width: size.w, height: size.h };
 }
 
-function StreamPane({
-  title,
-  src,
-}: {
-  title: string;
-  src: string;
-}) {
+function LiveClock() {
+  const [t, setT] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setT(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <span className="font-mono text-sm tabular-nums tracking-widest text-cyan-400/90">
+      {t.toLocaleTimeString('en-GB', { hour12: false })}
+    </span>
+  );
+}
+
+function CctvCell({ label, src }: { label: string; src: string }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -73,20 +80,18 @@ function StreamPane({
   }, [src]);
 
   return (
-    <div className="relative min-h-0 min-w-0 h-full w-full overflow-hidden rounded-sm bg-black">
-      <div
-        className="absolute left-1 top-1 z-20 pointer-events-none rounded px-1 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/90 bg-black/60"
-        aria-hidden
-      >
-        {title}
-      </div>
+    <div className="relative min-h-0 min-w-0 h-full w-full overflow-hidden bg-black outline outline-1 outline-zinc-800">
       {!loaded && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950" aria-hidden>
-          <div className="h-8 w-8 rounded-full border-2 border-slate-600 border-t-blue-500 animate-spin" />
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-zinc-950"
+          aria-hidden
+        >
+          <div className="h-6 w-6 rounded-full border-2 border-zinc-700 border-t-cyan-500/80 animate-spin" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-600">Signal</span>
         </div>
       )}
       <iframe
-        title={title}
+        title={label}
         src={src}
         className={cn(
           'absolute inset-0 box-border block h-full w-full max-h-full max-w-full border-0',
@@ -96,33 +101,11 @@ function StreamPane({
         allow="camera; microphone; fullscreen"
         onLoad={() => setLoaded(true)}
       />
-    </div>
-  );
-}
-
-function VehicleCameraCard({
-  vehicle,
-  lunaOrigin,
-  lunaToken,
-}: {
-  vehicle: VehicleWithImei;
-  lunaOrigin: string;
-  lunaToken: string;
-}) {
-  const frontSrc = buildEmbedSrc(lunaOrigin, vehicle.imei, 1, lunaToken);
-  const rearSrc = buildEmbedSrc(lunaOrigin, vehicle.imei, 2, lunaToken);
-
-  return (
-    <div className="flex min-h-0 min-w-0 h-full w-full flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-950 shadow-lg">
-      <div className="flex-shrink-0 border-b border-slate-700/90 bg-slate-900/90 px-2 py-1.5">
-        <p className="truncate text-xs font-semibold text-slate-100">{vehicle.name}</p>
-        <p className="truncate text-[10px] text-slate-500">
-          {vehicle.vehicle_no} · IMEI {vehicle.imei}
-        </p>
-      </div>
-      <div className="grid min-h-0 flex-1 grid-cols-2 gap-px bg-slate-800 p-px">
-        <StreamPane title="Front" src={frontSrc} />
-        <StreamPane title="Rear" src={rearSrc} />
+      <div
+        className="pointer-events-none absolute bottom-1 left-1 z-20 max-w-[calc(100%-0.5rem)] truncate bg-black/75 px-1.5 py-0.5 font-mono text-[11px] leading-tight text-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.15)]"
+        aria-hidden
+      >
+        {label}
       </div>
     </div>
   );
@@ -160,69 +143,86 @@ export default function CameraMonitoring() {
     load();
   }, [load]);
 
-  const vehiclesWithImei: VehicleWithImei[] = useMemo(() => {
-    return vehicles
-      .map((v) => {
-        const imei = (v.imei ?? '').trim();
-        if (!imei) return null;
-        return {
-          id: v.id,
-          name: v.name,
-          vehicle_no: v.vehicle_no,
-          imei,
-        };
-      })
-      .filter((x): x is VehicleWithImei => x != null);
-  }, [vehicles]);
+  const activeStreams: CameraStream[] = useMemo(() => {
+    const origin = normalizeLunaOrigin(lunaOrigin);
+    if (!origin || !lunaToken) return [];
+    const list: CameraStream[] = [];
+    for (const v of vehicles) {
+      const imei = (v.imei ?? '').trim();
+      if (!imei) continue;
+      const base = v.vehicle_no?.trim() || v.name?.slice(0, 12) || imei.slice(-8);
+      list.push({
+        key: `${v.id}:1`,
+        label: `${base}.F`,
+        src: buildEmbedSrc(origin, imei, 1, lunaToken),
+      });
+      list.push({
+        key: `${v.id}:2`,
+        label: `${base}.R`,
+        src: buildEmbedSrc(origin, imei, 2, lunaToken),
+      });
+    }
+    return list;
+  }, [vehicles, lunaOrigin, lunaToken]);
 
   const missingConfig = !normalizeLunaOrigin(lunaOrigin) || !lunaToken;
-  const showGrid = !loading && !error && !missingConfig && vehiclesWithImei.length > 0;
+  const showGrid = !loading && !error && !missingConfig && activeStreams.length > 0;
 
+  const streamCount = activeStreams.length;
   const { cols, rows } = useMemo(
-    () => computeGridDims(vehiclesWithImei.length, gridW, gridH),
-    [vehiclesWithImei.length, gridW, gridH]
+    () => computeGridDims(streamCount, gridW, gridH),
+    [streamCount, gridW, gridH]
   );
 
   return (
-    <div className="flex h-dvh min-h-[100dvh] flex-col overflow-hidden bg-slate-900 text-white">
-      <header className="z-10 flex h-14 flex-shrink-0 items-center gap-4 border-b border-slate-700/60 bg-slate-900/95 px-4 backdrop-blur">
+    <div className="flex h-dvh min-h-[100dvh] flex-col overflow-hidden bg-black text-zinc-100">
+      {/* CCTV-style top bar */}
+      <header className="z-10 flex h-11 flex-shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-950 px-3">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/admin')}
-          className="flex-shrink-0 gap-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+          className="h-8 flex-shrink-0 gap-1 text-zinc-500 hover:bg-zinc-900 hover:text-cyan-400"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Back</span>
+          <span className="hidden font-mono text-xs sm:inline">Back</span>
         </Button>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <Video className="h-5 w-5 flex-shrink-0 text-blue-400" />
-          <h1 className="truncate text-sm font-bold uppercase tracking-widest text-slate-100">
-            Camera monitoring
-          </h1>
+        <div className="flex min-w-0 flex-1 items-center justify-center">
+          <LiveClock />
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          <Video className="h-4 w-4 text-cyan-600" />
+          <span className="hidden font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500 sm:inline">
+            Cam
+          </span>
         </div>
       </header>
 
-      <div ref={gridContainerRef} className="min-h-0 flex-1 overflow-hidden p-2">
+      <div ref={gridContainerRef} className="min-h-0 flex-1 overflow-hidden bg-zinc-950 p-px">
         {loading && (
-          <div className="grid h-full w-full grid-cols-2 gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="min-h-0 animate-pulse rounded-lg border border-slate-700 bg-slate-900/60"
-              />
+          <div
+            className="grid h-full w-full gap-px bg-zinc-800"
+            style={{
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
+            }}
+          >
+            {Array.from({ length: 16 }, (_, i) => (
+              <div key={i} className="min-h-0 animate-pulse bg-zinc-900" />
             ))}
           </div>
         )}
 
-        {!loading && error && <p className="text-sm text-red-300">{error}</p>}
+        {!loading && error && (
+          <p className="p-4 font-mono text-sm text-red-400">{error}</p>
+        )}
 
         {!loading && !error && missingConfig && (
-          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            <p className="font-medium">Luna embed is not configured</p>
-            <p className="mt-1 text-amber-200/80">
-              Set <strong>Luna web origin</strong> and <strong>Luna API token</strong> in{' '}
-              <Link to="/admin/settings" className="font-medium underline">
+          <div className="m-4 border border-amber-900/60 bg-amber-950/40 p-4 font-mono text-sm text-amber-200/90">
+            <p className="font-semibold text-amber-400">CONFIG</p>
+            <p className="mt-2 text-amber-200/70">
+              Set Luna web origin + API token in{' '}
+              <Link to="/admin/settings" className="text-cyan-400 underline">
                 Settings
               </Link>
               .
@@ -230,44 +230,35 @@ export default function CameraMonitoring() {
           </div>
         )}
 
-        {!loading && !error && !missingConfig && vehiclesWithImei.length === 0 && (
-          <div className="rounded-lg border border-slate-700 bg-slate-800/40 px-4 py-3 text-sm text-slate-200">
-            <p className="flex items-center gap-2 font-medium">
-              <Video className="h-4 w-4" />
-              No vehicles with IMEI
-            </p>
-            <p className="mt-1 text-slate-400">
-              Add an IMEI on each vehicle in{' '}
-              <Link to="/admin/vehicles" className="text-blue-400 underline">
-                Vehicles
-              </Link>{' '}
-              to show cameras here.
-            </p>
+        {!loading && !error && !missingConfig && streamCount === 0 && (
+          <div className="m-4 border border-zinc-800 p-4 font-mono text-sm text-zinc-500">
+            <p>No IMEI — add in</p>
+            <Link to="/admin/vehicles" className="mt-1 inline-block text-cyan-600 underline">
+              Vehicles
+            </Link>
           </div>
         )}
 
         {showGrid && gridW > 0 && gridH > 0 && (
           <div
-            className="grid h-full w-full gap-2"
+            className="grid h-full w-full gap-px bg-zinc-800"
             style={{
               gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
               gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
             }}
           >
-            {vehiclesWithImei.map((v) => (
-              <VehicleCameraCard
-                key={v.id}
-                vehicle={v}
-                lunaOrigin={lunaOrigin}
-                lunaToken={lunaToken}
-              />
+            {activeStreams.map((s) => (
+              <CctvCell key={s.key} label={s.label} src={s.src} />
             ))}
           </div>
         )}
 
-        {showGrid && (gridW === 0 || gridH === 0) && (
-          <div className="flex h-full items-center justify-center text-slate-500 text-sm">Loading layout…</div>
-        )}
+        {showGrid &&
+          (gridW === 0 || gridH === 0) && (
+            <div className="flex h-full items-center justify-center font-mono text-sm text-zinc-600">
+              …
+            </div>
+          )}
       </div>
     </div>
   );
