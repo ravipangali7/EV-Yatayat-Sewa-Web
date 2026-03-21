@@ -83,15 +83,16 @@ function VehicleSimplePanel({ v }: { v: VehicleCam }) {
           <p className="mt-1 font-mono text-[11px] text-cyan-600/90">
             {v.vehicle_no} · IMEI {v.imei}
           </p>
-          <p className="mt-3 text-xs leading-relaxed text-zinc-300">
-            Live video for the front and rear cameras isn’t showing on this screen right now.
+          <p className="mt-3 text-xs font-medium leading-relaxed text-zinc-200">
+            This wall is in <span className="text-zinc-100">Simple view</span> — live camera video is not loaded
+            here on purpose (no partner player, no technical error text).
           </p>
           <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-            Usually the bus is parked, switched off, or out of network coverage. Both cameras typically come back
-            when the vehicle is running and online.
+            Tap <span className="font-medium text-zinc-400">Live view</span> in the top bar to watch front and
+            rear feeds when your Luna token and network allow it.
           </p>
           <p className="mt-2 text-[10px] leading-relaxed text-zinc-600">
-            If this continues for a long time, contact support and we’ll help check the camera link.
+            If feeds still fail in Live view, check Luna API client permissions and allowed origins for dashcam.
           </p>
         </div>
       </div>
@@ -279,17 +280,20 @@ export default function CameraMonitoring() {
           className={cn(
             'h-8 flex-shrink-0 gap-1 px-2 font-mono text-[10px] uppercase tracking-wide sm:px-3',
             simpleView
-              ? 'bg-cyan-950/50 text-cyan-300 hover:bg-cyan-950/70'
-              : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'
+              ? 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200'
+              : 'bg-cyan-950/50 text-cyan-300 hover:bg-cyan-950/70'
           )}
           title={
             simpleView
-              ? 'Load live Luna cameras (may show token/stream messages from the provider)'
-              : 'Customer-safe view: no partner iframe, no red technical text'
+              ? 'You are in Simple view (no embedded video). Click to switch to Live view and load Luna feeds.'
+              : 'You are in Live view (embedded cameras). Click for Simple view: placeholders only, no partner iframe.'
           }
         >
           <Info className="h-3.5 w-3.5 sm:mr-1" />
-          <span className="hidden sm:inline">{simpleView ? 'Live view' : 'Simple view'}</span>
+          <span className="font-mono uppercase tracking-wide">
+            <span className="sm:hidden">{simpleView ? 'Simple' : 'Live'}</span>
+            <span className="hidden sm:inline">{simpleView ? 'Simple view' : 'Live view'}</span>
+          </span>
         </Button>
         <Video className="h-4 w-4 flex-shrink-0 text-cyan-600" />
       </header>
