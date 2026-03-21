@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Video } from 'lucide-react';
+import { ArrowLeft, Video, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { monitoringApi } from '@/modules/monitoring/services/monitoringApi';
 import { superSettingApi } from '@/modules/settings/services/superSettingApi';
 import { cn } from '@/lib/utils';
 import type { MonitoringVehicle } from '@/types';
 
+const COMFORT_STORAGE_KEY = 'cctv_customer_friendly_view';
+
 type Channel = 1 | 2;
 
 interface CameraStream {
   key: string;
-  /** Short label like CCTV id (bottom-left overlay) */
   label: string;
   src: string;
 }
@@ -28,7 +29,6 @@ function buildEmbedSrc(origin: string, imei: string, channel: Channel, apiToken:
   return url.toString();
 }
 
-/** Uniform N×M grid from stream count + viewport aspect (CCTV wall style). */
 function computeGridDims(count: number, width: number, height: number): { cols: number; rows: number } {
   if (count <= 0) return { cols: 1, rows: 1 };
   const w = Math.max(width, 1);
@@ -72,7 +72,37 @@ function LiveClock() {
   );
 }
 
-function CctvCell({ label, src }: { label: string; src: string }) {
+/** Covers partner iframe with plain-language copy (partner errors live inside iframe; we cannot edit them). */
+function CustomerFriendlyCover({ cameraLabel }: { cameraLabel: string }) {
+  return (
+    <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-zinc-950/96 p-3 text-center">
+      <div className="max-w-[220px] rounded border border-zinc-700/80 bg-zinc-900/90 px-3 py-3 shadow-lg">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-cyan-500/90">{cameraLabel}</p>
+        <p className="mt-2 text-xs font-medium leading-snug text-zinc-100">
+          Live camera isn’t available right now
+        </p>
+        <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
+          This usually means the bus is parked, switched off, or out of coverage. Video often appears once the
+          vehicle is running and online again.
+        </p>
+        <p className="mt-2 text-[10px] leading-relaxed text-zinc-500">
+          If it stays like this for a long time, check the device or contact support—we’ll help trace the camera
+          link.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function CctvCell({
+  label,
+  src,
+  customerFriendlyView,
+}: {
+  label: string;
+  src: string;
+  customerFriendlyView: boolean;
+}) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -95,14 +125,16 @@ function CctvCell({ label, src }: { label: string; src: string }) {
         src={src}
         className={cn(
           'absolute inset-0 box-border block h-full w-full max-h-full max-w-full border-0',
-          !loaded && 'opacity-0'
+          !loaded && 'opacity-0',
+          customerFriendlyView && 'pointer-events-none'
         )}
         referrerPolicy="strict-origin-when-cross-origin"
         allow="camera; microphone; fullscreen"
         onLoad={() => setLoaded(true)}
       />
+      {customerFriendlyView && <CustomerFriendlyCover cameraLabel={label} />}
       <div
-        className="pointer-events-none absolute bottom-1 left-1 z-20 max-w-[calc(100%-0.5rem)] truncate bg-black/75 px-1.5 py-0.5 font-mono text-[11px] leading-tight text-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.15)]"
+        className="pointer-events-none absolute bottom-1 left-1 z-50 max-w-[calc(100%-0.5rem)] truncate bg-black/75 px-1.5 py-0.5 font-mono text-[11px] leading-tight text-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.15)]"
         aria-hidden
       >
         {label}
@@ -120,6 +152,25 @@ export default function CameraMonitoring() {
   const [error, setError] = useState<string | null>(null);
   const { ref: gridContainerRef, width: gridW, height: gridH } = useGridContainerSize();
 
+  const [customerFriendlyView, setCustomerFriendlyView] = useState(() => {
+    try {
+      const v = sessionStorage.getItem(COMFORT_STORAGE_KEY);
+      if (v === '0') return false;
+      if (v === '1') return true;
+      return true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(COMFORT_STORAGE_KEY, customerFriendlyView ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }, [customerFriendlyView]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -132,8 +183,10 @@ export default function CameraMonitoring() {
       setLunaOrigin((row?.luna_web_origin ?? '').trim());
       setLunaToken((row?.luna_api_token ?? '').trim());
       setVehicles(snapshot.vehicles ?? []);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load');
+    } catch {
+      setError(
+        'We could not refresh this screen. Check your connection, sign in again, or try in a few minutes.'
+      );
     } finally {
       setLoading(false);
     }
@@ -176,8 +229,7 @@ export default function CameraMonitoring() {
 
   return (
     <div className="flex h-dvh min-h-[100dvh] flex-col overflow-hidden bg-black text-zinc-100">
-      {/* CCTV-style top bar */}
-      <header className="z-10 flex h-11 flex-shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-950 px-3">
+      <header className="z-10 flex h-11 flex-shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-2 sm:gap-3 sm:px-3">
         <Button
           variant="ghost"
           size="sm"
@@ -190,11 +242,27 @@ export default function CameraMonitoring() {
         <div className="flex min-w-0 flex-1 items-center justify-center">
           <LiveClock />
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCustomerFriendlyView((v) => !v)}
+          className={cn(
+            'h-8 flex-shrink-0 gap-1 px-2 font-mono text-[10px] uppercase tracking-wide sm:px-3',
+            customerFriendlyView
+              ? 'bg-cyan-950/50 text-cyan-300 hover:bg-cyan-950/70'
+              : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'
+          )}
+          title={
+            customerFriendlyView
+              ? 'Show live camera view (may include technical messages from the video provider)'
+              : 'Show customer-friendly messages instead of raw provider screens'
+          }
+        >
+          <Info className="h-3.5 w-3.5 sm:mr-1" />
+          <span className="hidden sm:inline">{customerFriendlyView ? 'Live view' : 'Simple view'}</span>
+        </Button>
         <div className="flex flex-shrink-0 items-center gap-1.5">
           <Video className="h-4 w-4 text-cyan-600" />
-          <span className="hidden font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500 sm:inline">
-            Cam
-          </span>
         </div>
       </header>
 
@@ -214,28 +282,35 @@ export default function CameraMonitoring() {
         )}
 
         {!loading && error && (
-          <p className="p-4 font-mono text-sm text-red-400">{error}</p>
+          <div className="m-4 max-w-md rounded border border-amber-900/50 bg-amber-950/50 p-4 text-sm text-amber-100/95">
+            <p className="font-medium text-amber-200">Something went wrong</p>
+            <p className="mt-2 leading-relaxed text-amber-100/80">{error}</p>
+          </div>
         )}
 
         {!loading && !error && missingConfig && (
-          <div className="m-4 border border-amber-900/60 bg-amber-950/40 p-4 font-mono text-sm text-amber-200/90">
-            <p className="font-semibold text-amber-400">CONFIG</p>
-            <p className="mt-2 text-amber-200/70">
-              Set Luna web origin + API token in{' '}
-              <Link to="/admin/settings" className="text-cyan-400 underline">
+          <div className="m-4 max-w-md rounded border border-amber-900/50 bg-amber-950/40 p-4 text-sm text-amber-100/90">
+            <p className="font-semibold text-amber-200">Camera setup needed</p>
+            <p className="mt-2 leading-relaxed text-amber-100/75">
+              Add your Luna web address and API token under{' '}
+              <Link to="/admin/settings" className="font-medium text-cyan-400 underline">
                 Settings
-              </Link>
-              .
+              </Link>{' '}
+              so this wall can load.
             </p>
           </div>
         )}
 
         {!loading && !error && !missingConfig && streamCount === 0 && (
-          <div className="m-4 border border-zinc-800 p-4 font-mono text-sm text-zinc-500">
-            <p>No IMEI — add in</p>
-            <Link to="/admin/vehicles" className="mt-1 inline-block text-cyan-600 underline">
-              Vehicles
-            </Link>
+          <div className="m-4 max-w-md rounded border border-zinc-800 p-4 text-sm text-zinc-400">
+            <p className="font-medium text-zinc-300">No cameras to show yet</p>
+            <p className="mt-2 leading-relaxed">
+              Add an IMEI for each bus under{' '}
+              <Link to="/admin/vehicles" className="text-cyan-500 underline">
+                Vehicles
+              </Link>
+              .
+            </p>
           </div>
         )}
 
@@ -248,17 +323,19 @@ export default function CameraMonitoring() {
             }}
           >
             {activeStreams.map((s) => (
-              <CctvCell key={s.key} label={s.label} src={s.src} />
+              <CctvCell
+                key={s.key}
+                label={s.label}
+                src={s.src}
+                customerFriendlyView={customerFriendlyView}
+              />
             ))}
           </div>
         )}
 
-        {showGrid &&
-          (gridW === 0 || gridH === 0) && (
-            <div className="flex h-full items-center justify-center font-mono text-sm text-zinc-600">
-              …
-            </div>
-          )}
+        {showGrid && (gridW === 0 || gridH === 0) && (
+          <div className="flex h-full items-center justify-center font-mono text-sm text-zinc-600">…</div>
+        )}
       </div>
     </div>
   );
