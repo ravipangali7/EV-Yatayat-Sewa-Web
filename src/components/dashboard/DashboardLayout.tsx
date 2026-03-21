@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -35,10 +35,17 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-interface NavItem {
+interface NavChild {
   label: string;
   path: string;
+}
+
+interface NavItem {
+  label: string;
+  /** Single link (omit when using `children`) */
+  path?: string;
   icon: ReactNode;
+  children?: NavChild[];
 }
 
 interface NavSection {
@@ -51,7 +58,14 @@ const navSections: NavSection[] = [
     title: 'Main',
     items: [
       { label: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
-      { label: 'Monitoring', path: '/admin/monitoring', icon: <MonitorDot className="w-5 h-5" /> },
+      {
+        label: 'Monitoring',
+        icon: <MonitorDot className="w-5 h-5" />,
+        children: [
+          { label: 'Vehicle Monitoring', path: '/admin/monitoring' },
+          { label: 'Camera Monitoring', path: '/admin/monitoring/cameras' },
+        ],
+      },
       { label: 'Users', path: '/admin/users', icon: <Users className="w-5 h-5" /> },
       { label: 'Wallets', path: '/admin/wallets', icon: <Wallet className="w-5 h-5" /> },
       { label: 'Cards', path: '/admin/cards', icon: <CreditCard className="w-5 h-5" /> },
@@ -95,6 +109,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [openSections, setOpenSections] = useState<string[]>(['Main', 'Booking', 'Website']);
+  const [monitoringNavOpen, setMonitoringNavOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.location.pathname.startsWith('/admin/monitoring') : false
+  );
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -103,8 +120,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     if (path === '/admin') {
       return location.pathname === '/admin';
     }
+    if (path === '/admin/monitoring') {
+      return location.pathname === '/admin/monitoring';
+    }
     return location.pathname.startsWith(path);
   };
+
+  const isMonitoringSectionActive = location.pathname.startsWith('/admin/monitoring');
+
+  useEffect(() => {
+    if (isMonitoringSectionActive) {
+      setMonitoringNavOpen(true);
+    }
+  }, [isMonitoringSectionActive]);
 
   const handleLogout = () => {
     logout();
@@ -149,20 +177,83 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="space-y-1 mt-1">
-                {section.items.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setMobileSidebarOpen(false)}
-                    className={cn(
-                      'sidebar-link',
-                      isActive(item.path) && 'sidebar-link-active'
-                    )}
-                  >
-                    {item.icon}
-                    {sidebarOpen && <span>{item.label}</span>}
-                  </Link>
-                ))}
+                {section.items.map((item) => {
+                  if (item.children?.length) {
+                    if (!sidebarOpen) {
+                      return (
+                        <Link
+                          key={item.label}
+                          to="/admin/monitoring"
+                          onClick={() => setMobileSidebarOpen(false)}
+                          className={cn(
+                            'sidebar-link',
+                            isMonitoringSectionActive && 'sidebar-link-active'
+                          )}
+                        >
+                          {item.icon}
+                        </Link>
+                      );
+                    }
+                    return (
+                      <Collapsible
+                        key={item.label}
+                        open={monitoringNavOpen}
+                        onOpenChange={setMonitoringNavOpen}
+                        className="space-y-0.5"
+                      >
+                        <CollapsibleTrigger className="w-full">
+                          <div
+                            className={cn(
+                              'sidebar-link cursor-pointer',
+                              isMonitoringSectionActive && 'sidebar-link-active'
+                            )}
+                          >
+                            {item.icon}
+                            <span className="flex-1 text-left">{item.label}</span>
+                            <ChevronDown
+                              className={cn(
+                                'w-4 h-4 shrink-0 transition-transform',
+                                monitoringNavOpen && 'rotate-180'
+                              )}
+                            />
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-0.5 pb-1">
+                            {item.children.map((child) => (
+                              <Link
+                                key={child.path}
+                                to={child.path}
+                                onClick={() => setMobileSidebarOpen(false)}
+                                className={cn(
+                                  'sidebar-link pl-9 text-sm',
+                                  location.pathname === child.path && 'sidebar-link-active'
+                                )}
+                              >
+                                <span>{child.label}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  }
+                  const path = item.path!;
+                  return (
+                    <Link
+                      key={path}
+                      to={path}
+                      onClick={() => setMobileSidebarOpen(false)}
+                      className={cn(
+                        'sidebar-link',
+                        isActive(path) && 'sidebar-link-active'
+                      )}
+                    >
+                      {item.icon}
+                      {sidebarOpen && <span>{item.label}</span>}
+                    </Link>
+                  );
+                })}
               </div>
             </CollapsibleContent>
           </Collapsible>

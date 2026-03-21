@@ -65,6 +65,8 @@ export interface SuperSetting {
   stop_point_announcement_header?: string;
   short_trip_min_distance_for_booking?: number;
   short_trip_max_distance_for_booking?: number;
+  luna_web_origin?: string | null;
+  luna_api_token?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -312,6 +314,7 @@ export interface MonitoringSummary {
 
 export interface MonitoringVehicle {
   id: string;
+  imei?: string | null;
   name: string;
   vehicle_no: string;
   start_point: string;

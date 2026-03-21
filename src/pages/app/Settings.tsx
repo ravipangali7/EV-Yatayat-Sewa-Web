@@ -23,7 +23,9 @@ export default function Settings() {
     stop_point_announcement_header: '',
     short_trip_min_distance_for_booking: 5,
     short_trip_max_distance_for_booking: 200,
+    luna_web_origin: '',
   });
+  const [lunaTokenInput, setLunaTokenInput] = useState('');
   const [seatLayoutRaw, setSeatLayoutRaw] = useState('[]');
 
   useEffect(() => {
@@ -45,7 +47,9 @@ export default function Settings() {
             stop_point_announcement_header: setting.stop_point_announcement_header ?? '',
             short_trip_min_distance_for_booking: toNumber(setting.short_trip_min_distance_for_booking, 5),
             short_trip_max_distance_for_booking: toNumber(setting.short_trip_max_distance_for_booking, 200),
+            luna_web_origin: (setting.luna_web_origin ?? '').trim(),
           });
+          setLunaTokenInput('');
           setSeatLayoutRaw(JSON.stringify(layout));
         } else {
           setIsEditing(true);
@@ -71,7 +75,7 @@ export default function Settings() {
       seatLayout = formData.seat_layout;
     }
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         per_km_charge: formData.per_km_charge,
         initial_km: formData.initial_km ?? null,
         initial_km_charge: formData.initial_km_charge ?? null,
@@ -80,17 +84,31 @@ export default function Settings() {
         stop_point_announcement_header: formData.stop_point_announcement_header ?? '',
         short_trip_min_distance_for_booking: formData.short_trip_min_distance_for_booking,
         short_trip_max_distance_for_booking: formData.short_trip_max_distance_for_booking,
+        luna_web_origin: formData.luna_web_origin.trim(),
       };
+      if (lunaTokenInput.trim() !== '') {
+        payload.luna_api_token = lunaTokenInput.trim();
+      }
       if (settings) {
         const updated = await superSettingApi.edit(settings.id, payload);
         setSettings(updated);
-        setFormData((prev) => ({ ...prev, stop_point_announcement_header: updated.stop_point_announcement_header ?? '' }));
+        setFormData((prev) => ({
+          ...prev,
+          stop_point_announcement_header: updated.stop_point_announcement_header ?? '',
+          luna_web_origin: (updated.luna_web_origin ?? '').trim(),
+        }));
+        setLunaTokenInput('');
         setSeatLayoutRaw(JSON.stringify(updated.seat_layout ?? []));
         toast.success('Settings updated successfully');
       } else {
         const created = await superSettingApi.create(payload);
         setSettings(created);
-        setFormData((prev) => ({ ...prev, stop_point_announcement_header: created.stop_point_announcement_header ?? '' }));
+        setFormData((prev) => ({
+          ...prev,
+          stop_point_announcement_header: created.stop_point_announcement_header ?? '',
+          luna_web_origin: (created.luna_web_origin ?? '').trim(),
+        }));
+        setLunaTokenInput('');
         setSeatLayoutRaw(JSON.stringify(created.seat_layout ?? []));
         toast.success('Settings created successfully');
       }
@@ -124,7 +142,7 @@ export default function Settings() {
           subtitle={settings ? 'Edit system settings' : 'Configure system settings'}
         />
 
-        <form onSubmit={handleSubmit} className="form-section max-w-xl">
+        <form onSubmit={handleSubmit} className="form-section max-w-2xl">
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="per_km_charge">Per KM Charge (Rs.)</Label>
@@ -221,6 +239,39 @@ export default function Settings() {
                 disabled={loading}
               />
             </div>
+
+            <div className="space-y-4 pt-4 border-t border-border">
+              <p className="text-sm font-medium text-foreground">Luna camera embed</p>
+              <p className="text-xs text-muted-foreground">
+                Use the Luna web app base URL (not Django). Whitelist this admin site&apos;s hostname on the Luna API client and enable Camera live UI (embed). Channel 1 = front, 2 = rear.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="luna_web_origin">Luna web origin</Label>
+                <Input
+                  id="luna_web_origin"
+                  type="url"
+                  placeholder="https://dashboard.example.com"
+                  value={formData.luna_web_origin}
+                  onChange={(e) => setFormData({ ...formData, luna_web_origin: e.target.value })}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="luna_api_token">Luna API token</Label>
+                <Input
+                  id="luna_api_token"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={settings?.luna_api_token ? '(unchanged — enter new token to replace)' : 'Bearer token from Luna'}
+                  value={lunaTokenInput}
+                  onChange={(e) => setLunaTokenInput(e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave blank when editing to keep the current token. The token is only sent when you type a new value.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-4 mt-8">
@@ -252,7 +303,7 @@ export default function Settings() {
         }
       />
 
-      <Card className="max-w-xl">
+      <Card className="max-w-xl mb-6">
         <CardHeader>
           <CardTitle>Pricing Settings</CardTitle>
         </CardHeader>
@@ -302,6 +353,26 @@ export default function Settings() {
                 </div>
               </>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-xl">
+        <CardHeader>
+          <CardTitle>Luna camera embed</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-border gap-4">
+              <span className="text-muted-foreground">Luna web origin</span>
+              <span className="font-semibold text-right break-all">{settings?.luna_web_origin?.trim() || '—'}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">API token</span>
+              <span className="font-semibold">
+                {settings?.luna_api_token && String(settings.luna_api_token).length > 0 ? 'Configured' : 'Not set'}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>

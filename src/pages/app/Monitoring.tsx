@@ -281,14 +281,14 @@ export default function Monitoring() {
 
   if (loading && vehicles.length === 0) {
     return (
-      <div className="h-screen flex flex-col bg-slate-900 text-white items-center justify-center">
+      <div className="h-[calc(100dvh-8rem)] min-h-[320px] flex flex-col bg-slate-900 text-white items-center justify-center rounded-xl border border-slate-800">
         <div className="text-slate-400 animate-pulse">Loading monitoring…</div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-900 overflow-hidden text-white">
+    <div className="h-[calc(100dvh-8rem)] min-h-[480px] flex flex-col bg-slate-900 overflow-hidden text-white rounded-xl border border-slate-800">
       {error && (
         <div className="flex-shrink-0 bg-amber-500/20 border-b border-amber-500/40 px-4 py-2 text-amber-200 text-sm">
           {error}

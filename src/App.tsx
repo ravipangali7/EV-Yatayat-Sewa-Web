@@ -89,6 +89,8 @@ const AppResetPassword = lazyWithChunkErrorReload(() => import("./pages/app/AppR
 const AppRoleLayout = lazyWithChunkErrorReload(() => import("./pages/app/AppRoleLayout"));
 const PaymentCallbackPage = lazyWithChunkErrorReload(() => import("./pages/app/PaymentCallbackPage"));
 const Monitoring = lazyWithChunkErrorReload(() => import("./pages/app/Monitoring"));
+const MonitoringLayout = lazyWithChunkErrorReload(() => import("./pages/app/MonitoringLayout"));
+const CameraMonitoring = lazyWithChunkErrorReload(() => import("./pages/app/CameraMonitoring"));
 import { getAppRoles, getAppRoleConfig, getHomePathForUser } from "@/config/appRoles";
 
 const queryClient = new QueryClient();
@@ -216,7 +218,17 @@ function AppRoutes() {
       
       {/* Admin Dashboard Routes */}
       <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/admin/monitoring" element={<SuperuserOnlyRoute><Monitoring /></SuperuserOnlyRoute>} />
+      <Route
+        path="/admin/monitoring"
+        element={
+          <SuperuserOnlyRoute>
+            <MonitoringLayout />
+          </SuperuserOnlyRoute>
+        }
+      >
+        <Route index element={<Monitoring />} />
+        <Route path="cameras" element={<CameraMonitoring />} />
+      </Route>
       
       {/* Users */}
       <Route path="/admin/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
