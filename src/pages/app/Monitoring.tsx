@@ -18,6 +18,7 @@ import { monitoringApi } from '@/modules/monitoring/services/monitoringApi';
 import type { MonitoringVehicle, HeavyDue } from '@/types';
 import { toast } from 'sonner';
 import { VehicleDetailSheet } from '@/components/monitoring/VehicleDetailSheet';
+import { MapTypeToggle } from '@/components/maps/MapTypeToggle';
 
 // ---------------------------------------------------------------------------
 // Types (display vehicle = API vehicle + color + today_revenue as number)
@@ -38,7 +39,6 @@ const VEHICLE_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#6b7280', '#a855f7', '
 const MAP_CENTER = { lat: 27.7041, lng: 85.3131 };
 
 const MAP_OPTIONS: google.maps.MapOptions = {
-  mapTypeId: 'roadmap',
   disableDefaultUI: false,
   zoomControl: true,
   streetViewControl: false,
@@ -188,7 +188,7 @@ function VehicleCard({ vehicle, selected, onClick }: VehicleCardProps) {
 
 export default function Monitoring() {
   const navigate = useNavigate();
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
 
   const [vehicles, setVehicles] = useState<DisplayVehicle[]>([]);
   const [heavyDues, setHeavyDues] = useState<HeavyDue[]>([]);
@@ -278,6 +278,10 @@ export default function Monitoring() {
   const totalRevenue = vehicles.reduce((s, v) => s + v.today_revenue, 0);
   const onTripCount = vehicles.filter((v) => v.status === 'on_trip').length;
   const totalSeatsBooked = vehicles.reduce((s, v) => s + v.seats_booked, 0);
+  const mapOptions = { ...MAP_OPTIONS, mapTypeId: mapType };
+  const handleMapTypeToggle = () => {
+    setMapType(mapType === 'satellite' ? 'roadmap' : 'satellite');
+  };
 
   if (loading && vehicles.length === 0) {
     return (
@@ -407,7 +411,7 @@ export default function Monitoring() {
               mapContainerStyle={{ width: '100%', height: '100%' }}
               center={MAP_CENTER}
               zoom={13}
-              options={MAP_OPTIONS}
+              options={mapOptions}
               onLoad={onMapLoad}
             >
               {vehiclesWithLocation.map((vehicle) => (
@@ -466,6 +470,9 @@ export default function Monitoring() {
           )}
 
           {/* Map overlay legend */}
+          <div className="absolute top-4 right-4 z-10">
+            <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+          </div>
           <div className="absolute bottom-4 left-4 bg-slate-900/90 border border-slate-700 rounded-xl p-3 backdrop-blur space-y-1.5">
             <div className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Legend</div>
             <div className="flex items-center gap-2 text-xs text-slate-400">

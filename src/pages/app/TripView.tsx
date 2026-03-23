@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { toNumber } from '@/lib/utils';
 import { Play, Pause, RotateCcw } from 'lucide-react';
+import { MapTypeToggle } from '@/components/maps/MapTypeToggle';
 
 interface TripLocation {
   id: string;
@@ -88,7 +89,7 @@ export default function TripView() {
   const [playing, setPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const playbackRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
 
   useEffect(() => {
     if (!id) return;
@@ -120,6 +121,9 @@ export default function TripView() {
   const startPoint = path[0];
   const endPoint = path[path.length - 1];
   const playbackPoint = path[playbackIndex];
+  const handleMapTypeToggle = () => {
+    setMapType(mapType === 'satellite' ? 'roadmap' : 'satellite');
+  };
 
   if (loading || !trip) {
     return (
@@ -161,12 +165,12 @@ export default function TripView() {
             </CardHeader>
             <CardContent>
               {path.length > 1 && isLoaded ? (
-                <div className="rounded overflow-hidden border">
+                <div className="rounded overflow-hidden border relative">
                   <GoogleMap
                     mapContainerStyle={{ width: '100%', height: '400px' }}
                     center={center}
                     zoom={14}
-                    options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false }}
+                    options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false, mapTypeId: mapType }}
                   >
                     <Polyline path={path} options={{ strokeColor: '#2563eb', strokeWeight: 4, strokeOpacity: 0.8 }} />
                     {startPoint && <Marker position={startPoint} label="S" title="Start" />}
@@ -183,6 +187,9 @@ export default function TripView() {
                       />
                     )}
                   </GoogleMap>
+                  <div className="absolute top-3 right-3 z-10">
+                    <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+                  </div>
                 </div>
               ) : path.length <= 1 ? (
                 <p className="text-muted-foreground py-8 text-center">No location data for this trip.</p>

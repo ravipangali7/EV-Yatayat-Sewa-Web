@@ -28,7 +28,7 @@ import { iconColorClasses } from "@/lib/appHomeStyles";
 
 const userGridCards = [
   { label: "Book Trip", icon: CalendarDays, to: "booking", gradient: true },
-  { label: "My Booking", icon: FileText, to: "booking?tab=my-booking", iconClass: "bg-primary/15 text-primary" },
+  { label: "History", icon: FileText, to: "booking?tab=my-booking", iconClass: "bg-primary/15 text-primary" },
   { label: "Deposit", icon: PlusCircle, to: "deposit" },
   { label: "Transfer", icon: Send, action: "transfer" as const },
   { label: "Topup Card", icon: CreditCard, to: "card/topup" },
@@ -109,6 +109,8 @@ export default function UserHome() {
       </div>
 
       <div className="px-5 pt-5 pb-24 space-y-5 bg-background">
+        <UserHomeMap />
+
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</p>
         <div className="grid grid-cols-4 gap-3">
           {gridCards.map((item, idx) => {
@@ -156,8 +158,6 @@ export default function UserHome() {
           onSuccess={refreshWallet}
           currentUserId={user?.id}
         />
-
-        <UserHomeMap />
 
         <div>
           <div className="flex gap-2 mb-3 p-1 rounded-xl bg-muted/30 border border-border/50">

@@ -12,12 +12,14 @@ import {
   VEHICLE_MARKER_WIDTH,
   VEHICLE_MARKER_HEIGHT,
 } from "@/config/mapConstants";
+import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
 
 const POLL_INTERVAL_MS = 3000;
 const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
 const DEFAULT_ZOOM = 14;
 /** Time constant for exponential follow; slightly slower than driver map for polling. */
-const SMOOTH_FOLLOW_SPEED = 4;
+const SMOOTH_FOLLOW_SPEED = 5.5;
+const SOCKET_RECENCY_WINDOW_MS = 4500;
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
@@ -57,7 +59,7 @@ export default function UserTrackTrip() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
 
   const fetchTrip = async () => {
     if (!tripId) return;
@@ -117,11 +119,16 @@ export default function UserTrackTrip() {
   const displayHeadingRef = useRef<number>(targetHeading);
   const targetCenterRef = useRef<{ lat: number; lng: number }>({ ...targetCenter });
   const targetHeadingRef = useRef<number>(targetHeading);
+  const lastSocketLocationAtRef = useRef<number>(0);
   const lastTickTimeRef = useRef<number>(performance.now());
   const rafRef = useRef<number | null>(null);
 
-  targetCenterRef.current = targetCenter;
-  targetHeadingRef.current = targetHeading;
+  useEffect(() => {
+    const hasRecentSocketUpdate = Date.now() - lastSocketLocationAtRef.current < SOCKET_RECENCY_WINDOW_MS;
+    if (hasRecentSocketUpdate) return;
+    targetCenterRef.current = targetCenter;
+    targetHeadingRef.current = targetHeading;
+  }, [targetCenter, targetHeading]);
 
   const authReadyForSocket = useAuthReadyForSocket();
   useTripSocket({
@@ -130,6 +137,7 @@ export default function UserTrackTrip() {
     authReady: authReadyForSocket,
     onSeatBooked: () => {},
     onTripLocation: useCallback((payload) => {
+      lastSocketLocationAtRef.current = Date.now();
       targetCenterRef.current = { lat: payload.lat, lng: payload.lng };
       if (payload.course != null) targetHeadingRef.current = payload.course;
     }, []),
@@ -176,6 +184,9 @@ export default function UserTrackTrip() {
       map.setZoom(DEFAULT_ZOOM);
     }
   }, []);
+  const handleMapTypeToggle = useCallback(() => {
+    setMapType(mapType === "satellite" ? "roadmap" : "satellite");
+  }, [mapType, setMapType]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -246,7 +257,7 @@ export default function UserTrackTrip() {
             zoom={zoomState}
             onLoad={onMapLoad}
             onUnmount={onMapUnmount}
-            options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false, gestureHandling: "greedy" }}
+            options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false, gestureHandling: "greedy", mapTypeId: mapType }}
           >
             {path.length > 0 && (
               <Polyline path={path} options={{ strokeColor: "#2563eb", strokeWeight: 4, strokeOpacity: 0.8 }} />
@@ -256,7 +267,7 @@ export default function UserTrackTrip() {
             )}
           </GoogleMap>
         )}
-        {isLoaded && latestPoint && (
+        {isLoaded && (latestPoint || isActive) && (
           <div
             ref={vehicleOverlayRef}
             className="absolute left-1/2 top-1/2 pointer-events-none z-10 flex justify-center items-center"
@@ -280,15 +291,20 @@ export default function UserTrackTrip() {
           </div>
         )}
         {isLoaded && (
-          <button
-            type="button"
-            onClick={handleFollowPress}
-            className="absolute bottom-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur-sm hover:bg-muted aria-pressed:bg-muted"
-            title="Follow vehicle"
-            aria-label="Follow vehicle"
-          >
-            <Crosshair className="h-5 w-5 text-foreground" />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={handleFollowPress}
+              className="absolute bottom-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur-sm hover:bg-muted aria-pressed:bg-muted"
+              title="Follow vehicle"
+              aria-label="Follow vehicle"
+            >
+              <Crosshair className="h-5 w-5 text-foreground" />
+            </button>
+            <div className="absolute bottom-4 right-16 z-10">
+              <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+            </div>
+          </>
         )}
       </div>
       <AppBar

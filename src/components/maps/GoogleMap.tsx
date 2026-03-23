@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
 import { Card } from '@/components/ui/card';
+import { MapTypeToggle } from '@/components/maps/MapTypeToggle';
 
 interface GoogleMapComponentProps {
   latitude: number;
@@ -42,7 +43,7 @@ export function GoogleMapComponent({
   const [currentPosition, setCurrentPosition] = useState({ lat: latitude, lng: longitude });
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
 
   // Sync marker position and pan map when latitude/longitude change from parent (e.g. "Current location" button)
   useEffect(() => {
@@ -96,6 +97,9 @@ export function GoogleMapComponent({
     },
     [clickable, onLocationChange, reverseGeocode]
   );
+  const handleMapTypeToggle = () => {
+    setMapType(mapType === 'satellite' ? 'roadmap' : 'satellite');
+  };
 
   if (!isLoaded) {
     return (
@@ -116,7 +120,7 @@ export function GoogleMapComponent({
     : defaultPinIcon;
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden relative">
       <GoogleMap
         mapContainerStyle={{ ...containerStyle, height }}
         center={center}
@@ -130,6 +134,7 @@ export function GoogleMapComponent({
           zoomControl: true,
           streetViewControl: false,
           mapTypeControl: false,
+          mapTypeId: mapType,
         }}
       >
         <Marker
@@ -154,6 +159,9 @@ export function GoogleMapComponent({
           }}
         />
       </GoogleMap>
+      <div className="absolute top-3 right-3 z-10">
+        <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+      </div>
     </Card>
   );
 }

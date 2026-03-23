@@ -11,6 +11,7 @@ import {
   VEHICLE_MARKER_WIDTH,
 } from '@/config/mapConstants';
 import { Card } from '@/components/ui/card';
+import { MapTypeToggle } from '@/components/maps/MapTypeToggle';
 
 interface MarkerData {
   lat: number;
@@ -68,7 +69,7 @@ export function MiniMap({
   onPolylineClick,
 }: MiniMapProps) {
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
 
   // Calculate center and bounds from markers if not provided
   const mapCenter = useMemo(() => {
@@ -109,9 +110,12 @@ export function MiniMap({
     setSelectedMarker((prev) => (prev && isSameMarker(prev, marker) ? null : marker));
     onMarkerClick?.(marker);
   };
+  const handleMapTypeToggle = () => {
+    setMapType(mapType === 'satellite' ? 'roadmap' : 'satellite');
+  };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden relative">
       <GoogleMap
         mapContainerStyle={{ width: '100%', height }}
         center={mapCenter}
@@ -123,6 +127,7 @@ export function MiniMap({
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
+          mapTypeId: mapType,
         }}
         onClick={() => setSelectedMarker(null)}
       >
@@ -214,6 +219,9 @@ export function MiniMap({
           </InfoWindow>
         )}
       </GoogleMap>
+      <div className="absolute top-3 right-3 z-10">
+        <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+      </div>
     </Card>
   );
 }

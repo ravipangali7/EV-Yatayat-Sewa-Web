@@ -1,9 +1,14 @@
 import { api, PaginatedResponse, ListParams } from '@/lib/api';
 import { Transaction } from '@/types';
 
+interface TransactionListParams extends ListParams {
+  is_driver?: boolean;
+  is_ticket_dealer?: boolean;
+}
+
 export const transactionApi = {
   // List transactions with pagination and filters
-  list: async (params?: ListParams): Promise<PaginatedResponse<Transaction>> => {
+  list: async (params?: TransactionListParams): Promise<PaginatedResponse<Transaction>> => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
@@ -15,6 +20,8 @@ export const transactionApi = {
     if (params?.card) queryParams.append('card', params.card);
     if (params?.date_from) queryParams.append('date_from', params.date_from);
     if (params?.date_to) queryParams.append('date_to', params.date_to);
+    if (typeof params?.is_driver === 'boolean') queryParams.append('is_driver', String(params.is_driver));
+    if (typeof params?.is_ticket_dealer === 'boolean') queryParams.append('is_ticket_dealer', String(params.is_ticket_dealer));
 
     const queryString = queryParams.toString();
     const url = `transactions/${queryString ? `?${queryString}` : ''}`;

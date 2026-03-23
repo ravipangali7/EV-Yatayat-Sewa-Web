@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Receipt, Search } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { transactionApi } from '@/modules/transactions/services/transactionApi';
 import { Transaction } from '@/types';
 import { toast } from 'sonner';
@@ -28,6 +29,8 @@ export default function Transactions() {
   const [totalCount, setTotalCount] = useState(0);
   const [stats, setStats] = useState<{ total_count?: number; sum_amount?: string } | null>(null);
   const perPage = 25;
+  type RoleTab = 'all' | 'driver' | 'dealer' | 'customer';
+  const [roleTab, setRoleTab] = useState<RoleTab>('all');
 
   // Input state
   const [searchInput, setSearchInput] = useState('');
@@ -42,16 +45,28 @@ export default function Transactions() {
   const [appliedDateTo, setAppliedDateTo] = useState('');
   const [appliedStatus, setAppliedStatus] = useState<'all' | 'pending' | 'success' | 'failed'>('all');
   const [appliedType, setAppliedType] = useState<'all' | 'add' | 'deducted'>('all');
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingInFlightRef = useRef(false);
 
-  const fetchTransactions = useCallback(async () => {
-    setLoading(true);
+  const fetchTransactions = useCallback(async (isBackground = false) => {
+    if (isBackground) {
+      if (pollingInFlightRef.current) return;
+      pollingInFlightRef.current = true;
+      setIsPolling(true);
+    } else {
+      setLoading(true);
+    }
     try {
+      const isDriver = roleTab === 'driver' ? true : roleTab === 'customer' ? false : undefined;
+      const isTicketDealer = roleTab === 'dealer' ? true : roleTab === 'customer' ? false : undefined;
       const response = (await transactionApi.list({
         search: appliedSearch || undefined,
         date_from: appliedDateFrom || undefined,
         date_to: appliedDateTo || undefined,
         status: appliedStatus !== 'all' ? appliedStatus : undefined,
         type: appliedType !== 'all' ? appliedType : undefined,
+        is_driver: isDriver,
+        is_ticket_dealer: isTicketDealer,
         page,
         per_page: perPage,
       })) as { results: TransactionWithDetails[]; count: number; stats?: { total_count?: number; sum_amount?: string } };
@@ -62,12 +77,24 @@ export default function Transactions() {
       console.error('Failed to load transactions:', error);
       setTransactions([]);
     } finally {
-      setLoading(false);
+      if (isBackground) {
+        pollingInFlightRef.current = false;
+        setIsPolling(false);
+      } else {
+        setLoading(false);
+      }
     }
-  }, [appliedSearch, appliedDateFrom, appliedDateTo, appliedStatus, appliedType, page]);
+  }, [appliedSearch, appliedDateFrom, appliedDateTo, appliedStatus, appliedType, page, roleTab]);
 
   useEffect(() => {
     fetchTransactions();
+  }, [fetchTransactions]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      fetchTransactions(true);
+    }, 12_000);
+    return () => clearInterval(id);
   }, [fetchTransactions]);
 
   const handleSearch = () => {
@@ -165,6 +192,15 @@ export default function Transactions() {
           </Card>
         </div>
       )}
+
+      <Tabs value={roleTab} onValueChange={(v) => { setRoleTab(v as RoleTab); setPage(1); }}>
+        <TabsList className="grid w-full max-w-md grid-cols-4">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="driver">Driver</TabsTrigger>
+          <TabsTrigger value="customer">Customer</TabsTrigger>
+          <TabsTrigger value="dealer">Dealer</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/30 rounded-lg border">

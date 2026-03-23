@@ -17,6 +17,7 @@ import {
   VEHICLE_MARKER_WIDTH,
 } from "@/config/mapConstants";
 import { getDirectionsPath } from "@/lib/directions";
+import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
 
 export interface MapPoint {
   name: string;
@@ -42,7 +43,7 @@ interface MiniMapProps {
 const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) => {
   const [selectedPoint, setSelectedPoint] = useState<MapPoint | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
 
   const routeWaypoints = useMemo(
     () => points.filter((p) => p.type !== "current").map((p) => ({ lat: p.lat, lng: p.lng })),
@@ -147,7 +148,7 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
 
   if (points.length === 0) {
     return (
-      <div className={wrapperClass} style={wrapperStyle}>
+      <div className={`${wrapperClass} relative`} style={wrapperStyle}>
         <GoogleMap
           mapContainerStyle={fillHeight ? { width: "100%", height: "100%", minHeight: 200 } : { width: "100%", height: "200px" }}
           center={NEPAL_CENTER}
@@ -160,8 +161,12 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
             mapTypeControl: false,
             fullscreenControl: false,
             gestureHandling: "greedy",
+            mapTypeId: mapType,
           }}
         />
+        <div className="absolute top-3 right-3 z-10">
+          <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+        </div>
       </div>
     );
   }
@@ -169,9 +174,12 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
   const handleMarkerClick = (point: MapPoint) => {
     setSelectedPoint((prev) => (prev === point ? null : point));
   };
+  const handleMapTypeToggle = () => {
+    setMapType(mapType === "satellite" ? "roadmap" : "satellite");
+  };
 
   return (
-    <div className={wrapperClass} style={wrapperStyle}>
+    <div className={`${wrapperClass} relative`} style={wrapperStyle}>
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={mapCenter}
@@ -186,6 +194,7 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
           mapTypeControl: false,
           fullscreenControl: false,
           gestureHandling: "greedy",
+          mapTypeId: mapType,
         }}
         onClick={() => setSelectedPoint(null)}
       >
@@ -233,6 +242,9 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
           </InfoWindow>
         )}
       </GoogleMap>
+      <div className="absolute top-3 right-3 z-10">
+        <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+      </div>
     </div>
   );
 };

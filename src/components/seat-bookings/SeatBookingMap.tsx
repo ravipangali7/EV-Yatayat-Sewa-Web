@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Search, MapPin } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { VoiceSearchButton } from '@/components/app/VoiceSearchButton';
+import { MapTypeToggle } from '@/components/maps/MapTypeToggle';
 
 interface SeatBookingMapProps {
   checkInLat?: number;
@@ -69,7 +70,7 @@ export function SeatBookingMap({
   const mapRef = useRef<google.maps.Map | null>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
 
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
 
   // Helper function: Calculate Haversine distance
   const calculateHaversineDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -237,6 +238,9 @@ export function SeatBookingMap({
     }
     mapRef.current = null;
   }, []);
+  const handleMapTypeToggle = () => {
+    setMapType(mapType === 'satellite' ? 'roadmap' : 'satellite');
+  };
 
   if (!isLoaded) {
     return (
@@ -316,7 +320,7 @@ export function SeatBookingMap({
       </div>
 
       {/* Map */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden relative">
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={mapCenter}
@@ -329,6 +333,7 @@ export function SeatBookingMap({
             zoomControl: true,
             streetViewControl: false,
             mapTypeControl: false,
+            mapTypeId: mapType,
           }}
         >
           {/* Custom Markers */}
@@ -341,6 +346,9 @@ export function SeatBookingMap({
             />
           ))}
         </GoogleMap>
+        <div className="absolute top-3 right-3 z-10">
+          <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+        </div>
       </Card>
 
       {/* Location Info */}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
 import { Crosshair } from "lucide-react";
 import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
+import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
 import {
   MARKER_ICONS,
   NAVIGATION_MARKER_SIZE,
@@ -108,7 +109,7 @@ export default function DriverNavigationMap({
   /** When liveTargetRef is provided, freeze center so GoogleMap does not override RAF-driven setCenter on re-renders. */
   const initialCenterRef = useRef<{ lat: number; lng: number }>({ lat: center.lat, lng: center.lng });
 
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
   const mapId = GOOGLE_MAPS_CONFIG.mapId;
 
   const handleFollowPress = useCallback(() => {
@@ -128,6 +129,9 @@ export default function DriverNavigationMap({
       if (setHeadingFn) setHeadingFn.call(map, targetH);
     }
   }, []);
+  const handleMapTypeToggle = useCallback(() => {
+    setMapType(mapType === "satellite" ? "roadmap" : "satellite");
+  }, [mapType, setMapType]);
 
   // Update target refs from props when not using live ref
   targetCenterRef.current = { lat: center.lat, lng: center.lng };
@@ -268,9 +272,8 @@ export default function DriverNavigationMap({
   };
   if (mapId) {
     mapOptions.mapId = mapId;
-  } else {
-    mapOptions.mapTypeId = google.maps.MapTypeId.HYBRID;
   }
+  mapOptions.mapTypeId = mapType;
 
   return (
     <div className={`relative rounded-xl overflow-hidden h-full min-h-[200px] ${className}`} style={{ height: "100%" }}>
@@ -330,6 +333,9 @@ export default function DriverNavigationMap({
       >
         <Crosshair className="h-5 w-5 text-foreground" />
       </button>
+      <div className="absolute bottom-3 right-16 z-10">
+        <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+      </div>
     </div>
   );
 }

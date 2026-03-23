@@ -147,7 +147,7 @@ export default function AppRoleLayout({ role }: AppRoleLayoutProps) {
                       )}
                       {(paymentCallback.returnTo === "booking" || paymentCallback.payment.purpose === "vehicle_ticket_booking") && (
                         <Button variant="secondary" size="sm" onClick={() => { closePaymentModal(); navigate(`${basePath}/booking?tab=my-booking`); }}>
-                          My Booking
+                          History
                         </Button>
                       )}
                     </>

@@ -781,7 +781,7 @@ export default function Vehicle() {
       if (selectedVehicle?.id) {
         const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
         const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
-        startLocationStream(trip.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
+        startLocationStream(trip.id, selectedVehicle.id, 3, token ?? undefined, userStr ?? undefined);
       }
       await refetchVehicleAndSeats();
       toast.success("Trip started!");
@@ -808,7 +808,7 @@ export default function Vehicle() {
       if (selectedVehicle?.id) {
         const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
         const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
-        startLocationStream(trip.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
+        startLocationStream(trip.id, selectedVehicle.id, 3, token ?? undefined, userStr ?? undefined);
       }
       await refetchVehicleAndSeats();
       toast.success("Scheduled trip started!");
@@ -832,7 +832,7 @@ export default function Vehicle() {
       if (selectedVehicle?.id) {
         const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth_token") : null;
         const userStr = typeof localStorage !== "undefined" ? localStorage.getItem("auth_user") : null;
-        startLocationStream(t.id, selectedVehicle.id, 30, token ?? undefined, userStr ?? undefined);
+        startLocationStream(t.id, selectedVehicle.id, 3, token ?? undefined, userStr ?? undefined);
       }
       await refetchVehicleAndSeats();
       toast.success("Trip started!");

@@ -22,6 +22,7 @@ import {
 import { Car, MapPin, User, Route } from "lucide-react";
 import { toast } from "sonner";
 import { DirectBookFlow } from "./DirectBookFlow";
+import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
 
 const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
 /** Map fits to this radius (visible area 10 km). */
@@ -36,7 +37,7 @@ const DEFAULT_BOOK_MIN_KM = 5;
 const DEFAULT_BOOK_MAX_KM = 200;
 
 export function UserHomeMap() {
-  const { isLoaded } = useGoogleMaps();
+  const { isLoaded, mapType, setMapType } = useGoogleMaps();
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [nearbyVehicles, setNearbyVehicles] = useState<VehicleNearby[]>([]);
   const [loading, setLoading] = useState(false);
@@ -150,6 +151,9 @@ export function UserHomeMap() {
     handleCloseModal();
     toast.success("Seat booked successfully");
   };
+  const handleMapTypeToggle = () => {
+    setMapType(mapType === "satellite" ? "roadmap" : "satellite");
+  };
 
   if (!isLoaded) {
     return (
@@ -165,7 +169,7 @@ export function UserHomeMap() {
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">
           Nearby vehicles (active trips only)
         </p>
-        <div style={containerStyle} className="rounded-xl">
+        <div style={containerStyle} className="rounded-xl relative">
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={center}
@@ -177,6 +181,7 @@ export function UserHomeMap() {
               zoomControl: true,
               streetViewControl: false,
               mapTypeControl: false,
+              mapTypeId: mapType,
             }}
           >
             {userPosition && (
@@ -226,6 +231,9 @@ export function UserHomeMap() {
               );
             })}
           </GoogleMap>
+          <div className="absolute top-3 right-3 z-10">
+            <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
+          </div>
         </div>
         {loading && (
           <p className="text-xs text-muted-foreground text-center py-2">Loading vehicles...</p>
