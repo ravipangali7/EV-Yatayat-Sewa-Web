@@ -9,11 +9,15 @@ import { RichTextEditor } from '@/components/common/RichTextEditor';
 import { IconPicker } from '@/components/common/IconPicker';
 import { suggestIconFromText } from '@/lib/websiteIcons';
 import { siteSettingApi } from '@/modules/website/services/websiteApi';
-import type { SiteSetting, StatItem } from '@/modules/website/types';
+import type { StatItem } from '@/modules/website/types';
 import { toast } from 'sonner';
 import { fileToDataUrl } from '@/lib/imagePreview';
+import { API_ORIGIN } from '@/lib/api';
 
-const API_BASE = 'https://system.evyatayatsewa.com';
+function mediaUrl(path: string | null | undefined) {
+  if (!path) return null;
+  return path.startsWith('http') ? path : `${API_ORIGIN}${path.startsWith('/') ? '' : '/'}${path}`;
+}
 
 export default function SiteSettingForm() {
   const navigate = useNavigate();
@@ -27,9 +31,19 @@ export default function SiteSettingForm() {
   const [footer_text, setFooterText] = useState('');
   const [stats, setStats] = useState<StatItem[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [defaultOgFile, setDefaultOgFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
+  const [defaultOgPreview, setDefaultOgPreview] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [meta_title, setMetaTitle] = useState('');
+  const [meta_description, setMetaDescription] = useState('');
+  const [twitter_handle, setTwitterHandle] = useState('');
+  const [facebook_app_id, setFacebookAppId] = useState('');
+  const [og_locale, setOgLocale] = useState('en_US');
+  const [google_site_verification, setGoogleSiteVerification] = useState('');
   const [about_title, setAboutTitle] = useState('');
   const [about_content, setAboutContent] = useState('');
   const [mission, setMission] = useState('');
@@ -51,23 +65,27 @@ export default function SiteSettingForm() {
         setMap(d.map || '');
         setFooterText(d.footer_text || '');
         setStats(d.stats?.stats && Array.isArray(d.stats.stats) ? d.stats.stats : []);
-        if (d.logo) {
-          const url = d.logo.startsWith('http') ? d.logo : `${API_BASE}${d.logo.startsWith('/') ? '' : '/'}${d.logo}`;
-          setLogoPreview(url);
-        }
-        if (d.cover_image) {
-          const url = d.cover_image.startsWith('http') ? d.cover_image : `${API_BASE}${d.cover_image.startsWith('/') ? '' : '/'}${d.cover_image}`;
-          setCoverPreview(url);
-        }
+        setMetaTitle(d.meta_title || '');
+        setMetaDescription(d.meta_description || '');
+        setTwitterHandle(d.twitter_handle || '');
+        setFacebookAppId(d.facebook_app_id || '');
+        setOgLocale(d.og_locale || 'en_US');
+        setGoogleSiteVerification(d.google_site_verification || '');
+        const logoU = mediaUrl(d.logo);
+        if (logoU) setLogoPreview(logoU);
+        const favU = mediaUrl(d.favicon);
+        if (favU) setFaviconPreview(favU);
+        const defOg = mediaUrl(d.default_og_image);
+        if (defOg) setDefaultOgPreview(defOg);
+        const coverU = mediaUrl(d.cover_image);
+        if (coverU) setCoverPreview(coverU);
         setAboutTitle(d.about_title ?? '');
         setAboutContent(d.about_content ?? '');
         setMission(d.mission ?? '');
         setVision(d.vision ?? '');
         setValues(typeof d.values === 'string' ? d.values : (Array.isArray(d.values) ? (d.values as { text?: string }[]).map((v) => v?.text ?? '').filter(Boolean).join('\n') : ''));
-        if (d.about_image) {
-          const url = d.about_image.startsWith('http') ? d.about_image : `${API_BASE}${d.about_image.startsWith('/') ? '' : '/'}${d.about_image}`;
-          setAboutPreview(url);
-        }
+        const aboutU = mediaUrl(d.about_image);
+        if (aboutU) setAboutPreview(aboutU);
       } catch (e) {
         console.error(e);
       } finally {
@@ -93,7 +111,15 @@ export default function SiteSettingForm() {
       fd.append('mission', mission);
       fd.append('vision', vision);
       fd.append('values', values);
+      fd.append('meta_title', meta_title);
+      fd.append('meta_description', meta_description);
+      fd.append('twitter_handle', twitter_handle);
+      fd.append('facebook_app_id', facebook_app_id);
+      fd.append('og_locale', og_locale);
+      fd.append('google_site_verification', google_site_verification);
       if (logoFile) fd.append('logo', logoFile);
+      if (faviconFile) fd.append('favicon', faviconFile);
+      if (defaultOgFile) fd.append('default_og_image', defaultOgFile);
       if (coverFile) fd.append('cover_image', coverFile);
       if (aboutFile) fd.append('about_image', aboutFile);
       await siteSettingApi.edit(fd);
@@ -127,14 +153,6 @@ export default function SiteSettingForm() {
     return n;
   });
   const removeStat = (i: number) => setStats((s) => s.filter((_, j) => j !== i));
-
-  const addValue = () => setValues((v) => [...v, { text: '' }]);
-  const setValueAt = (i: number, field: keyof AboutValueItem, val: string) => setValues((v) => {
-    const n = [...v];
-    n[i] = { ...n[i], [field]: val };
-    return n;
-  });
-  const removeValue = (i: number) => setValues((v) => v.filter((_, j) => j !== i));
 
   if (loading) {
     return (
@@ -176,6 +194,51 @@ export default function SiteSettingForm() {
             else setCoverPreview(null);
           }} />
           {coverPreview && <img src={coverPreview} alt="Cover" className="mt-2 h-24 object-cover rounded" />}
+        </div>
+        <div>
+          <Label>Favicon</Label>
+          <Input type="file" accept="image/*" onChange={(e) => {
+            const f = e.target.files?.[0];
+            setFaviconFile(f || null);
+            if (f) fileToDataUrl(f).then(setFaviconPreview);
+            else setFaviconPreview(null);
+          }} />
+          {faviconPreview && <img src={faviconPreview} alt="Favicon" className="mt-2 h-10 object-contain" />}
+        </div>
+        <div>
+          <Label>Default Open Graph image</Label>
+          <Input type="file" accept="image/*" onChange={(e) => {
+            const f = e.target.files?.[0];
+            setDefaultOgFile(f || null);
+            if (f) fileToDataUrl(f).then(setDefaultOgPreview);
+            else setDefaultOgPreview(null);
+          }} />
+          {defaultOgPreview && <img src={defaultOgPreview} alt="Default OG" className="mt-2 h-24 object-cover rounded" />}
+        </div>
+        <h3 className="text-lg font-semibold">SEO &amp; social</h3>
+        <div>
+          <Label>Default meta title</Label>
+          <Input value={meta_title} onChange={(e) => setMetaTitle(e.target.value)} placeholder="Site-wide default document title" />
+        </div>
+        <div>
+          <Label>Default meta description</Label>
+          <Textarea value={meta_description} onChange={(e) => setMetaDescription(e.target.value)} rows={2} />
+        </div>
+        <div>
+          <Label>Twitter / X handle (no @)</Label>
+          <Input value={twitter_handle} onChange={(e) => setTwitterHandle(e.target.value)} placeholder="yourbrand" />
+        </div>
+        <div>
+          <Label>Facebook app ID (optional)</Label>
+          <Input value={facebook_app_id} onChange={(e) => setFacebookAppId(e.target.value)} />
+        </div>
+        <div>
+          <Label>OG locale</Label>
+          <Input value={og_locale} onChange={(e) => setOgLocale(e.target.value)} placeholder="en_US" />
+        </div>
+        <div>
+          <Label>Google site verification (content token only)</Label>
+          <Input value={google_site_verification} onChange={(e) => setGoogleSiteVerification(e.target.value)} />
         </div>
         <div>
           <Label>Phones</Label>

@@ -10,6 +10,13 @@ import { suggestIconFromText } from '@/lib/websiteIcons';
 import { Switch } from '@/components/ui/switch';
 import { serviceApi } from '@/modules/website/services/websiteApi';
 import { toast } from 'sonner';
+import { fileToDataUrl } from '@/lib/imagePreview';
+import { API_ORIGIN } from '@/lib/api';
+
+function mediaUrl(path: string | null | undefined) {
+  if (!path) return null;
+  return path.startsWith('http') ? path : `${API_ORIGIN}${path.startsWith('/') ? '' : '/'}${path}`;
+}
 
 export default function ServiceForm() {
   const { id } = useParams();
@@ -19,8 +26,17 @@ export default function ServiceForm() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [svg, setSvg] = useState('');
+  const [icon, setIcon] = useState('');
+  const [order, setOrder] = useState(0);
   const [description, setDescription] = useState('');
   const [is_active, setIsActive] = useState(true);
+  const [meta_title, setMetaTitle] = useState('');
+  const [meta_description, setMetaDescription] = useState('');
+  const [og_image_alt, setOgImageAlt] = useState('');
+  const [canonical_path, setCanonicalPath] = useState('');
+  const [robots_noindex, setRobotsNoindex] = useState(false);
+  const [ogImageFile, setOgImageFile] = useState<File | null>(null);
+  const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isEdit || !id) return;
@@ -31,8 +47,17 @@ export default function ServiceForm() {
         setName(d.name || '');
         setSlug(d.slug || '');
         setSvg(d.svg || '');
+        setIcon(d.icon || '');
+        setOrder(d.order ?? 0);
         setDescription(d.description || '');
         setIsActive(d.is_active ?? true);
+        setMetaTitle(d.meta_title || '');
+        setMetaDescription(d.meta_description || '');
+        setOgImageAlt(d.og_image_alt || '');
+        setCanonicalPath(d.canonical_path || '');
+        setRobotsNoindex(d.robots_noindex ?? false);
+        const og = mediaUrl(d.og_image);
+        if (og) setOgImagePreview(og);
       } catch (e) {
         toast.error('Failed to load');
       } finally {
@@ -44,12 +69,25 @@ export default function ServiceForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { name, slug, svg, description, is_active };
+      const fd = new FormData();
+      fd.append('name', name);
+      fd.append('slug', slug);
+      fd.append('svg', svg);
+      fd.append('icon', icon);
+      fd.append('order', String(order));
+      fd.append('description', description);
+      fd.append('is_active', String(is_active));
+      fd.append('meta_title', meta_title);
+      fd.append('meta_description', meta_description);
+      fd.append('og_image_alt', og_image_alt);
+      fd.append('canonical_path', canonical_path);
+      fd.append('robots_noindex', String(robots_noindex));
+      if (ogImageFile) fd.append('og_image', ogImageFile);
       if (isEdit && id) {
-        await serviceApi.edit(id, payload);
+        await serviceApi.edit(id, fd);
         toast.success('Updated');
       } else {
-        await serviceApi.create(payload);
+        await serviceApi.create(fd);
         toast.success('Created');
       }
       navigate('/admin/website/services');
@@ -83,21 +121,70 @@ export default function ServiceForm() {
           <Input value={slug} onChange={(e) => setSlug(e.target.value)} required />
         </div>
         <div>
-          <Label>Icon</Label>
+          <Label>Order</Label>
+          <Input
+            type="number"
+            value={order}
+            onChange={(e) => setOrder(parseInt(e.target.value, 10) || 0)}
+          />
+        </div>
+        <div>
+          <Label>Website icon (SVG markup)</Label>
           <IconPicker
             value={svg}
             onChange={setSvg}
             placeholder="Select icon..."
             suggestedIcon={suggestIconFromText(name)}
             onApplySuggestion={() => {
-              const icon = suggestIconFromText(name);
-              if (icon) setSvg(icon);
+              const ic = suggestIconFromText(name);
+              if (ic) setSvg(ic);
             }}
           />
         </div>
         <div>
+          <Label>Lucide icon name (optional)</Label>
+          <Input value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="e.g. Bus" />
+        </div>
+        <div>
           <Label>Description</Label>
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div>
+          <Label>OG image (optional)</Label>
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              setOgImageFile(f || null);
+              if (f) fileToDataUrl(f).then(setOgImagePreview);
+              else setOgImagePreview(null);
+            }}
+          />
+          {ogImagePreview && (
+            <img src={ogImagePreview} alt="OG preview" className="mt-2 h-24 object-cover rounded" />
+          )}
+        </div>
+        <h3 className="text-lg font-semibold pt-2">SEO</h3>
+        <div>
+          <Label>Meta title override</Label>
+          <Input value={meta_title} onChange={(e) => setMetaTitle(e.target.value)} />
+        </div>
+        <div>
+          <Label>Meta description override</Label>
+          <Textarea value={meta_description} onChange={(e) => setMetaDescription(e.target.value)} rows={2} />
+        </div>
+        <div>
+          <Label>OG image alt text</Label>
+          <Input value={og_image_alt} onChange={(e) => setOgImageAlt(e.target.value)} />
+        </div>
+        <div>
+          <Label>Canonical path override</Label>
+          <Input value={canonical_path} onChange={(e) => setCanonicalPath(e.target.value)} placeholder="/service/slug/" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch checked={robots_noindex} onCheckedChange={setRobotsNoindex} />
+          <Label>Hide from search engines (noindex)</Label>
         </div>
         <div className="flex items-center gap-2">
           <Switch checked={is_active} onCheckedChange={setIsActive} />

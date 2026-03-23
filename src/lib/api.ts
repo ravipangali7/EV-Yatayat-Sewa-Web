@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 // Base API URL - adjust this to match your Django server
 // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 const API_BASE_URL = 'https://system.evyatayatsewa.com/api';
+/** Origin for resolving /media/ paths from the API (no trailing slash). */
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 // const MEDIA_BASE_URL = 'https://system.evyatayatsewa.com/media/';
 
 // Create axios instance

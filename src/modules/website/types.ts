@@ -14,6 +14,12 @@ export interface CMSPage {
   slug: string;
   image: string | null;
   content: string;
+  meta_title?: string;
+  meta_description?: string;
+  og_image?: string | null;
+  og_image_alt?: string;
+  canonical_path?: string;
+  robots_noindex?: boolean;
   is_active: boolean;
   is_footer: boolean;
   is_header: boolean;
@@ -55,8 +61,15 @@ export interface Service {
   slug: string;
   svg: string;
   description: string;
+  icon: string;
   order: number;
   is_active: boolean;
+  meta_title?: string;
+  meta_description?: string;
+  og_image?: string | null;
+  og_image_alt?: string;
+  canonical_path?: string;
+  robots_noindex?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -87,7 +100,15 @@ export interface Blog {
   slug: string;
   image: string | null;
   content: string;
+  excerpt: string;
+  category: string;
   is_active: boolean;
+  meta_title?: string;
+  meta_description?: string;
+  og_image?: string | null;
+  og_image_alt?: string;
+  canonical_path?: string;
+  robots_noindex?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +122,14 @@ export interface StatItem {
 export interface SiteSetting {
   id: number;
   logo: string | null;
+  favicon?: string | null;
+  default_og_image?: string | null;
+  meta_title?: string;
+  meta_description?: string;
+  twitter_handle?: string;
+  facebook_app_id?: string;
+  og_locale?: string;
+  google_site_verification?: string;
   name: string;
   tagline: string;
   phones: string[];
