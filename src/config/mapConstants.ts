@@ -10,7 +10,7 @@ export const VEHICLE_MARKER_ICON = "/icon/bus_marker.png";
  * Global vehicle (bus) marker size on Google Maps (px).
  * Single source: driver nav, live tracking, home map, trip view, mini maps, rotated icon helper.
  */
-export const MARKER_WIDTH = 15;
+export const MARKER_WIDTH = 25;
 export const MARKER_HEIGHT = 65;
 /** Anchor for vehicle marker icon (center of image). */
 export const MARKER_ANCHOR_X = MARKER_WIDTH / 2;
