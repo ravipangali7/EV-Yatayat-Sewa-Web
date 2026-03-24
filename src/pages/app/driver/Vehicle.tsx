@@ -861,15 +861,30 @@ export default function Vehicle() {
   const handleDestinationNext = async () => {
     if (!selectedDestination || !selectedVehicle?.id || !activeTrip?.id) return;
     try {
-      const [settingsRes, loc] = await Promise.all([
-        superSettingApi.list({ per_page: 1 }),
-        lastLocation ? Promise.resolve({ lat: lastLocation.lat, lng: lastLocation.lng }) : getCurrentLocation({ requiredBridge: true, context: "checkout" }),
-      ]);
+      const settingsRes = await superSettingApi.list({ per_page: 1 });
       const setting = settingsRes.results?.[0];
       const perKmCharge = Number(setting?.per_km_charge ?? 0);
       if (!perKmCharge) {
         toast.error("Per km charge not configured");
         return;
+      }
+      let loc = lastLocation ? { lat: lastLocation.lat, lng: lastLocation.lng } : null;
+      if (!loc) {
+        try {
+          loc = await getCurrentLocation({ requiredBridge: true, context: "checkout" });
+        } catch {
+          // Fallback: use latest server-side trip location when live request fails.
+          const latest = await locationApi.list({ trip: activeTrip.id, per_page: 1 });
+          const row = latest.results?.[0];
+          const lat = row?.latitude != null ? Number(row.latitude) : NaN;
+          const lng = row?.longitude != null ? Number(row.longitude) : NaN;
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            loc = { lat, lng };
+          }
+        }
+      }
+      if (!loc) {
+        throw new Error("Could not get current location. Please wait a moment and try again.");
       }
       const initialKm = setting?.initial_km != null && setting?.initial_km !== "" ? Number(setting.initial_km) : undefined;
       const initialKmCharge = setting?.initial_km_charge != null && setting?.initial_km_charge !== "" ? Number(setting.initial_km_charge) : undefined;
@@ -885,7 +900,7 @@ export default function Vehicle() {
       } else if (msg && (msg.toLowerCase().includes("setting") || msg.toLowerCase().includes("per km"))) {
         toast.error(msg);
       } else {
-        toast.error("Could not get current location for fare calculation");
+        toast.error(msg ?? "Could not get current location for fare calculation");
       }
     }
   };
