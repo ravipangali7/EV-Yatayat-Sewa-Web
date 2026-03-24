@@ -351,15 +351,9 @@ export default function Vehicle() {
           if (myActiveRes) {
             setSelectedVehicle(myActiveRes);
             let fallbackLayout: string[] | undefined;
+            // Do not fetch super-settings here; driver role may not have permission (403).
             if (!myActiveRes.seats?.length && !myActiveRes.seat_layout?.length) {
-              try {
-                const settingsRes = await superSettingApi.list({ per_page: 1 });
-                const layout = settingsRes.results?.[0]?.seat_layout;
-                fallbackLayout = Array.isArray(layout) ? layout : undefined;
-                if (fallbackLayout?.length) setSuperSettingSeatLayout(fallbackLayout);
-              } catch {
-                fallbackLayout = undefined;
-              }
+              fallbackLayout = undefined;
             }
             setSeats(buildSeatsFromVehicle(myActiveRes, fallbackLayout));
             const routeInfo = myActiveRes.active_route_details
@@ -387,11 +381,8 @@ export default function Vehicle() {
 
   useEffect(() => {
     if (driverState !== "trip_started") return;
-    superSettingApi.list({ per_page: 1 }).then((res) => {
-      const raw = res.results?.[0]?.point_cover_radius;
-      const km = raw != null ? (typeof raw === "number" ? raw : parseFloat(String(raw))) : 0.5;
-      setPointCoverRadiusKm(Number.isFinite(km) && km > 0 ? km : 0.5);
-    }).catch(() => {});
+    // Keep a safe default; avoid driver-side super-settings call that can return 403.
+    setPointCoverRadiusKm(0.5);
   }, [driverState]);
 
   useEffect(() => {
@@ -570,16 +561,14 @@ export default function Vehicle() {
       if (!res) return;
       let fallback: string[] | undefined = superSettingSeatLayout ?? undefined;
       if (!res.seats?.length && !res.seat_layout?.length && !fallback?.length) {
-        try {
-          const settingsRes = await superSettingApi.list({ per_page: 1 });
-          fallback = Array.isArray(settingsRes.results?.[0]?.seat_layout) ? settingsRes.results[0].seat_layout : undefined;
-        } catch {
-          fallback = undefined;
-        }
+        // Do not fetch super-settings for driver flow.
+        fallback = undefined;
       }
       setSelectedVehicle(res);
       setSeats(buildSeatsFromVehicle(res, fallback));
-    } catch (_) {}
+    } catch (_) {
+      // Keep current UI state when refresh fails.
+    }
   };
 
   const authReadyForSocket = useAuthReadyForSocket();
@@ -861,13 +850,6 @@ export default function Vehicle() {
   const handleDestinationNext = async () => {
     if (!selectedDestination || !selectedVehicle?.id || !activeTrip?.id) return;
     try {
-      const settingsRes = await superSettingApi.list({ per_page: 1 });
-      const setting = settingsRes.results?.[0];
-      const perKmCharge = Number(setting?.per_km_charge ?? 0);
-      if (!perKmCharge) {
-        toast.error("Per km charge not configured");
-        return;
-      }
       let loc = lastLocation ? { lat: lastLocation.lat, lng: lastLocation.lng } : null;
       if (!loc) {
         try {
@@ -886,10 +868,19 @@ export default function Vehicle() {
       if (!loc) {
         throw new Error("Could not get current location. Please wait a moment and try again.");
       }
-      const initialKm = setting?.initial_km != null && setting?.initial_km !== "" ? Number(setting.initial_km) : undefined;
-      const initialKmCharge = setting?.initial_km_charge != null && setting?.initial_km_charge !== "" ? Number(setting.initial_km_charge) : undefined;
-      const distanceKm = haversineKm(loc.lat, loc.lng, selectedDestination.lat, selectedDestination.lng);
-      const amountPerSeat = tripAmountFromDistance(distanceKm, perKmCharge, initialKm, initialKmCharge);
+      // Driver cannot always access /super-settings/ (403). Use backend fare preview endpoint instead.
+      const preview = await seatBookingApi.directBookPreview({
+        vehicle: selectedVehicle.id,
+        destination_place: selectedDestination.id,
+        latitude: loc.lat,
+        longitude: loc.lng,
+      });
+      const distanceKm = parseFloat(String(preview.distance_km));
+      const amountPerSeat = parseFloat(String(preview.estimated_trip_amount));
+      const perKmCharge = parseFloat(String(preview.per_km_charge));
+      if (!Number.isFinite(distanceKm) || !Number.isFinite(amountPerSeat) || amountPerSeat <= 0) {
+        throw new Error("Could not calculate fare preview. Please try again.");
+      }
       const totalAmount = Math.round(amountPerSeat * availableSelected.length * 100) / 100;
       setCheckinAmount({ distanceKm, totalAmount, perKmCharge });
       setCheckinStep("amount");
@@ -897,7 +888,7 @@ export default function Vehicle() {
       const msg = (e as { message?: string })?.message;
       if (msg && (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission"))) {
         toast.error(getLocationErrorToast(msg, "checkout"));
-      } else if (msg && (msg.toLowerCase().includes("setting") || msg.toLowerCase().includes("per km"))) {
+      } else if (msg && (msg.toLowerCase().includes("setting") || msg.toLowerCase().includes("per km") || msg.toLowerCase().includes("preview"))) {
         toast.error(msg);
       } else {
         toast.error(msg ?? "Could not get current location for fare calculation");
