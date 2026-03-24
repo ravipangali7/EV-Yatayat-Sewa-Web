@@ -11,8 +11,16 @@ import {
   VEHICLE_MARKER_ICON,
   VEHICLE_MARKER_WIDTH,
   VEHICLE_MARKER_HEIGHT,
+  VEHICLE_MARKER_ANCHOR_X,
+  VEHICLE_MARKER_ANCHOR_Y,
 } from "@/config/mapConstants";
 import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
+import {
+  loadVehicleMarkerImage,
+  makePlainVehicleIcon,
+  makeRotatedVehicleIcon,
+  shouldRefreshVehicleIconRotation,
+} from "@/lib/mapRotatedVehicleIcon";
 
 const POLL_INTERVAL_MS = 3000;
 const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
@@ -111,8 +119,11 @@ export default function UserTrackTrip() {
   const isActive = trip && !trip.end_time;
 
   const mapRef = useRef<google.maps.Map | null>(null);
-  const vehicleOverlayRef = useRef<HTMLDivElement | null>(null);
+  const vehicleMarkerRef = useRef<google.maps.Marker | null>(null);
+  const vehicleImageRef = useRef<HTMLImageElement | null>(null);
+  const lastRotationPaintedRef = useRef<number | null>(null);
   const listenerRef = useRef<google.maps.MapsEventListener[]>([]);
+  const [mapAttachTick, setMapAttachTick] = useState(0);
   const [followMode, setFollowMode] = useState(true);
   const [zoomState, setZoomState] = useState(DEFAULT_ZOOM);
   const displayCenterRef = useRef<{ lat: number; lng: number }>({ ...targetCenter });
@@ -152,6 +163,8 @@ export default function UserTrackTrip() {
     map.setZoom(DEFAULT_ZOOM);
     listenerRef.current.forEach((l) => l.remove());
     listenerRef.current = [];
+    const dragStartListener = map.addListener("dragstart", () => setFollowMode(false));
+    listenerRef.current.push(dragStartListener);
     const dragListener = map.addListener("dragend", () => setFollowMode(false));
     listenerRef.current.push(dragListener);
     const zoomListener = map.addListener("zoom_changed", () => {
@@ -160,6 +173,7 @@ export default function UserTrackTrip() {
       setFollowMode(false);
     });
     listenerRef.current.push(zoomListener);
+    setMapAttachTick((n) => n + 1);
   }, []);
 
   const onMapUnmount = useCallback(() => {
@@ -167,9 +181,65 @@ export default function UserTrackTrip() {
     listenerRef.current = [];
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
+    vehicleMarkerRef.current?.setMap(null);
+    vehicleMarkerRef.current = null;
+    vehicleImageRef.current = null;
+    lastRotationPaintedRef.current = null;
     mapRef.current = null;
-    vehicleOverlayRef.current = null;
   }, []);
+
+  const showVehicleMarker = !!(latestPoint || isActive);
+  const showVehicleRef = useRef(showVehicleMarker);
+  showVehicleRef.current = showVehicleMarker;
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!isLoaded || !map || !showVehicleMarker) {
+      if (!showVehicleMarker) {
+        vehicleMarkerRef.current?.setMap(null);
+        vehicleMarkerRef.current = null;
+        lastRotationPaintedRef.current = null;
+      }
+      return;
+    }
+
+    const w = VEHICLE_MARKER_WIDTH;
+    const h = VEHICLE_MARKER_HEIGHT;
+    const ax = VEHICLE_MARKER_ANCHOR_X;
+    const ay = VEHICLE_MARKER_ANCHOR_Y;
+    const plainIcon = makePlainVehicleIcon(VEHICLE_MARKER_ICON, w, h, ax, ay);
+
+    void loadVehicleMarkerImage(VEHICLE_MARKER_ICON)
+      .then((img) => {
+        if (mapRef.current !== map || !showVehicleRef.current) return;
+        vehicleImageRef.current = img;
+        if (vehicleMarkerRef.current) {
+          vehicleMarkerRef.current.setMap(map);
+          return;
+        }
+        vehicleMarkerRef.current = new google.maps.Marker({
+          map,
+          position: displayCenterRef.current,
+          icon: plainIcon,
+          zIndex: 1000,
+          optimized: false,
+        });
+        lastRotationPaintedRef.current = null;
+      })
+      .catch(() => {
+        if (mapRef.current !== map || !showVehicleRef.current) return;
+        if (!vehicleMarkerRef.current) {
+          vehicleMarkerRef.current = new google.maps.Marker({
+            map,
+            position: displayCenterRef.current,
+            icon: plainIcon,
+            zIndex: 1000,
+          });
+        } else {
+          vehicleMarkerRef.current.setMap(map);
+        }
+      });
+  }, [isLoaded, mapAttachTick, showVehicleMarker, trip?.id]);
 
   const handleFollowPress = useCallback(() => {
     const map = mapRef.current;
@@ -212,8 +282,28 @@ export default function UserTrackTrip() {
       if (followMode) {
         map.setCenter({ lat: displayLat, lng: displayLng });
       }
-      if (vehicleOverlayRef.current) {
-        vehicleOverlayRef.current.style.transform = `translate(-50%, -50%) rotate(${displayHeading}deg)`;
+
+      const vehicleMarker = vehicleMarkerRef.current;
+      const vehicleImg = vehicleImageRef.current;
+      if (vehicleMarker && showVehicleMarker) {
+        vehicleMarker.setPosition({ lat: displayLat, lng: displayLng });
+        if (
+          vehicleImg &&
+          (lastRotationPaintedRef.current === null ||
+            shouldRefreshVehicleIconRotation(lastRotationPaintedRef.current, displayHeading))
+        ) {
+          vehicleMarker.setIcon(
+            makeRotatedVehicleIcon(
+              vehicleImg,
+              displayHeading,
+              VEHICLE_MARKER_WIDTH,
+              VEHICLE_MARKER_HEIGHT,
+              VEHICLE_MARKER_ANCHOR_X,
+              VEHICLE_MARKER_ANCHOR_Y
+            )
+          );
+          lastRotationPaintedRef.current = displayHeading;
+        }
       }
 
       rafRef.current = requestAnimationFrame(tick);
@@ -223,7 +313,7 @@ export default function UserTrackTrip() {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [isLoaded, followMode]);
+  }, [isLoaded, followMode, showVehicleMarker]);
 
   const initialCenter = path.length ? path[0] : DEFAULT_CENTER;
 
@@ -266,24 +356,6 @@ export default function UserTrackTrip() {
               <Marker position={path[0]} label="S" title="Start" />
             )}
           </GoogleMap>
-        )}
-        {isLoaded && (latestPoint || isActive) && (
-          <div
-            ref={vehicleOverlayRef}
-            className="absolute left-1/2 top-1/2 pointer-events-none z-10 flex justify-center items-center"
-            style={{
-              width: VEHICLE_MARKER_WIDTH,
-              height: VEHICLE_MARKER_HEIGHT,
-              transform: `translate(-50%, -50%) rotate(${displayHeadingRef.current}deg)`,
-            }}
-            aria-hidden
-          >
-            <img
-              src={VEHICLE_MARKER_ICON}
-              alt=""
-              className="object-contain drop-shadow-md w-full h-full"
-            />
-          </div>
         )}
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-muted-foreground">

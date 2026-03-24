@@ -15,6 +15,12 @@ import {
 } from "@/config/mapConstants";
 import { GOOGLE_MAPS_CONFIG } from "@/config/maps";
 import { getDirectionsPath } from "@/lib/directions";
+import {
+  loadVehicleMarkerImage,
+  makePlainVehicleIcon,
+  makeRotatedVehicleIcon,
+  shouldRefreshVehicleIconRotation,
+} from "@/lib/mapRotatedVehicleIcon";
 
 /** Time constant for exponential follow: display = lerp(display, target, 1 - exp(-dt * k)). Higher = faster follow. */
 const SMOOTH_FOLLOW_SPEED = 6;
@@ -50,7 +56,7 @@ export interface LiveTargetSnapshot {
 }
 
 export interface DriverNavigationMapProps {
-  /** Current position (map pans so this stays under the fixed marker). */
+  /** Current position (smoothed; map recenters in follow mode). */
   center: { lat: number; lng: number };
   /** Previous position; if set, heading is computed from prev -> center for map rotation. */
   previousCenter?: { lat: number; lng: number } | null;
@@ -86,7 +92,10 @@ export default function DriverNavigationMap({
   className = "",
 }: DriverNavigationMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
-  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const vehicleMarkerRef = useRef<google.maps.Marker | null>(null);
+  const vehicleImageRef = useRef<HTMLImageElement | null>(null);
+  const lastVehicleIconModeRef = useRef<"plain" | "rotated" | null>(null);
+  const lastRotationPaintedRef = useRef<number | null>(null);
   const listenerRef = useRef<google.maps.MapsEventListener[]>([]);
   const [followMode, setFollowMode] = useState(true);
   const [zoomState, setZoomState] = useState(NAV_ZOOM);
@@ -161,6 +170,8 @@ export default function DriverNavigationMap({
       }
       listenerRef.current.forEach((l) => l.remove());
       listenerRef.current = [];
+      const dragStartListener = map.addListener("dragstart", () => setFollowMode(false));
+      listenerRef.current.push(dragStartListener);
       const dragListener = map.addListener("dragend", () => setFollowMode(false));
       listenerRef.current.push(dragListener);
       const zoomListener = map.addListener("zoom_changed", () => {
@@ -169,6 +180,42 @@ export default function DriverNavigationMap({
         setFollowMode(false);
       });
       listenerRef.current.push(zoomListener);
+
+      const navSize = NAVIGATION_MARKER_SIZE;
+      const anchor = navSize / 2;
+      const plainIcon = makePlainVehicleIcon(MARKER_ICONS.current, navSize, navSize, anchor, anchor);
+      void loadVehicleMarkerImage(MARKER_ICONS.current)
+        .then((img) => {
+          if (mapRef.current !== map) return;
+          vehicleImageRef.current = img;
+          if (vehicleMarkerRef.current) {
+            vehicleMarkerRef.current.setMap(null);
+            vehicleMarkerRef.current = null;
+          }
+          vehicleMarkerRef.current = new google.maps.Marker({
+            map,
+            position: displayCenterRef.current,
+            icon: plainIcon,
+            zIndex: 1000,
+            optimized: false,
+          });
+          lastVehicleIconModeRef.current = null;
+          lastRotationPaintedRef.current = null;
+        })
+        .catch(() => {
+          if (mapRef.current !== map) return;
+          vehicleImageRef.current = null;
+          if (!vehicleMarkerRef.current) {
+            vehicleMarkerRef.current = new google.maps.Marker({
+              map,
+              position: displayCenterRef.current,
+              icon: plainIcon,
+              zIndex: 1000,
+            });
+            lastVehicleIconModeRef.current = "plain";
+            lastRotationPaintedRef.current = null;
+          }
+        });
     },
     [center.lat, center.lng, targetHeading]
   );
@@ -177,8 +224,12 @@ export default function DriverNavigationMap({
     listenerRef.current = [];
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
+    vehicleMarkerRef.current?.setMap(null);
+    vehicleMarkerRef.current = null;
+    vehicleImageRef.current = null;
+    lastVehicleIconModeRef.current = null;
+    lastRotationPaintedRef.current = null;
     mapRef.current = null;
-    overlayRef.current = null;
   }, []);
 
   // Continuous interpolation: every frame move display toward target (from props or liveTargetRef)
@@ -223,8 +274,36 @@ export default function DriverNavigationMap({
         if (setHeadingFn) setHeadingFn.call(map, displayHeading);
       }
 
-      if (overlayRef.current) {
-        overlayRef.current.style.transform = `translate(-50%, -50%) rotate(${displayHeading}deg)`;
+      const vehicleMarker = vehicleMarkerRef.current;
+      const vehicleImg = vehicleImageRef.current;
+      if (vehicleMarker) {
+        vehicleMarker.setPosition({ lat: displayLat, lng: displayLng });
+      }
+      if (vehicleMarker && vehicleImg) {
+        const navSize = NAVIGATION_MARKER_SIZE;
+        const anchor = navSize / 2;
+        const usePlainIcon = followMode && !!setHeadingFn;
+        if (usePlainIcon) {
+          if (lastVehicleIconModeRef.current !== "plain") {
+            vehicleMarker.setIcon(
+              makePlainVehicleIcon(MARKER_ICONS.current, navSize, navSize, anchor, anchor)
+            );
+            lastVehicleIconModeRef.current = "plain";
+            lastRotationPaintedRef.current = null;
+          }
+        } else {
+          const modeSwitch = lastVehicleIconModeRef.current !== "rotated";
+          if (
+            modeSwitch ||
+            shouldRefreshVehicleIconRotation(lastRotationPaintedRef.current, displayHeading)
+          ) {
+            vehicleMarker.setIcon(
+              makeRotatedVehicleIcon(vehicleImg, displayHeading, navSize, navSize, anchor, anchor)
+            );
+            lastVehicleIconModeRef.current = "rotated";
+            lastRotationPaintedRef.current = displayHeading;
+          }
+        }
       }
 
       rafRef.current = requestAnimationFrame(tick);
@@ -308,22 +387,6 @@ export default function DriverNavigationMap({
           />
         ))}
       </GoogleMap>
-      <div
-        ref={overlayRef}
-        className="absolute left-1/2 top-1/2 pointer-events-none z-10 flex justify-center items-center"
-        style={{
-          width: NAVIGATION_MARKER_SIZE,
-          height: NAVIGATION_MARKER_SIZE,
-          transform: `translate(-50%, -50%) rotate(${displayHeadingRef.current}deg)`,
-        }}
-        aria-hidden
-      >
-        <img
-          src={MARKER_ICONS.current}
-          alt=""
-          className="object-contain drop-shadow-md w-full h-full"
-        />
-      </div>
       <button
         type="button"
         onClick={handleFollowPress}
