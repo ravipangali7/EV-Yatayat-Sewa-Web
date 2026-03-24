@@ -882,8 +882,10 @@ export default function Vehicle() {
       const msg = (e as { message?: string })?.message;
       if (msg && (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission"))) {
         toast.error(getLocationErrorToast(msg, "checkout"));
+      } else if (msg && (msg.toLowerCase().includes("setting") || msg.toLowerCase().includes("per km"))) {
+        toast.error(msg);
       } else {
-        toast.error("Could not get location or settings");
+        toast.error("Could not get current location for fare calculation");
       }
     }
   };

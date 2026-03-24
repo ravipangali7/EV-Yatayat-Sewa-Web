@@ -58,6 +58,7 @@ export interface SuperSetting {
   per_km_charge: number;
   initial_km?: number | null;
   initial_km_charge?: number | null;
+  // Canonical key is gps_threshold_second; gps_threshold kept for compatibility.
   gps_threshold?: number;
   gps_threshold_second?: number;
   point_cover_radius?: number | string | null;

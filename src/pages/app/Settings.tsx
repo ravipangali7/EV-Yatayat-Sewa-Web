@@ -11,6 +11,9 @@ import { toast } from 'sonner';
 import { toNumber } from '@/lib/utils';
 
 export default function Settings() {
+  const readGpsThreshold = (setting: SuperSetting | null | undefined): number =>
+    toNumber(setting?.gps_threshold_second ?? setting?.gps_threshold, 5);
+
   const [settings, setSettings] = useState<SuperSetting | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,7 +40,7 @@ export default function Settings() {
           const setting = response.results[0];
           setSettings(setting);
           const layout = Array.isArray(setting.seat_layout) ? setting.seat_layout : [];
-          const gps = toNumber(setting.gps_threshold_second ?? setting.gps_threshold, 5);
+          const gps = readGpsThreshold(setting);
           setFormData({
             per_km_charge: toNumber(setting.per_km_charge, 0),
             initial_km: setting.initial_km != null && setting.initial_km !== '' ? toNumber(setting.initial_km, 0) : undefined,
@@ -79,6 +82,8 @@ export default function Settings() {
         per_km_charge: formData.per_km_charge,
         initial_km: formData.initial_km ?? null,
         initial_km_charge: formData.initial_km_charge ?? null,
+        // Keep both keys for backward compatibility across clients.
+        gps_threshold: formData.gps_threshold,
         gps_threshold_second: formData.gps_threshold,
         seat_layout: seatLayout,
         stop_point_announcement_header: formData.stop_point_announcement_header ?? '',
@@ -323,7 +328,7 @@ export default function Settings() {
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">GPS Threshold (seconds)</span>
-              <span className="font-semibold">{toNumber(settings?.gps_threshold_second ?? settings?.gps_threshold, 5).toFixed(2)}</span>
+              <span className="font-semibold">{readGpsThreshold(settings).toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Stop point announcement header</span>
