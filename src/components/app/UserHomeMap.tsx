@@ -13,11 +13,11 @@ import { superSettingApi } from "@/modules/settings/services/superSettingApi";
 import type { VehicleNearby } from "@/types";
 import { toNumber } from "@/lib/utils";
 import {
+  MARKER_ANCHOR_X,
+  MARKER_ANCHOR_Y,
+  MARKER_HEIGHT,
+  MARKER_WIDTH,
   VEHICLE_MARKER_ICON,
-  VEHICLE_MARKER_WIDTH,
-  VEHICLE_MARKER_HEIGHT,
-  VEHICLE_MARKER_ANCHOR_X,
-  VEHICLE_MARKER_ANCHOR_Y,
 } from "@/config/mapConstants";
 import { Car, MapPin, User, Route } from "lucide-react";
 import { toast } from "sonner";
@@ -224,8 +224,8 @@ export function UserHomeMap() {
                   onClick={() => handleMarkerClick(v)}
                   icon={{
                     url: VEHICLE_MARKER_ICON,
-                    scaledSize: new google.maps.Size(VEHICLE_MARKER_WIDTH, VEHICLE_MARKER_HEIGHT),
-                    anchor: new google.maps.Point(VEHICLE_MARKER_ANCHOR_X, VEHICLE_MARKER_ANCHOR_Y),
+                    scaledSize: new google.maps.Size(MARKER_WIDTH, MARKER_HEIGHT),
+                    anchor: new google.maps.Point(MARKER_ANCHOR_X, MARKER_ANCHOR_Y),
                   }}
                 />
               );

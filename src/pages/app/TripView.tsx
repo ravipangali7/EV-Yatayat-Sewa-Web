@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleMap, Polyline, Marker } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
 import {
+  MARKER_ANCHOR_X,
+  MARKER_ANCHOR_Y,
+  MARKER_HEIGHT,
+  MARKER_WIDTH,
   VEHICLE_MARKER_ICON,
-  VEHICLE_MARKER_WIDTH,
-  VEHICLE_MARKER_HEIGHT,
-  VEHICLE_MARKER_ANCHOR_X,
-  VEHICLE_MARKER_ANCHOR_Y,
 } from '@/config/mapConstants';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -181,8 +181,8 @@ export default function TripView() {
                         title="Vehicle"
                         icon={{
                           url: VEHICLE_MARKER_ICON,
-                          scaledSize: new window.google.maps.Size(VEHICLE_MARKER_WIDTH, VEHICLE_MARKER_HEIGHT),
-                          anchor: new window.google.maps.Point(VEHICLE_MARKER_ANCHOR_X, VEHICLE_MARKER_ANCHOR_Y),
+                          scaledSize: new window.google.maps.Size(MARKER_WIDTH, MARKER_HEIGHT),
+                          anchor: new window.google.maps.Point(MARKER_ANCHOR_X, MARKER_ANCHOR_Y),
                         }}
                       />
                     )}

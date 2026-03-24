@@ -8,11 +8,11 @@ import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
 import { useTripSocket } from "@/hooks/useTripSocket";
 import { useAuthReadyForSocket } from "@/hooks/useAuthReadyForSocket";
 import {
+  MARKER_ANCHOR_X,
+  MARKER_ANCHOR_Y,
+  MARKER_HEIGHT,
+  MARKER_WIDTH,
   VEHICLE_MARKER_ICON,
-  VEHICLE_MARKER_WIDTH,
-  VEHICLE_MARKER_HEIGHT,
-  VEHICLE_MARKER_ANCHOR_X,
-  VEHICLE_MARKER_ANCHOR_Y,
 } from "@/config/mapConstants";
 import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
 import {
@@ -203,11 +203,13 @@ export default function UserTrackTrip() {
       return;
     }
 
-    const w = VEHICLE_MARKER_WIDTH;
-    const h = VEHICLE_MARKER_HEIGHT;
-    const ax = VEHICLE_MARKER_ANCHOR_X;
-    const ay = VEHICLE_MARKER_ANCHOR_Y;
-    const plainIcon = makePlainVehicleIcon(VEHICLE_MARKER_ICON, w, h, ax, ay);
+    const plainIcon = makePlainVehicleIcon(
+      VEHICLE_MARKER_ICON,
+      MARKER_WIDTH,
+      MARKER_HEIGHT,
+      MARKER_ANCHOR_X,
+      MARKER_ANCHOR_Y
+    );
 
     void loadVehicleMarkerImage(VEHICLE_MARKER_ICON)
       .then((img) => {
@@ -296,10 +298,10 @@ export default function UserTrackTrip() {
             makeRotatedVehicleIcon(
               vehicleImg,
               displayHeading,
-              VEHICLE_MARKER_WIDTH,
-              VEHICLE_MARKER_HEIGHT,
-              VEHICLE_MARKER_ANCHOR_X,
-              VEHICLE_MARKER_ANCHOR_Y
+              MARKER_WIDTH,
+              MARKER_HEIGHT,
+              MARKER_ANCHOR_X,
+              MARKER_ANCHOR_Y
             )
           );
           lastRotationPaintedRef.current = displayHeading;

@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react';
 import { GoogleMap, InfoWindow, Marker, Polyline } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/contexts/GoogleMapsContext';
 import {
+  MARKER_ANCHOR_X,
+  MARKER_ANCHOR_Y,
+  MARKER_HEIGHT,
   MARKER_ICONS,
+  MARKER_WIDTH,
   ROUTE_MARKER_ANCHOR,
   ROUTE_MARKER_SIZE,
-  VEHICLE_MARKER_ANCHOR_X,
-  VEHICLE_MARKER_ANCHOR_Y,
-  VEHICLE_MARKER_HEIGHT,
-  VEHICLE_MARKER_WIDTH,
 } from '@/config/mapConstants';
 import { Card } from '@/components/ui/card';
 import { MapTypeToggle } from '@/components/maps/MapTypeToggle';
@@ -175,12 +175,12 @@ export function MiniMap({
           const icon = {
             url: iconUrl,
             scaledSize: new google.maps.Size(
-              isVehicle ? VEHICLE_MARKER_WIDTH : ROUTE_MARKER_SIZE,
-              isVehicle ? VEHICLE_MARKER_HEIGHT : ROUTE_MARKER_SIZE
+              isVehicle ? MARKER_WIDTH : ROUTE_MARKER_SIZE,
+              isVehicle ? MARKER_HEIGHT : ROUTE_MARKER_SIZE
             ),
             anchor: new google.maps.Point(
-              isVehicle ? VEHICLE_MARKER_ANCHOR_X : ROUTE_MARKER_ANCHOR,
-              isVehicle ? VEHICLE_MARKER_ANCHOR_Y : ROUTE_MARKER_ANCHOR
+              isVehicle ? MARKER_ANCHOR_X : ROUTE_MARKER_ANCHOR,
+              isVehicle ? MARKER_ANCHOR_Y : ROUTE_MARKER_ANCHOR
             ),
           };
 

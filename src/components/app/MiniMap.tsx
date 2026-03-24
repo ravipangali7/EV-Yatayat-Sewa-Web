@@ -9,12 +9,12 @@ import {
   POLYLINE_STROKE_COLOR,
   POLYLINE_STROKE_OPACITY,
   POLYLINE_STROKE_WEIGHT,
+  MARKER_ANCHOR_X,
+  MARKER_ANCHOR_Y,
+  MARKER_HEIGHT,
+  MARKER_WIDTH,
   ROUTE_MARKER_ANCHOR,
   ROUTE_MARKER_SIZE,
-  VEHICLE_MARKER_ANCHOR_X,
-  VEHICLE_MARKER_ANCHOR_Y,
-  VEHICLE_MARKER_HEIGHT,
-  VEHICLE_MARKER_WIDTH,
 } from "@/config/mapConstants";
 import { getDirectionsPath } from "@/lib/directions";
 import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
@@ -218,12 +218,12 @@ const MiniMap = ({ points, className = "", fillHeight = false }: MiniMapProps) =
               icon={{
                 url: MARKER_ICONS[point.type],
                 scaledSize: new google.maps.Size(
-                  isVehicle ? VEHICLE_MARKER_WIDTH : ROUTE_MARKER_SIZE,
-                  isVehicle ? VEHICLE_MARKER_HEIGHT : ROUTE_MARKER_SIZE
+                  isVehicle ? MARKER_WIDTH : ROUTE_MARKER_SIZE,
+                  isVehicle ? MARKER_HEIGHT : ROUTE_MARKER_SIZE
                 ),
                 anchor: new google.maps.Point(
-                  isVehicle ? VEHICLE_MARKER_ANCHOR_X : ROUTE_MARKER_ANCHOR,
-                  isVehicle ? VEHICLE_MARKER_ANCHOR_Y : ROUTE_MARKER_ANCHOR
+                  isVehicle ? MARKER_ANCHOR_X : ROUTE_MARKER_ANCHOR,
+                  isVehicle ? MARKER_ANCHOR_Y : ROUTE_MARKER_ANCHOR
                 ),
               }}
               onClick={() => handleMarkerClick(point)}

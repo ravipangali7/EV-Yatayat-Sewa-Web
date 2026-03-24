@@ -6,14 +6,15 @@
 /** URL for map markers that represent a vehicle (bus). */
 export const VEHICLE_MARKER_ICON = "/icon/bus_marker.png";
 
-/** Width in px for vehicle (bus) marker on the map. */
-export const VEHICLE_MARKER_WIDTH = 24;
-/** Height in px for vehicle (bus) marker on the map. */
-export const VEHICLE_MARKER_HEIGHT = 54;
-/** Anchor X for vehicle marker (center = width / 2). */
-export const VEHICLE_MARKER_ANCHOR_X = VEHICLE_MARKER_WIDTH / 2;
-/** Anchor Y for vehicle marker (center = height / 2). */
-export const VEHICLE_MARKER_ANCHOR_Y = VEHICLE_MARKER_HEIGHT / 2;
+/**
+ * Global vehicle (bus) marker size on Google Maps (px).
+ * Single source: driver nav, live tracking, home map, trip view, mini maps, rotated icon helper.
+ */
+export const MARKER_WIDTH = 35;
+export const MARKER_HEIGHT = 95;
+/** Anchor for vehicle marker icon (center of image). */
+export const MARKER_ANCHOR_X = MARKER_WIDTH / 2;
+export const MARKER_ANCHOR_Y = MARKER_HEIGHT / 2;
 
 export const MARKER_ICONS = {
   start: "/start_point.png",
@@ -26,9 +27,6 @@ export const MARKER_ICONS = {
 export const ROUTE_MARKER_SIZE = 24;
 /** Anchor offset so the marker tip is at the position (half of ROUTE_MARKER_SIZE for center). */
 export const ROUTE_MARKER_ANCHOR = 12;
-
-/** Size in px for the fixed navigation (current location) overlay image. */
-export const NAVIGATION_MARKER_SIZE = 40;
 
 export const POLYLINE_STROKE_WEIGHT = 3;
 export const POLYLINE_STROKE_OPACITY = 0.8;

@@ -4,8 +4,11 @@ import { Crosshair } from "lucide-react";
 import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
 import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
 import {
+  MARKER_ANCHOR_X,
+  MARKER_ANCHOR_Y,
   MARKER_ICONS,
-  NAVIGATION_MARKER_SIZE,
+  MARKER_HEIGHT,
+  MARKER_WIDTH,
   NAV_ZOOM,
   POLYLINE_STROKE_COLOR,
   POLYLINE_STROKE_OPACITY,
@@ -181,9 +184,13 @@ export default function DriverNavigationMap({
       });
       listenerRef.current.push(zoomListener);
 
-      const navSize = NAVIGATION_MARKER_SIZE;
-      const anchor = navSize / 2;
-      const plainIcon = makePlainVehicleIcon(MARKER_ICONS.current, navSize, navSize, anchor, anchor);
+      const plainIcon = makePlainVehicleIcon(
+        MARKER_ICONS.current,
+        MARKER_WIDTH,
+        MARKER_HEIGHT,
+        MARKER_ANCHOR_X,
+        MARKER_ANCHOR_Y
+      );
       void loadVehicleMarkerImage(MARKER_ICONS.current)
         .then((img) => {
           if (mapRef.current !== map) return;
@@ -280,13 +287,17 @@ export default function DriverNavigationMap({
         vehicleMarker.setPosition({ lat: displayLat, lng: displayLng });
       }
       if (vehicleMarker && vehicleImg) {
-        const navSize = NAVIGATION_MARKER_SIZE;
-        const anchor = navSize / 2;
         const usePlainIcon = followMode && !!setHeadingFn;
         if (usePlainIcon) {
           if (lastVehicleIconModeRef.current !== "plain") {
             vehicleMarker.setIcon(
-              makePlainVehicleIcon(MARKER_ICONS.current, navSize, navSize, anchor, anchor)
+              makePlainVehicleIcon(
+                MARKER_ICONS.current,
+                MARKER_WIDTH,
+                MARKER_HEIGHT,
+                MARKER_ANCHOR_X,
+                MARKER_ANCHOR_Y
+              )
             );
             lastVehicleIconModeRef.current = "plain";
             lastRotationPaintedRef.current = null;
@@ -298,7 +309,14 @@ export default function DriverNavigationMap({
             shouldRefreshVehicleIconRotation(lastRotationPaintedRef.current, displayHeading)
           ) {
             vehicleMarker.setIcon(
-              makeRotatedVehicleIcon(vehicleImg, displayHeading, navSize, navSize, anchor, anchor)
+              makeRotatedVehicleIcon(
+                vehicleImg,
+                displayHeading,
+                MARKER_WIDTH,
+                MARKER_HEIGHT,
+                MARKER_ANCHOR_X,
+                MARKER_ANCHOR_Y
+              )
             );
             lastVehicleIconModeRef.current = "rotated";
             lastRotationPaintedRef.current = displayHeading;
