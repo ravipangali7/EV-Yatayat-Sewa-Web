@@ -22,6 +22,8 @@ export default function Settings() {
     initial_km: undefined as number | undefined,
     initial_km_charge: undefined as number | undefined,
     gps_threshold: 5,
+    point_cover_radius: 0.5,
+    minute_coverage_schedule: 60,
     seat_layout: [] as string[],
     stop_point_announcement_header: '',
     short_trip_min_distance_for_booking: 5,
@@ -46,6 +48,14 @@ export default function Settings() {
             initial_km: setting.initial_km != null && setting.initial_km !== '' ? toNumber(setting.initial_km, 0) : undefined,
             initial_km_charge: setting.initial_km_charge != null && setting.initial_km_charge !== '' ? toNumber(setting.initial_km_charge, 0) : undefined,
             gps_threshold: gps,
+            point_cover_radius:
+              setting.point_cover_radius != null && setting.point_cover_radius !== ''
+                ? toNumber(setting.point_cover_radius, 0.5)
+                : 0.5,
+            minute_coverage_schedule:
+              setting.minute_coverage_schedule != null && setting.minute_coverage_schedule !== ''
+                ? Number(setting.minute_coverage_schedule)
+                : 60,
             seat_layout: layout,
             stop_point_announcement_header: setting.stop_point_announcement_header ?? '',
             short_trip_min_distance_for_booking: toNumber(setting.short_trip_min_distance_for_booking, 5),
@@ -89,6 +99,8 @@ export default function Settings() {
         stop_point_announcement_header: formData.stop_point_announcement_header ?? '',
         short_trip_min_distance_for_booking: formData.short_trip_min_distance_for_booking,
         short_trip_max_distance_for_booking: formData.short_trip_max_distance_for_booking,
+        point_cover_radius: formData.point_cover_radius,
+        minute_coverage_schedule: formData.minute_coverage_schedule,
         luna_web_origin: formData.luna_web_origin.trim(),
       };
       if (lunaTokenInput.trim() !== '') {
@@ -101,6 +113,14 @@ export default function Settings() {
           ...prev,
           stop_point_announcement_header: updated.stop_point_announcement_header ?? '',
           luna_web_origin: (updated.luna_web_origin ?? '').trim(),
+          point_cover_radius:
+            updated.point_cover_radius != null && updated.point_cover_radius !== ''
+              ? toNumber(updated.point_cover_radius, 0.5)
+              : 0.5,
+          minute_coverage_schedule:
+            updated.minute_coverage_schedule != null && updated.minute_coverage_schedule !== ''
+              ? Number(updated.minute_coverage_schedule)
+              : 60,
         }));
         setLunaTokenInput('');
         setSeatLayoutRaw(JSON.stringify(updated.seat_layout ?? []));
@@ -112,6 +132,14 @@ export default function Settings() {
           ...prev,
           stop_point_announcement_header: created.stop_point_announcement_header ?? '',
           luna_web_origin: (created.luna_web_origin ?? '').trim(),
+          point_cover_radius:
+            created.point_cover_radius != null && created.point_cover_radius !== ''
+              ? toNumber(created.point_cover_radius, 0.5)
+              : 0.5,
+          minute_coverage_schedule:
+            created.minute_coverage_schedule != null && created.minute_coverage_schedule !== ''
+              ? Number(created.minute_coverage_schedule)
+              : 60,
         }));
         setLunaTokenInput('');
         setSeatLayoutRaw(JSON.stringify(created.seat_layout ?? []));
@@ -197,6 +225,46 @@ export default function Settings() {
                 onChange={(e) => setFormData({ ...formData, gps_threshold: parseFloat(e.target.value) || 5 })}
                 disabled={loading}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="point_cover_radius">Point cover radius (km)</Label>
+              <Input
+                id="point_cover_radius"
+                type="number"
+                step="0.0001"
+                min={0}
+                value={formData.point_cover_radius}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    point_cover_radius: parseFloat(e.target.value) || 0,
+                  })
+                }
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Radius in km for considering a vehicle at a stop/start point.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="minute_coverage_schedule">Minute coverage schedule</Label>
+              <Input
+                id="minute_coverage_schedule"
+                type="number"
+                step={1}
+                min={0}
+                value={formData.minute_coverage_schedule}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    minute_coverage_schedule: parseInt(e.target.value, 10) || 0,
+                  })
+                }
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Minutes before/after scheduled time for scheduled start coverage.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="short_trip_min_distance_for_booking">Short trip min distance for booking (km)</Label>
@@ -358,6 +426,32 @@ export default function Settings() {
                 </div>
               </>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-xl mb-6">
+        <CardHeader>
+          <CardTitle>Coverage &amp; scheduling</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-border gap-4">
+              <span className="text-muted-foreground">Point cover radius (km)</span>
+              <span className="font-semibold">
+                {settings?.point_cover_radius != null && settings?.point_cover_radius !== ''
+                  ? toNumber(settings.point_cover_radius, 0.5).toFixed(4)
+                  : '—'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Minute coverage schedule</span>
+              <span className="font-semibold">
+                {settings?.minute_coverage_schedule != null && settings?.minute_coverage_schedule !== ''
+                  ? Number(settings.minute_coverage_schedule)
+                  : '—'}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>

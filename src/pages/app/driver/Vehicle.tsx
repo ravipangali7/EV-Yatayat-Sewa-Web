@@ -900,7 +900,7 @@ export default function Vehicle() {
     if (!selectedVehicle?.id || !activeTrip?.id || !selectedDestination || !checkinAmount) return;
     const checkInLoc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
     const now = new Date().toISOString();
-    const checkInAddress = "Current location";
+    const checkInAddress = "";
     const checkOutAddress = selectedDestination.name;
     const tripDistance = checkinAmount.distanceKm;
     const tripAmountPerSeat = Math.round((checkinAmount.totalAmount / availableSelected.length) * 100) / 100;
@@ -1020,7 +1020,7 @@ export default function Vehicle() {
             vehicle_seat_id: vehicleSeatId!,
             check_out_lat: loc.lat,
             check_out_lng: loc.lng,
-            check_out_address: "Current location",
+            check_out_address: "",
             is_paid: false,
           });
           if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
@@ -1029,7 +1029,7 @@ export default function Vehicle() {
               seat_label: seat.id,
               check_out_lat: loc.lat,
               check_out_lng: loc.lng,
-              check_out_address: "Current location",
+              check_out_address: "",
               preview: res as CheckoutPreviewResponse,
             });
           }
