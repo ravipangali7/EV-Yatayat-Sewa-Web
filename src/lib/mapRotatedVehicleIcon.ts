@@ -32,29 +32,40 @@ export function makePlainVehicleIcon(
   };
 }
 
+/** Extra px on each side so rotated edges are not clipped by subpixel/antialiasing. */
+const ROTATED_ICON_PAD = 2;
+
 export function makeRotatedVehicleIcon(
   img: HTMLImageElement,
   headingDeg: number,
   width: number,
   height: number,
-  anchorX: number,
-  anchorY: number
+  _anchorX: number,
+  _anchorY: number
 ): google.maps.Icon {
+  const rad = headingDeg * RAD;
+  const c = Math.abs(Math.cos(rad));
+  const s = Math.abs(Math.sin(rad));
+  const boundW = width * c + height * s;
+  const boundH = width * s + height * c;
+  const cw = Math.ceil(boundW) + ROTATED_ICON_PAD * 2;
+  const ch = Math.ceil(boundH) + ROTATED_ICON_PAD * 2;
+
   const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = cw;
+  canvas.height = ch;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
-    return makePlainVehicleIcon(img.src, width, height, anchorX, anchorY);
+    return makePlainVehicleIcon(img.src, width, height, _anchorX, _anchorY);
   }
-  ctx.clearRect(0, 0, width, height);
-  ctx.translate(width / 2, height / 2);
-  ctx.rotate(headingDeg * RAD);
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.translate(cw / 2, ch / 2);
+  ctx.rotate(rad);
   ctx.drawImage(img, -width / 2, -height / 2, width, height);
   return {
     url: canvas.toDataURL(),
-    scaledSize: new google.maps.Size(width, height),
-    anchor: new google.maps.Point(anchorX, anchorY),
+    scaledSize: new google.maps.Size(cw, ch),
+    anchor: new google.maps.Point(cw / 2, ch / 2),
   };
 }
 
