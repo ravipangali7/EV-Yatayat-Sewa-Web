@@ -60,8 +60,16 @@ export function startPttCapture(
       reject(new Error("getUserMedia not supported"));
       return;
     }
+    // Match Flutter RecordConfig (walkietalkie_service): echo cancel, noise suppress, AGC for clearer laptop capture.
     navigator.mediaDevices
-      .getUserMedia({ audio: true })
+      .getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
+      })
       .then(async (stream) => {
         const AudioContextClass =
           window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
