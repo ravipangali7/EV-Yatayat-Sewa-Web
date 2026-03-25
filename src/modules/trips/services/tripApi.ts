@@ -42,7 +42,8 @@ export interface TripSeatBookingDetail {
   check_in_address: string;
   check_in_datetime?: string | null;
   check_out_datetime?: string | null;
-  destination_place_details?: { name?: string } | null;
+  origin_place_details?: { name?: string; code?: string } | null;
+  destination_place_details?: { name?: string; code?: string } | null;
   trip_amount?: number | string | null;
   is_paid: boolean;
 }

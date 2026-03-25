@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -11,6 +11,8 @@ import { tripApi, type TripSeatBookingDetail } from '@/modules/trips/services/tr
 import type { Vehicle, VehicleSeat } from '@/types';
 import { SeatLayoutVisualizer } from '@/components/vehicles/SeatLayoutVisualizer';
 import { cn } from '@/lib/utils';
+
+const REFRESH_MS = 5000;
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -26,6 +28,27 @@ function formatTime(iso: string | null | undefined): string {
   } catch {
     return iso;
   }
+}
+
+function bookingFromLabel(b: TripSeatBookingDetail): string {
+  return b.origin_place_details?.name?.trim() || b.check_in_address?.trim() || '—';
+}
+
+function bookingToLabel(b: TripSeatBookingDetail): string {
+  return b.destination_place_details?.name?.trim() || '—';
+}
+
+/** Active trip: only passengers still on board. Completed trip: all bookings in snapshot. */
+function bookedSeatKeys(bookings: TripSeatBookingDetail[] | undefined, tripActive: boolean): Set<string> {
+  const list = bookings ?? [];
+  const relevant = tripActive ? list.filter((b) => !b.check_out_datetime) : list;
+  return new Set(
+    relevant
+      .map((b) =>
+        b.vehicle_seat_details ? `${b.vehicle_seat_details.side}${b.vehicle_seat_details.number}` : ''
+      )
+      .filter(Boolean)
+  );
 }
 
 interface TripListItem {
@@ -65,11 +88,49 @@ export function VehicleDetailSheet({
   const [tripDetailsCache, setTripDetailsCache] = useState<Map<string, TripDetailWithRevenue>>(new Map());
   const [loadingTripId, setLoadingTripId] = useState<string | null>(null);
   const [tripErrorId, setTripErrorId] = useState<string | null>(null);
+  const [expandedTripId, setExpandedTripId] = useState<string | undefined>(undefined);
 
-  const fetchVehicleAndTrips = useCallback(async (id: string) => {
+  const tripDetailsCacheRef = useRef(tripDetailsCache);
+  tripDetailsCacheRef.current = tripDetailsCache;
+
+  const expandedTripIdRef = useRef<string | undefined>(undefined);
+  expandedTripIdRef.current = expandedTripId;
+
+  const refreshTripDetail = useCallback(
+    async (tripId: string, opts: { force?: boolean; silent?: boolean } = {}) => {
+      if (!opts.force && tripDetailsCacheRef.current.has(tripId)) return;
+      const showRowSpinner = !opts.silent && !tripDetailsCacheRef.current.has(tripId);
+      if (showRowSpinner) setLoadingTripId(tripId);
+      if (!opts.silent) setTripErrorId(null);
+      try {
+        const detail = (await tripApi.getDetail(tripId)) as TripDetailWithRevenue & {
+          seat_bookings?: TripSeatBookingDetail[];
+        };
+        const slice: TripDetailWithRevenue = {
+          seat_bookings: detail.seat_bookings,
+          total_seat_booking_revenue: detail.total_seat_booking_revenue,
+          total_revenue: detail.total_revenue,
+        };
+        setTripDetailsCache((prev) => {
+          const next = new Map(prev);
+          next.set(tripId, slice);
+          return next;
+        });
+      } catch {
+        if (!opts.silent) setTripErrorId(tripId);
+      } finally {
+        if (showRowSpinner) setLoadingTripId(null);
+      }
+    },
+    []
+  );
+
+  const fetchVehicleAndTripsInitial = useCallback(async (id: string) => {
     setLoading(true);
     setTripDetailsCache(new Map());
     setTripErrorId(null);
+    setExpandedTripId(undefined);
+    expandedTripIdRef.current = undefined;
     try {
       const [vehicleRes, tripsRes, seatsRes] = await Promise.all([
         vehicleApi.get(id),
@@ -93,38 +154,62 @@ export function VehicleDetailSheet({
     }
   }, []);
 
+  const pollVehicleAndTrips = useCallback(async (id: string) => {
+    try {
+      const [vehicleRes, tripsRes, seatsRes] = await Promise.all([
+        vehicleApi.get(id),
+        tripApi.list({
+          vehicle: id,
+          date_from: today(),
+          date_to: today(),
+          per_page: 50,
+        }),
+        vehicleApi.getSeats(id),
+      ]);
+      setVehicle(vehicleRes);
+      setSeats(seatsRes ?? []);
+      const list = (tripsRes?.results ?? []) as TripListItem[];
+      setTrips(list);
+      const tid = expandedTripIdRef.current;
+      if (tid) {
+        const t = list.find((x) => x.id === tid);
+        if (t && !t.end_time) {
+          await refreshTripDetail(tid, { force: true, silent: true });
+        }
+      }
+    } catch {
+      /* ignore transient poll errors */
+    }
+  }, [refreshTripDetail]);
+
   useEffect(() => {
     if (open && vehicleId) {
-      fetchVehicleAndTrips(vehicleId);
+      void fetchVehicleAndTripsInitial(vehicleId);
     } else if (!open) {
       setVehicle(null);
       setSeats([]);
       setTrips([]);
       setTripDetailsCache(new Map());
+      setExpandedTripId(undefined);
+      expandedTripIdRef.current = undefined;
     }
-  }, [open, vehicleId, fetchVehicleAndTrips]);
+  }, [open, vehicleId, fetchVehicleAndTripsInitial]);
 
-  const loadTripDetail = useCallback(async (tripId: string) => {
-    if (tripDetailsCache.has(tripId)) return;
-    setLoadingTripId(tripId);
-    setTripErrorId(null);
-    try {
-      const detail = await tripApi.getDetail(tripId) as TripDetailWithRevenue & { seat_bookings?: TripSeatBookingDetail[] };
-      setTripDetailsCache((prev) => {
-        const next = new Map(prev);
-        next.set(tripId, {
-          seat_bookings: detail.seat_bookings,
-          total_seat_booking_revenue: detail.total_seat_booking_revenue,
-          total_revenue: detail.total_revenue,
-        });
-        return next;
-      });
-    } catch {
-      setTripErrorId(tripId);
-    } finally {
-      setLoadingTripId(null);
+  useEffect(() => {
+    if (!open || !vehicleId) return;
+    const id = vehicleId;
+    const handle = window.setInterval(() => {
+      void pollVehicleAndTrips(id);
+    }, REFRESH_MS);
+    return () => window.clearInterval(handle);
+  }, [open, vehicleId, pollVehicleAndTrips]);
+
+  useEffect(() => {
+    if (expandedTripId && !trips.some((t) => t.id === expandedTripId)) {
+      setExpandedTripId(undefined);
+      expandedTripIdRef.current = undefined;
     }
-  }, [tripDetailsCache]);
+  }, [trips, expandedTripId]);
 
   const displayName = vehicle?.name ?? propVehicleName ?? 'Vehicle';
   const displayNo = vehicle?.vehicle_no ?? propVehicleNo ?? '—';
@@ -161,8 +246,12 @@ export function VehicleDetailSheet({
                   type="single"
                   collapsible
                   className="w-full"
+                  value={expandedTripId}
                   onValueChange={(value) => {
-                    if (value) loadTripDetail(value);
+                    const v = value || undefined;
+                    setExpandedTripId(v);
+                    expandedTripIdRef.current = v;
+                    if (v) void refreshTripDetail(v, {});
                   }}
                 >
                   {trips.map((trip) => {
@@ -215,17 +304,7 @@ export function VehicleDetailSheet({
                                   <SeatLayoutVisualizer
                                     seatLayout={seatLayout}
                                     seats={seatsForLayout}
-                                    bookedSeats={
-                                      new Set(
-                                        (detail.seat_bookings ?? [])
-                                          .map((b) =>
-                                            b.vehicle_seat_details
-                                              ? `${b.vehicle_seat_details.side}${b.vehicle_seat_details.number}`
-                                              : ''
-                                          )
-                                          .filter(Boolean)
-                                      )
-                                    }
+                                    bookedSeats={bookedSeatKeys(detail.seat_bookings, isActive)}
                                     size="default"
                                   />
                                 </div>
@@ -241,15 +320,18 @@ export function VehicleDetailSheet({
                                 {(detail.seat_bookings?.length ?? 0) === 0 ? (
                                   <p className="text-xs text-slate-500">No seat bookings.</p>
                                 ) : (
-                                  <div className="rounded-lg border border-slate-700 overflow-hidden">
-                                    <table className="w-full text-xs">
+                                  <div className="rounded-lg border border-slate-700 overflow-x-auto">
+                                    <table className="w-full text-xs min-w-[32rem]">
                                       <thead>
                                         <tr className="bg-slate-800/60 border-b border-slate-700">
-                                          <th className="text-left py-2 px-3 text-slate-400 font-medium">Seat</th>
-                                          <th className="text-left py-2 px-3 text-slate-400 font-medium">Passenger</th>
-                                          <th className="text-left py-2 px-3 text-slate-400 font-medium">Check-in</th>
-                                          <th className="text-right py-2 px-3 text-slate-400 font-medium">Amount</th>
-                                          <th className="text-center py-2 px-3 text-slate-400 font-medium">Paid</th>
+                                          <th className="text-left py-2 px-2 text-slate-400 font-medium">Seat</th>
+                                          <th className="text-left py-2 px-2 text-slate-400 font-medium">Passenger</th>
+                                          <th className="text-left py-2 px-2 text-slate-400 font-medium">From</th>
+                                          <th className="text-left py-2 px-2 text-slate-400 font-medium">To</th>
+                                          <th className="text-left py-2 px-2 text-slate-400 font-medium">Check-in</th>
+                                          <th className="text-left py-2 px-2 text-slate-400 font-medium">Check-out</th>
+                                          <th className="text-right py-2 px-2 text-slate-400 font-medium">Amount</th>
+                                          <th className="text-center py-2 px-2 text-slate-400 font-medium">Paid</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -263,6 +345,9 @@ export function VehicleDetailSheet({
                                           const checkIn = b.check_in_datetime
                                             ? formatTime(b.check_in_datetime)
                                             : '—';
+                                          const checkOut = b.check_out_datetime
+                                            ? formatTime(b.check_out_datetime)
+                                            : '—';
                                           const amount =
                                             b.trip_amount != null
                                               ? typeof b.trip_amount === 'string'
@@ -274,13 +359,22 @@ export function VehicleDetailSheet({
                                               key={b.id}
                                               className="border-b border-slate-700/60 last:border-0"
                                             >
-                                              <td className="py-2 px-3 font-mono">{seatLabel}</td>
-                                              <td className="py-2 px-3 text-slate-300">{name}</td>
-                                              <td className="py-2 px-3 text-slate-400">{checkIn}</td>
-                                              <td className="py-2 px-3 text-right text-slate-300">
+                                              <td className="py-2 px-2 font-mono whitespace-nowrap">{seatLabel}</td>
+                                              <td className="py-2 px-2 text-slate-300 max-w-[7rem] truncate" title={name}>
+                                                {name}
+                                              </td>
+                                              <td className="py-2 px-2 text-slate-400 max-w-[8rem] truncate" title={bookingFromLabel(b)}>
+                                                {bookingFromLabel(b)}
+                                              </td>
+                                              <td className="py-2 px-2 text-slate-400 max-w-[8rem] truncate" title={bookingToLabel(b)}>
+                                                {bookingToLabel(b)}
+                                              </td>
+                                              <td className="py-2 px-2 text-slate-400 whitespace-nowrap">{checkIn}</td>
+                                              <td className="py-2 px-2 text-slate-400 whitespace-nowrap">{checkOut}</td>
+                                              <td className="py-2 px-2 text-right text-slate-300 whitespace-nowrap">
                                                 {formatRs(amount)}
                                               </td>
-                                              <td className="py-2 px-3 text-center">
+                                              <td className="py-2 px-2 text-center">
                                                 <span
                                                   className={cn(
                                                     'px-1.5 py-0.5 rounded text-[10px] font-medium',
@@ -301,7 +395,7 @@ export function VehicleDetailSheet({
                                 )}
                               </div>
 
-                              <div className="flex gap-4 text-xs">
+                              <div className="flex flex-wrap gap-4 text-xs">
                                 {detail.total_seat_booking_revenue != null && (
                                   <span className="text-slate-400">
                                     Seat revenue:{' '}
