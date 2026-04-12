@@ -46,7 +46,7 @@ export default function RouteForm() {
   useEffect(() => {
     const fetchPlaces = async () => {
       try {
-        const response = await placeApi.list({ per_page: 1000 });
+        const response = await placeApi.list({ per_page: 10000 });
         setPlaces(response.results.map(p => ({ id: p.id, name: p.name })));
       } catch (error) {
         console.error('Failed to load places:', error);
