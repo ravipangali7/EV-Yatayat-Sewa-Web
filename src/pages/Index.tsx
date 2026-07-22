@@ -9,7 +9,6 @@ import { mockData } from "@/lib/mockData";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { SiteSetting, FAQ as FAQType, Testimonial as TestimonialType, Team as TeamType, PublicVehicle, Blog as BlogType, Slider as SliderType, Service as ServiceType } from "@/modules/website/types";
 import heroBus from "@/assets/hero-bus.jpg";
-import logo from "@/assets/logo.png";
 
 const CONTACT_FALLBACK = { address: "Kathmandu, Nepal", phone: "+977-1-4XXXXXX", email: "info@evyatayatsewa.com" };
 
@@ -103,9 +102,6 @@ export default function Index() {
         )}
         <div className="container w-full max-w-full relative z-10 text-primary-foreground px-4 sm:px-6">
           <div className="max-w-3xl animate-fade-in">
-            <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-5">
-              <img src={logo} alt="Logo" className="h-8 w-auto sm:h-10 md:h-16 drop-shadow-lg" />
-            </div>
             <h1 className="text-2xl sm:text-3xl md:text-6xl font-display font-bold leading-tight mb-2 md:mb-5">
               {heroSlider?.title ? <span className="whitespace-pre-line">{heroSlider.title}</span> : <>Nepal's Electric<br className="hidden sm:block" /> Transport Revolution</>}
             </h1>
@@ -300,31 +296,31 @@ export default function Index() {
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight">Modern Electric Vehicles</h2>
             <p className="text-muted-foreground mt-2 md:mt-3 text-xs sm:text-sm md:text-base">Zero-emission buses built for comfort and reliability.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {vehicles.length === 0 ? (
-              <p className="text-muted-foreground col-span-full text-center py-12">No vehicles yet.</p>
-            ) : (
-              vehicles.map((v) => (
-                  <div key={v.id} className="website-card bg-card overflow-hidden group">
-                    <div className="h-24 sm:h-32 flex items-center justify-center bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
-                      {v.featured_image ? (
-                        <img src={v.featured_image} alt={v.name} className="h-full w-full object-cover object-center" />
-                      ) : (
-                        <Bus className="h-14 w-14 text-primary/60 group-hover:text-primary transition-colors" />
-                      )}
-                    </div>
-                    <div className="p-4 sm:p-5 text-center">
-                      <h4 className="font-display font-semibold text-foreground mb-0.5 sm:mb-1 text-sm sm:text-base">{v.name}</h4>
-                      <p className="text-xs text-muted-foreground mb-2 sm:mb-3">{v.vehicle_type}</p>
-                      <div className="flex justify-center gap-2 flex-wrap">
-                        {v.vehicle_no && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium">{v.vehicle_no}</span>}
-                        {v.description && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs line-clamp-1 max-w-[140px]">{v.description}</span>}
-                      </div>
+          {vehicles.length === 0 ? (
+            <p className="text-muted-foreground text-center py-12">No vehicles yet.</p>
+          ) : (
+            <div className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 [scrollbar-width:thin]">
+              {vehicles.slice(0, 10).map((v) => (
+                <div key={v.id} className="website-card bg-card overflow-hidden group w-[260px] sm:w-[280px] shrink-0 snap-start">
+                  <div className="h-24 sm:h-32 flex items-center justify-center bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
+                    {v.featured_image ? (
+                      <img src={v.featured_image} alt={v.name} className="h-full w-full object-cover object-center" />
+                    ) : (
+                      <Bus className="h-14 w-14 text-primary/60 group-hover:text-primary transition-colors" />
+                    )}
+                  </div>
+                  <div className="p-4 sm:p-5 text-center">
+                    <h4 className="font-display font-semibold text-foreground mb-0.5 sm:mb-1 text-sm sm:text-base">{v.name}</h4>
+                    <p className="text-xs text-muted-foreground mb-2 sm:mb-3">{v.vehicle_type}</p>
+                    <div className="flex justify-center gap-2 flex-wrap">
+                      {v.vehicle_no && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium">{v.vehicle_no}</span>}
+                      {v.description && <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs line-clamp-1 max-w-[140px]">{v.description}</span>}
                     </div>
                   </div>
-                ))
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

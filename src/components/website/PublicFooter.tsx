@@ -100,8 +100,18 @@ export function PublicFooter(_props?: PublicFooterProps) {
           </div>
         </div>
 
-        <div className="border-t border-white/15 mt-6 md:mt-8 pt-4 md:pt-5 text-center text-xs opacity-60">
-          {copyrightText}
+        <div className="border-t border-white/15 mt-6 md:mt-8 pt-4 md:pt-5 text-center text-xs opacity-60 space-y-1.5">
+          <div>{copyrightText}</div>
+          <div>
+            <a
+              href="https://mylunago.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary hover:opacity-100 transition-all duration-200"
+            >
+              Powered by Luna IOT
+            </a>
+          </div>
         </div>
       </div>
     </footer>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -29,8 +30,65 @@ export function PublicHeader(_props?: PublicHeaderProps) {
     };
   }, [open]);
 
+  const mobileMenu =
+    typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className={`md:hidden fixed inset-0 z-[100] transition-opacity duration-300 ${
+              open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            }`}
+            aria-hidden={!open}
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setOpen(false)}
+              aria-label="Close menu"
+              tabIndex={open ? 0 : -1}
+            />
+            <div
+              className={`absolute top-0 right-0 w-full max-w-[min(20rem,100vw)] h-full bg-background border-l border-border shadow-card-hover flex flex-col pt-20 pb-8 px-6 transition-transform duration-300 ease-out ${
+                open ? "translate-x-0" : "translate-x-full"
+              }`}
+            >
+              <nav className="flex flex-col gap-1">
+                {navLinks.map((l) => {
+                  const isActive = pathname === l.to;
+                  return (
+                    <Link
+                      key={l.to}
+                      to={l.to}
+                      onClick={() => setOpen(false)}
+                      tabIndex={open ? 0 : -1}
+                      className={`px-4 py-3.5 rounded-xl text-base font-medium transition-colors ${
+                        isActive ? "text-primary bg-primary/10" : "text-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      {l.label}
+                    </Link>
+                  );
+                })}
+                <Link
+                  to="/app/login"
+                  onClick={() => setOpen(false)}
+                  tabIndex={open ? 0 : -1}
+                  className="mt-4 mx-2 py-3.5 rounded-full text-center text-sm font-semibold gradient-primary text-white shadow-soft"
+                >
+                  Login
+                </Link>
+              </nav>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
-    <header className="sticky top-0 left-0 right-0 z-50 w-full max-w-full min-w-0 bg-background/70 backdrop-blur-xl border-b border-border/80 shadow-soft">
+    <header
+      className={`sticky top-0 left-0 right-0 w-full max-w-full min-w-0 bg-background/70 backdrop-blur-xl border-b border-border/80 shadow-soft ${
+        open ? "z-[110]" : "z-50"
+      }`}
+    >
       <div className="container w-full max-w-full min-w-0 flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg">
           <img src={logo} alt="EV Yatayat Sewa" className="h-10 w-auto sm:h-12" />
@@ -70,50 +128,7 @@ export function PublicHeader(_props?: PublicHeaderProps) {
         </button>
       </div>
 
-      {/* Mobile: slide-in panel with backdrop */}
-      <div
-        className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-        aria-hidden={!open}
-      >
-        <button
-          type="button"
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-          aria-label="Close menu"
-        />
-        <div
-          className={`absolute top-0 right-0 w-full max-w-[min(20rem,100vw)] h-full bg-background border-l border-border shadow-card-hover flex flex-col pt-20 pb-8 px-6 transition-transform duration-300 ease-out ${
-            open ? "translate-x-0" : "translate-x-full"
-          }`}
-        >
-          <nav className="flex flex-col gap-1">
-            {navLinks.map((l) => {
-              const isActive = pathname === l.to;
-              return (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  onClick={() => setOpen(false)}
-                  className={`px-4 py-3.5 rounded-xl text-base font-medium transition-colors ${
-                    isActive ? "text-primary bg-primary/10" : "text-foreground hover:bg-muted/60"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              );
-            })}
-            <Link
-              to="/app/login"
-              onClick={() => setOpen(false)}
-              className="mt-4 mx-2 py-3.5 rounded-full text-center text-sm font-semibold gradient-primary text-white shadow-soft"
-            >
-              Login
-            </Link>
-          </nav>
-        </div>
-      </div>
+      {mobileMenu}
     </header>
   );
 }
