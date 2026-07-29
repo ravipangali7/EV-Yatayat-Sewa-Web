@@ -1,4 +1,4 @@
-export const GOOGLE_MAPS_API_KEY = 'AIzaSyDakyL49GU8gPjnK0jihVQuRDxh6lTx-O8';
+export const GOOGLE_MAPS_API_KEY = 'AIzaSyAGIdrqHts3zPr59SwAfDaXy4yty02bVfM';
 
 /** Optional Map ID for vector map (required for setHeading/rotation). Create in Google Cloud Console → Map Management. Set VITE_GOOGLE_MAPS_MAP_ID in .env to enable. */
 export const GOOGLE_MAPS_MAP_ID =
