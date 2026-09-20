@@ -8,12 +8,11 @@ import {
   Receipt,
   FileText,
   Clock,
-  Send,
+  MapPin,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
-import TransferModal from "@/components/app/TransferModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -27,9 +26,9 @@ const gridCards = [
   { label: "Vehicle", icon: Car, to: "/app/driver/vehicle" },
   { label: "Trip History", icon: Clock, to: "/app/driver/trip-history" },
   { label: "Seat Booking", icon: FileText, to: "/app/driver/seat-booking" },
+  { label: "Map", icon: MapPin, to: "/app/driver/vehicle" },
   { label: "Deposit", icon: CreditCard, to: "/app/driver/deposit" },
-  { label: "Pay Due", icon: Receipt, to: "/app/driver/pay-due" },
-  { label: "Transfer", icon: Send, action: "transfer" as const },
+  { label: "Pay Dues", icon: Receipt, to: "/app/driver/pay-due" },
   { label: "Wallet", icon: Wallet, to: "/app/driver/wallet" },
   { label: "Profile", icon: User, to: "/app/driver/profile" },
 ];
@@ -42,7 +41,6 @@ export default function DriverHome() {
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
   const [seatBookings, setSeatBookings] = useState<unknown[]>([]);
   const [homeTab, setHomeTab] = useState<"seat-bookings" | "transactions">("seat-bookings");
-  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const refreshWallet = useCallback(async () => {
     if (!user?.id) return;
@@ -95,27 +93,11 @@ export default function DriverHome() {
         <div className="grid grid-cols-4 gap-3">
           {gridCards.map((item, idx) => {
             const Icon = item.icon;
-            const key = "to" in item ? item.to + item.label : item.label;
             const iconClass = iconColorClasses[idx % iconColorClasses.length];
-            if ("action" in item && item.action === "transfer") {
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setShowTransferModal(true)}
-                  className="bg-white dark:bg-card/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md hover:border-primary/20 transition-all"
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
-                    <Icon size={20} />
-                  </div>
-                  <span className="text-[11px] font-medium text-center leading-tight text-foreground">{item.label}</span>
-                </button>
-              );
-            }
             return (
               <Link
-                key={key}
-                to={(item as { to: string }).to}
+                key={item.to + item.label}
+                to={item.to}
                 className="bg-white dark:bg-card/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md hover:border-primary/20 transition-all"
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
@@ -126,12 +108,6 @@ export default function DriverHome() {
             );
           })}
         </div>
-        <TransferModal
-          open={showTransferModal}
-          onClose={() => setShowTransferModal(false)}
-          onSuccess={refreshWallet}
-          currentUserId={user?.id}
-        />
 
         <div>
           <div className="flex gap-2 mb-3 p-1 rounded-xl bg-muted/30 border border-border/50">
