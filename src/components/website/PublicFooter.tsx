@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Bus, Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 import { websitePublicApi } from "@/modules/website/services/websiteApi";
 import type { SiteSetting, Service } from "@/modules/website/types";
+import logo from "@/assets/logo.png";
 
 const FALLBACK = {
   brandName: "EV Yatayat Sewa",
@@ -53,9 +54,7 @@ export function PublicFooter(_props?: PublicFooterProps) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10">
           <div className="space-y-2 md:space-y-3 col-span-2 md:col-span-1">
             <div className="flex items-center gap-2">
-              <span className="flex w-8 h-8 md:w-9 md:h-9 items-center justify-center rounded-lg bg-primary/20 shrink-0">
-                <Bus className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-              </span>
+              <img src={logo} alt={brandName} className="h-8 w-8 md:h-9 md:w-9 object-contain shrink-0" />
               <span className="font-display text-base md:text-lg font-bold">{brandName}</span>
             </div>
             <p className="text-xs opacity-85 leading-relaxed max-w-xs">{tagline}</p>
