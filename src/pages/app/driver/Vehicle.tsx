@@ -38,6 +38,32 @@ import { useTripSocket, type TripLocationPayload } from "@/hooks/useTripSocket";
 
 const CHECKOUT_ALL_FIRST_MSG = "Check out all passengers first.";
 
+function vehicleIdFromScan(code: string): string {
+  let value = code.trim();
+  try {
+    const uri = new URL(value);
+    const fromQuery =
+      uri.searchParams.get("vehicle_id") ||
+      uri.searchParams.get("vehicle") ||
+      uri.searchParams.get("id");
+    if (fromQuery?.trim()) {
+      value = fromQuery.trim();
+    } else {
+      const seg = uri.pathname.split("/").filter(Boolean).pop();
+      if (seg) value = decodeURIComponent(seg).trim();
+    }
+  } catch {
+    // Plain vehicle id, not a URL.
+  }
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+  return value;
+}
+
 function getLocationErrorToast(
   message: string | undefined,
   context: "end_trip" | "checkout" | "start_trip"
@@ -321,6 +347,8 @@ export default function Vehicle() {
   const [scheduleBookings, setScheduleBookings] = useState<Array<{ pnr: string; name: string; seat: string; price: string }>>([]);
   const [currentTripBookings, setCurrentTripBookings] = useState<TripSeatBookingDetail[]>([]);
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; speed?: number; course?: number } | null>(null);
+  /** GPS from the trip stream or a successful fix. Never the Kathmandu map fallback. */
+  const liveLocationRef = useRef<{ lat: number; lng: number } | null>(null);
   const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [superSettingSeatLayout, setSuperSettingSeatLayout] = useState<string[] | null>(null);
   const [pointCoverRadiusKm, setPointCoverRadiusKm] = useState(0.5);
@@ -421,7 +449,8 @@ export default function Vehicle() {
       window.__onDriverPosition = (jsonStr: string) => {
         try {
           const d = JSON.parse(jsonStr) as { lat: number; lng: number; speed?: number; course?: number };
-          if (typeof d.lat === "number" && typeof d.lng === "number") {
+          if (typeof d.lat === "number" && typeof d.lng === "number" && Number.isFinite(d.lat) && Number.isFinite(d.lng)) {
+            liveLocationRef.current = { lat: d.lat, lng: d.lng };
             const center = { lat: d.lat, lng: d.lng };
             const previousCenter = driverTargetRef.current?.center ?? prevLocationRef.current ?? null;
             driverTargetRef.current = {
@@ -456,9 +485,14 @@ export default function Vehicle() {
         .then((r) => {
           const loc = r.results?.[0];
           if (loc) {
+            const lat = Number(loc.latitude);
+            const lng = Number(loc.longitude);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+              liveLocationRef.current = { lat, lng };
+            }
             const next = {
-              lat: Number(loc.latitude),
-              lng: Number(loc.longitude),
+              lat,
+              lng,
               speed: loc.speed ? Number(loc.speed) : undefined,
               course: loc.course != null && loc.course !== "" ? Number(loc.course) : undefined,
             };
@@ -522,6 +556,9 @@ export default function Vehicle() {
     mapLocationRequestedRef.current = true;
     getCurrentLocation()
       .then((loc) => {
+        if (Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) {
+          liveLocationRef.current = { lat: loc.lat, lng: loc.lng };
+        }
         const center = { lat: loc.lat, lng: loc.lng };
         driverTargetRef.current = { center, previousCenter: null, heading: null };
         setLastLocation({ lat: loc.lat, lng: loc.lng });
@@ -585,6 +622,9 @@ export default function Vehicle() {
       heading: payload.course != null ? payload.course : null,
     };
     if (!isFlutterBridgeAvailable()) {
+      if (Number.isFinite(payload.lat) && Number.isFinite(payload.lng)) {
+        liveLocationRef.current = { lat: payload.lat, lng: payload.lng };
+      }
       setLastLocation((prev) => {
         if (prev) prevLocationRef.current = { lat: prev.lat, lng: prev.lng };
         return {
@@ -638,7 +678,7 @@ export default function Vehicle() {
     try {
       const result = await requestNativeScan();
       if (result.success && result.vehicleId) {
-        const vehicleId = result.vehicleId.trim();
+        const vehicleId = vehicleIdFromScan(result.vehicleId);
         try {
           const vehicleDetails = await vehicleApi.get(vehicleId);
           setVehicleToConnect(vehicleDetails);
@@ -1129,47 +1169,74 @@ export default function Vehicle() {
     toast.success("Seat switched!");
   };
 
+  const clearEndedTrip = () => {
+    stopLocationStream();
+    setDriverState("route_selected");
+    setActiveTrip(null);
+    lastAnnouncedPlaceIdRef.current = null;
+    setPendingEndTripLocation(null);
+    setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
+    setShowEndTripOutOfRangeModal(false);
+    setShowEndTripModal(false);
+  };
+
+  const resolveEndLocation = async (): Promise<{ lat: number; lng: number }> => {
+    const live = liveLocationRef.current;
+    if (live && Number.isFinite(live.lat) && Number.isFinite(live.lng)) return live;
+    try {
+      return await getCurrentLocation({ requiredBridge: true, context: "end_trip" });
+    } catch {
+      if (!activeTrip?.id) {
+        throw new Error("Could not get GPS position. Move to open sky and try again.");
+      }
+      const latest = await locationApi.list({ trip: activeTrip.id, per_page: 1 });
+      const row = latest.results?.[0];
+      const lat = row?.latitude != null ? Number(row.latitude) : NaN;
+      const lng = row?.longitude != null ? Number(row.longitude) : NaN;
+      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+      throw new Error("Could not get GPS position. Move to open sky and try again.");
+    }
+  };
+
   const confirmEndTrip = () => {
     setShowEndTripModal(false);
     if (!activeTrip?.id) {
-      stopLocationStream();
-      setDriverState("route_selected");
-      setActiveTrip(null);
-      lastAnnouncedPlaceIdRef.current = null;
-setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
-        return;
+      clearEndedTrip();
+      return;
     }
+    const tripId = activeTrip.id;
     setIsEndingTrip(true);
-    getCurrentLocation({ requiredBridge: true, context: "end_trip" })
+    resolveEndLocation()
       .then((loc) => {
         setPendingEndTripLocation(loc);
-        return tripApi.endTrip(activeTrip.id, { latitude: loc.lat, longitude: loc.lng });
+        return tripApi.endTrip(tripId, { latitude: loc.lat, longitude: loc.lng });
       })
       .then((res) => {
         if (res.within_destination === false) {
           setShowEndTripOutOfRangeModal(true);
           return;
         }
-        stopLocationStream();
-        setDriverState("route_selected");
-        setActiveTrip(null);
-        lastAnnouncedPlaceIdRef.current = null;
-        setPendingEndTripLocation(null);
-        setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
-        setShowEndTripOutOfRangeModal(false);
+        clearEndedTrip();
         toast.success("Trip ended!");
         navigate("/app/driver");
       })
       .catch((e: { response?: { status?: number; data?: { error?: string } }; message?: string }) => {
-        if (e?.response?.status === 400 && e?.response?.data?.error?.includes("Check out all passengers first")) {
-          toast.error(CHECKOUT_ALL_FIRST_MSG);
+        const serverError = e?.response?.data?.error ?? "";
+        if (/already ended/i.test(serverError)) {
+          clearEndedTrip();
+          toast.success("Trip ended!");
+          navigate("/app/driver");
+          return;
+        }
+        if (e?.response?.status === 400 && serverError.includes("Check out all passengers first")) {
+          toast.error(serverError || CHECKOUT_ALL_FIRST_MSG);
           setShowEndTripModal(true);
         } else {
-          const msg = e?.message ?? "";
+          const msg = serverError || e?.message || "";
           toast.error(
             msg && (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission"))
               ? getLocationErrorToast(msg, "end_trip")
-              : (e?.message ?? "Failed to get location or end trip")
+              : (msg || "Failed to get location or end trip")
           );
           setShowEndTripModal(true);
         }
@@ -1186,21 +1253,20 @@ setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefi
         longitude: pendingEndTripLocation.lng,
         confirm_out_of_range: true,
       });
-      stopLocationStream();
-      setDriverState("route_selected");
-      setActiveTrip(null);
-      lastAnnouncedPlaceIdRef.current = null;
-      setPendingEndTripLocation(null);
-      setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
-      setShowEndTripOutOfRangeModal(false);
+      clearEndedTrip();
       toast.success("Trip ended.");
       navigate("/app/driver");
     } catch (e: unknown) {
       const err = e as { response?: { status?: number; data?: { error?: string } } };
-      if (err?.response?.status === 400 && err?.response?.data?.error?.includes("Check out all passengers first")) {
-        toast.error(CHECKOUT_ALL_FIRST_MSG);
+      const serverError = err?.response?.data?.error ?? "";
+      if (/already ended/i.test(serverError)) {
+        clearEndedTrip();
+        toast.success("Trip ended.");
+        navigate("/app/driver");
+      } else if (err?.response?.status === 400 && serverError.includes("Check out all passengers first")) {
+        toast.error(serverError || CHECKOUT_ALL_FIRST_MSG);
       } else {
-        toast.error("Failed to end trip");
+        toast.error(serverError || "Failed to end trip");
       }
     } finally {
       setIsEndingTrip(false);

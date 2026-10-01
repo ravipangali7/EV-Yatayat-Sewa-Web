@@ -103,13 +103,20 @@ export function requestScan(): Promise<ScanResult> {
     return Promise.resolve({ success: false, error: 'Bridge not available' });
   }
   return new Promise((resolve) => {
+    const timeout = window.setTimeout(() => {
+      if (window.__onScanResult) {
+        delete window.__onScanResult;
+        resolve({ success: false, error: 'Scanner timed out. Try again.' });
+      }
+    }, 90000);
     window.__onScanResult = (jsonStr: string) => {
+      window.clearTimeout(timeout);
+      delete window.__onScanResult;
       try {
         resolve(JSON.parse(jsonStr) as ScanResult);
       } catch {
         resolve({ success: false, error: 'Invalid response' });
       }
-      delete window.__onScanResult;
     };
     window.FlutterBridge.requestScan();
   });
@@ -120,13 +127,20 @@ export function requestLocation(): Promise<LocationResult> {
     return Promise.resolve({ success: false, error: 'Bridge not available' });
   }
   return new Promise((resolve) => {
+    const timeout = window.setTimeout(() => {
+      if (window.__onLocationResult) {
+        delete window.__onLocationResult;
+        resolve({ success: false, error: 'Location request timed out' });
+      }
+    }, 15000);
     window.__onLocationResult = (jsonStr: string) => {
+      window.clearTimeout(timeout);
+      delete window.__onLocationResult;
       try {
         resolve(JSON.parse(jsonStr) as LocationResult);
       } catch {
         resolve({ success: false, error: 'Invalid response' });
       }
-      delete window.__onLocationResult;
     };
     window.FlutterBridge.requestLocation();
   });
