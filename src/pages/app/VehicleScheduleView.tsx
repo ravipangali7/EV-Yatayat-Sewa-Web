@@ -41,7 +41,8 @@ export default function VehicleScheduleView() {
           {schedule.reverse_direction != null && <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Direction</span><span>{schedule.reverse_direction ? 'Return' : 'Forward'}</span></div>}
           <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Date</span><span>{format(new Date(schedule.date), 'PP')}</span></div>
           <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Time</span><span>{schedule.time}</span></div>
-          <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Price</span><span>Rs. {Number(schedule.price).toFixed(2)}</span></div>
+          <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Full route price</span><span>Rs. {Number(schedule.price).toFixed(2)}</span></div>
+          <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Price per km</span><span>{schedule.price_per_km != null && schedule.price_per_km !== '' ? `Rs. ${Number(schedule.price_per_km).toFixed(2)}` : 'Default'}</span></div>
         </CardContent>
       </Card>
       <div className="mt-4 flex gap-2">

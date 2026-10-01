@@ -8,6 +8,7 @@ import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { vehicleScheduleApi } from '@/modules/vehicle-schedules/services/vehicleScheduleApi';
 import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
 import { routeApi } from '@/modules/routes/services/routeApi';
+import { superSettingApi } from '@/modules/settings/services/superSettingApi';
 import { toast } from 'sonner';
 
 export default function VehicleScheduleForm() {
@@ -17,12 +18,14 @@ export default function VehicleScheduleForm() {
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState<Array<{ id: string; name: string; vehicle_no?: string }>>([]);
   const [routes, setRoutes] = useState<Array<{ id: string; name: string; is_bidirectional?: boolean }>>([]);
+  const [defaultRate, setDefaultRate] = useState('');
   const [formData, setFormData] = useState({
     vehicle: '',
     route: '',
     date: new Date().toISOString().slice(0, 10),
     time: '09:00',
     price: 0,
+    price_per_km: '',
     reverse_direction: false,
   });
 
@@ -33,6 +36,10 @@ export default function VehicleScheduleForm() {
     ]).then(([v, r]) => {
       setVehicles(v);
       setRoutes(r);
+    }).catch(() => {});
+    superSettingApi.list({ per_page: 1 }).then((res) => {
+      const rate = res.results?.[0]?.default_price_per_km;
+      if (rate != null && rate !== '') setDefaultRate(String(rate));
     }).catch(() => {});
   }, []);
 
@@ -47,6 +54,7 @@ export default function VehicleScheduleForm() {
             date: s.date,
             time: s.time?.slice(0, 5) || '09:00',
             price: Number(s.price) || 0,
+            price_per_km: s.price_per_km != null && s.price_per_km !== '' ? String(s.price_per_km) : '',
             reverse_direction: s.reverse_direction ?? false,
           });
         })
@@ -59,11 +67,16 @@ export default function VehicleScheduleForm() {
     e.preventDefault();
     setLoading(true);
     try {
+      const payload = {
+        ...formData,
+        price_per_km: formData.price_per_km === '' ? null : Number(formData.price_per_km),
+        reverse_direction: formData.reverse_direction,
+      };
       if (isEdit && id) {
-        await vehicleScheduleApi.edit(id, { ...formData, reverse_direction: formData.reverse_direction });
+        await vehicleScheduleApi.edit(id, payload);
         toast.success('Schedule updated');
       } else {
-        await vehicleScheduleApi.create({ ...formData, reverse_direction: formData.reverse_direction });
+        await vehicleScheduleApi.create(payload);
         toast.success('Schedule created');
       }
       navigate('/admin/vehicle-schedules');
@@ -148,8 +161,8 @@ export default function VehicleScheduleForm() {
                   required
                 />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Price (Rs.)</Label>
+              <div className="space-y-2">
+                <Label>Full route price (Rs.)</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -158,6 +171,23 @@ export default function VehicleScheduleForm() {
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                   required
                 />
+                <p className="text-xs text-muted-foreground">Charged when the ticket is from the first stop to the last stop.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Price per km (Rs.)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="border-input"
+                  value={formData.price_per_km}
+                  onChange={(e) => setFormData({ ...formData, price_per_km: e.target.value })}
+                  placeholder={defaultRate ? `Default ${defaultRate}` : 'Uses super setting default'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Intermediate stops (for example New Road to Raja) are charged by kilometres along the route.
+                  {defaultRate ? ` Leave empty to use Rs. ${defaultRate} per km.` : ' Leave empty to use the super setting default.'}
+                </p>
               </div>
             </div>
           </section>

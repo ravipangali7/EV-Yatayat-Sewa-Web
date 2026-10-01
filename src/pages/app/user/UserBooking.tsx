@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Calendar, Search, Users, Clock, ArrowRight, Car, X, FileDown, Wallet } from "lucide-react";
+import { MapPin, Calendar, Search, Users, Clock, ArrowRight, Car, X, FileDown, Printer, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ import { paymentApi } from "@/modules/payments/services/paymentApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { printTicket } from "@/lib/printTicket";
 import AppBar from "@/components/app/AppBar";
 import { getSearchableVariants, matchesSearch } from "@/lib/transliterate";
 import { VoiceSearchButton } from "@/components/app/VoiceSearchButton";
@@ -173,18 +174,20 @@ export default function UserBooking() {
   const loadCheckoutData = useCallback(async (schedule: VehicleScheduleExpandedRecord) => {
     const vehicleId = schedule.vehicle;
     try {
-      const [vehicle, bookingsRes] = await Promise.all([
-        vehicleApi.get(vehicleId),
-        vehicleTicketBookingApi.list({ vehicle_schedule: schedule.id, per_page: 500 }),
-      ]);
+      const vehicle = await vehicleApi.get(vehicleId);
       setCheckoutVehicleLayout(Array.isArray(vehicle.seat_layout) ? vehicle.seat_layout : []);
       setCheckoutVehicleSeats((vehicle.seats || []).map((s) => ({ side: s.side, number: s.number })));
       const booked = new Set<string>();
-      for (const b of bookingsRes.results || []) {
-        const seatList = Array.isArray(b.seat) ? b.seat : (b.seat && typeof b.seat === "object" && "side" in b.seat ? [b.seat as SeatEntry] : []);
-        for (const s of seatList) {
-          if (s && typeof s === "object" && "side" in s && "number" in s) {
-            booked.add(`${s.side}${s.number}`);
+      if (Array.isArray(schedule.booked_seats)) {
+        for (const s of schedule.booked_seats) booked.add(`${s.side}${s.number}`);
+      } else {
+        const bookingsRes = await vehicleTicketBookingApi.list({ vehicle_schedule: schedule.id, per_page: 500 });
+        for (const b of bookingsRes.results || []) {
+          const seatList = Array.isArray(b.seat) ? b.seat : (b.seat && typeof b.seat === "object" && "side" in b.seat ? [b.seat as SeatEntry] : []);
+          for (const s of seatList) {
+            if (s && typeof s === "object" && "side" in s && "number" in s) {
+              booked.add(`${s.side}${s.number}`);
+            }
           }
         }
       }
@@ -219,7 +222,10 @@ export default function UserBooking() {
     });
   };
 
-  const totalAmount = checkoutSchedule ? Number(checkoutSchedule.price) * checkoutSelectedSeats.length : 0;
+  const unitPrice = checkoutSchedule ? Number(checkoutSchedule.segment_price ?? checkoutSchedule.price) : 0;
+  const totalAmount = unitPrice * checkoutSelectedSeats.length;
+  const fromName = startPlaces.find((p) => p.id === fromPlaceId)?.name ?? "";
+  const toName = endPlaces.find((p) => p.id === toPlaceId)?.name ?? "";
 
   const handleProceedToConfirm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -479,10 +485,21 @@ export default function UserBooking() {
                           <p className="text-xs text-muted-foreground">{sd?.date ?? ""} {sd?.time ?? ""}</p>
                           <p className="text-xs mt-1">{b.name} · <strong>Rs. {b.price}</strong></p>
                         </div>
+                        <div className="flex flex-col gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          className="rounded-xl h-9"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            printTicket(b);
+                          }}
+                        >
+                          <Printer size={14} className="mr-1" /> Print
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="shrink-0 rounded-xl h-9"
+                          className="rounded-xl h-9"
                           onClick={(e) => {
                             e.stopPropagation();
                             (async () => {
@@ -503,6 +520,7 @@ export default function UserBooking() {
                         >
                           <FileDown size={14} className="mr-1" /> PDF
                         </Button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -640,17 +658,21 @@ export default function UserBooking() {
                       <Clock size={12} />
                       <span>{result.time ?? ""}</span>
                     </div>
-                    <div className="ml-auto">
-                      <span className="font-bold text-foreground text-sm">Rs. {result.price}</span>
+                    <div className="ml-auto text-right">
+                      <span className="font-bold text-foreground text-sm">Rs. {result.segment_price ?? result.price}</span>
+                      {result.is_full_route === false && result.segment_km && (
+                        <p className="text-[10px] text-muted-foreground">{Number(result.segment_km).toFixed(1)} km</p>
+                      )}
                     </div>
                   </div>
-                  {rd && (
-                    <div className="text-xs text-muted-foreground">
-                      <span className="text-primary">{rd.start_point.name}</span>
-                      <span className="mx-1">→</span>
-                      <span className="text-destructive">{rd.end_point.name}</span>
-                    </div>
-                  )}
+                  <div className="text-xs text-muted-foreground">
+                    <span className="text-primary">{fromName || rd?.start_point.name}</span>
+                    <span className="mx-1">→</span>
+                    <span className="text-destructive">{toName || rd?.end_point.name}</span>
+                    {rd && fromName && toName && (fromName !== rd.start_point.name || toName !== rd.end_point.name) && (
+                      <span className="block text-[10px]">On {rd.name}: {rd.start_point.name} → {rd.end_point.name}</span>
+                    )}
+                  </div>
                   <Button
                     type="button"
                     size="sm"
@@ -693,14 +715,13 @@ export default function UserBooking() {
                   />
                 ))}
               </div>
-              {selectedResult.route_details && (
-                <p className="text-sm text-muted-foreground">
-                  {selectedResult.route_details.start_point.name} → {selectedResult.route_details.end_point.name}
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground">
+                {fromName || selectedResult.route_details?.start_point.name} → {toName || selectedResult.route_details?.end_point.name}
+              </p>
               <p className="text-sm">
                 <span className="text-muted-foreground">Time:</span> {selectedResult.time} &nbsp;|&nbsp;
-                <span className="text-muted-foreground">Price:</span> Rs. {selectedResult.price} &nbsp;|&nbsp;
+                <span className="text-muted-foreground">Price:</span> Rs. {selectedResult.segment_price ?? selectedResult.price}
+                {selectedResult.is_full_route === false && selectedResult.segment_km ? ` (${Number(selectedResult.segment_km).toFixed(1)} km)` : ""} &nbsp;|&nbsp;
                 <span className="text-muted-foreground">Seats:</span> {selectedResult.available_seats ?? 0} available
               </p>
               <Button
@@ -752,8 +773,8 @@ export default function UserBooking() {
               <>
                 {checkoutSchedule.route_details && (
                   <p className="text-sm text-muted-foreground mb-4">
-                    {checkoutSchedule.route_details.start_point.name} → {checkoutSchedule.route_details.end_point.name} &nbsp;|&nbsp;
-                    {checkoutSchedule.date} {checkoutSchedule.time} &nbsp;|&nbsp; Rs. {checkoutSchedule.price} per seat
+                    {fromName || checkoutSchedule.route_details.start_point.name} → {toName || checkoutSchedule.route_details.end_point.name} &nbsp;|&nbsp;
+                    {checkoutSchedule.date} {checkoutSchedule.time} &nbsp;|&nbsp; Rs. {unitPrice} per seat
                   </p>
                 )}
                 {checkoutVehicleLayout.length > 0 && (
@@ -800,7 +821,7 @@ export default function UserBooking() {
               >
                 {checkoutSchedule.route_details && (
                   <div className="rounded-2xl overflow-hidden border border-border/60 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 border-l-4 border-l-primary p-4 space-y-1">
-                    <p className="font-medium">{checkoutSchedule.route_details.start_point.name} → {checkoutSchedule.route_details.end_point.name}</p>
+                    <p className="font-medium">{fromName || checkoutSchedule.route_details.start_point.name} → {toName || checkoutSchedule.route_details.end_point.name}</p>
                     <p className="text-sm text-muted-foreground">{checkoutSchedule.date} {checkoutSchedule.time}</p>
                     <p className="text-sm">Seats: {checkoutSelectedSeats.map((s) => `${s.side}${s.number}`).join(", ")}</p>
                     <p className="text-sm">Passenger: {checkoutName} · {checkoutPhone}</p>

@@ -56,6 +56,7 @@ export interface Transaction {
 export interface SuperSetting {
   id: string;
   per_km_charge: number;
+  default_price_per_km?: number | string | null;
   initial_km?: number | null;
   initial_km_charge?: number | null;
   // Canonical key is gps_threshold_second; gps_threshold kept for compatibility.

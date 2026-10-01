@@ -4,11 +4,12 @@ import AppBar from "@/components/app/AppBar";
 import { vehicleTicketBookingApi, type VehicleTicketBookingRecord } from "@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi";
 import { tripApi } from "@/modules/trips/services/tripApi";
 import { format } from "date-fns";
-import { FileText, MapPin, FileDown } from "lucide-react";
+import { FileText, MapPin, FileDown, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveAppRole, getAppRoleConfig } from "@/config/appRoles";
 import { toast } from "sonner";
+import { printTicket } from "@/lib/printTicket";
 
 function DetailRow({ label, value, accent }: { label: string; value: string; accent?: "green" | "amber" }) {
   return (
@@ -149,9 +150,14 @@ export default function UserTicketDetail() {
         title="Ticket details"
         showBack
         right={
-          <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={handleDownloadPdf}>
-            <FileDown size={14} /> PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" className="rounded-xl gap-1" onClick={() => booking && printTicket(booking)}>
+              <Printer size={14} /> Print
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={handleDownloadPdf}>
+              <FileDown size={14} /> PDF
+            </Button>
+          </div>
         }
       />
       <div className="px-5 pt-6 pb-24 space-y-4">

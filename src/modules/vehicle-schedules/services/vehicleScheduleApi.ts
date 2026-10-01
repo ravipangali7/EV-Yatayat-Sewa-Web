@@ -7,7 +7,9 @@ export interface VehicleScheduleRecord {
   date: string;
   time: string;
   price: string;
+  price_per_km?: string | null;
   reverse_direction?: boolean;
+  places?: SchedulePlace[];
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +36,19 @@ export interface VehicleScheduleExpandedRecord extends VehicleScheduleRecord {
   };
   available_seats?: number;
   total_seats?: number;
+  segment_price?: string;
+  segment_km?: string;
+  segment_price_per_km?: string;
+  is_full_route?: boolean;
+  booked_seats?: Array<{ side: string; number: number }>;
+}
+
+export interface ScheduleFare {
+  unit_price: string;
+  distance_km: string;
+  price_per_km: string;
+  is_full_route: boolean;
+  booked_seats: Array<{ side: string; number: number }>;
 }
 
 export const vehicleScheduleApi = {
@@ -69,9 +84,24 @@ export const vehicleScheduleApi = {
   endPlaces: async (fromPlaceId: string) =>
     api.get<SchedulePlace[]>(`vehicle-schedules/end-places/?from=${encodeURIComponent(fromPlaceId)}`),
   get: async (id: string) => api.get<VehicleScheduleRecord>(`vehicle-schedules/${id}/`),
-  create: async (data: { vehicle: string; route: string; date: string; time: string; price: number; reverse_direction?: boolean }) =>
+  fare: async (id: string, fromPlaceId?: string, toPlaceId?: string) => {
+    const query = new URLSearchParams();
+    if (fromPlaceId) query.append('from', fromPlaceId);
+    if (toPlaceId) query.append('to', toPlaceId);
+    const q = query.toString();
+    return api.get<ScheduleFare>(`vehicle-schedules/${id}/fare/${q ? `?${q}` : ''}`);
+  },
+  create: async (data: { vehicle: string; route: string; date: string; time: string; price: number; price_per_km?: number | null; reverse_direction?: boolean }) =>
     api.post<VehicleScheduleRecord>('vehicle-schedules/create/', data),
-  edit: async (id: string, data: Partial<VehicleScheduleRecord>) =>
+  edit: async (id: string, data: {
+    vehicle?: string;
+    route?: string;
+    date?: string;
+    time?: string;
+    price?: number | string;
+    price_per_km?: number | string | null;
+    reverse_direction?: boolean;
+  }) =>
     api.post<VehicleScheduleRecord>(`vehicle-schedules/${id}/edit/`, data),
   delete: async (id: string) => api.get<void>(`vehicle-schedules/${id}/delete/`),
 };

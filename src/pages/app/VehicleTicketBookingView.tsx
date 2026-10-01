@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { vehicleTicketBookingApi, type VehicleTicketBookingRecord } from '@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { printTicket } from '@/lib/printTicket';
 
 export default function VehicleTicketBookingView() {
   const { id } = useParams<{ id: string }>();
@@ -54,7 +55,9 @@ export default function VehicleTicketBookingView() {
   const seatsStr = Array.isArray(booking.seat)
     ? booking.seat.map((s: { side?: string; number?: number }) => `${s?.side ?? ''}${s?.number ?? ''}`).join(', ')
     : '-';
-  const routeStr = sd?.start_point_name && sd?.end_point_name ? `${sd.start_point_name} → ${sd.end_point_name}` : (sd?.route_name ?? '-');
+  const fromName = booking.pickup_point_name || sd?.start_point_name;
+  const toName = booking.destination_point_name || sd?.end_point_name;
+  const routeStr = fromName && toName ? `${fromName} → ${toName}` : (sd?.route_name ?? '-');
 
   return (
     <div>
@@ -103,7 +106,11 @@ export default function VehicleTicketBookingView() {
         </CardContent>
       </Card>
       <div className="mt-4 flex gap-2">
-        <Button onClick={handleDownloadPdf} disabled={pdfLoading}>
+        <Button onClick={() => printTicket(booking)}>
+          <Printer className="w-4 h-4 mr-2" />
+          Print ticket
+        </Button>
+        <Button variant="outline" onClick={handleDownloadPdf} disabled={pdfLoading}>
           <Download className="w-4 h-4 mr-2" />
           {pdfLoading ? 'Downloading...' : 'Download ticket PDF'}
         </Button>

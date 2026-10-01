@@ -19,6 +19,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     per_km_charge: 0,
+    default_price_per_km: undefined as number | undefined,
     initial_km: undefined as number | undefined,
     initial_km_charge: undefined as number | undefined,
     gps_threshold: 5,
@@ -45,6 +46,7 @@ export default function Settings() {
           const gps = readGpsThreshold(setting);
           setFormData({
             per_km_charge: toNumber(setting.per_km_charge, 0),
+            default_price_per_km: setting.default_price_per_km != null && setting.default_price_per_km !== '' ? toNumber(setting.default_price_per_km, 0) : undefined,
             initial_km: setting.initial_km != null && setting.initial_km !== '' ? toNumber(setting.initial_km, 0) : undefined,
             initial_km_charge: setting.initial_km_charge != null && setting.initial_km_charge !== '' ? toNumber(setting.initial_km_charge, 0) : undefined,
             gps_threshold: gps,
@@ -90,6 +92,7 @@ export default function Settings() {
     try {
       const payload: Record<string, unknown> = {
         per_km_charge: formData.per_km_charge,
+        default_price_per_km: formData.default_price_per_km ?? null,
         initial_km: formData.initial_km ?? null,
         initial_km_charge: formData.initial_km_charge ?? null,
         // Keep both keys for backward compatibility across clients.
@@ -188,6 +191,22 @@ export default function Settings() {
                 required
                 disabled={loading}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="default_price_per_km">Default price per km (Rs.)</Label>
+              <Input
+                id="default_price_per_km"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Used when a vehicle schedule has no price per km"
+                value={formData.default_price_per_km ?? ''}
+                onChange={(e) => setFormData({ ...formData, default_price_per_km: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Ticket fare between intermediate stops is distance × this rate, unless the vehicle schedule sets its own price per km. The full route still uses the schedule price.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="initial_km">Initial KM (km)</Label>
@@ -385,6 +404,10 @@ export default function Settings() {
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Per KM Charge</span>
               <span className="font-semibold">Rs. {toNumber(settings?.per_km_charge, 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">Default price per km</span>
+              <span className="font-semibold">{settings?.default_price_per_km != null && settings?.default_price_per_km !== '' ? `Rs. ${toNumber(settings.default_price_per_km, 0).toFixed(2)}` : '—'}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Initial KM</span>

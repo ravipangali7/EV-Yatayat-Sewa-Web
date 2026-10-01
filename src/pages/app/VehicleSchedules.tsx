@@ -69,6 +69,7 @@ export default function VehicleSchedules() {
     { key: 'date', header: 'Date', render: (s) => format(new Date(s.date), 'MMM dd, yyyy') },
     { key: 'time', header: 'Time', render: (s) => s.time },
     { key: 'price', header: 'Price', render: (s) => `Rs. ${Number(s.price).toFixed(2)}` },
+    { key: 'price_per_km', header: 'Per km', render: (s) => (s.price_per_km != null && s.price_per_km !== '' ? `Rs. ${Number(s.price_per_km).toFixed(2)}` : 'Default') },
   ];
 
   const handleDelete = async (id: string) => {

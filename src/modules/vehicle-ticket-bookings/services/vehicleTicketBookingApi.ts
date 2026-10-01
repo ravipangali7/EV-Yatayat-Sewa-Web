@@ -8,6 +8,7 @@ export interface ScheduleDetails {
   time: string | null;
   price: string | null;
   vehicle_name: string | null;
+  vehicle_no?: string | null;
   route_name: string | null;
   start_point_name: string | null;
   end_point_name: string | null;
@@ -19,6 +20,10 @@ export interface VehicleTicketBookingRecord {
   is_guest: boolean;
   name: string;
   phone: string;
+  pickup_point?: string | null;
+  pickup_point_name?: string | null;
+  destination_point?: string | null;
+  destination_point_name?: string | null;
   vehicle_schedule: string;
   ticket_id: string;
   seat: SeatEntry[] | Record<string, unknown>;
@@ -72,6 +77,7 @@ export const vehicleTicketBookingApi = {
     seats?: SeatEntry[];
     seat?: Record<string, unknown>;
     price?: number;
+    manual_price?: boolean;
     is_paid?: boolean;
   }) => api.post<VehicleTicketBookingRecord>('vehicle-ticket-bookings/create/', data),
   edit: async (id: string, data: Partial<VehicleTicketBookingRecord>) =>

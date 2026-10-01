@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { SeatLayoutVisualizer, type SeatPosition } from '@/components/vehicles/SeatLayoutVisualizer';
 import { vehicleTicketBookingApi, type SeatEntry } from '@/modules/vehicle-ticket-bookings/services/vehicleTicketBookingApi';
-import { vehicleScheduleApi } from '@/modules/vehicle-schedules/services/vehicleScheduleApi';
+import { vehicleScheduleApi, type SchedulePlace } from '@/modules/vehicle-schedules/services/vehicleScheduleApi';
 import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
 import { userApi } from '@/modules/users/services/userApi';
 import { toast } from 'sonner';
@@ -20,7 +20,12 @@ export default function VehicleTicketBookingForm() {
   const [schedules, setSchedules] = useState<Array<{ id: string; date: string; time: string; price: string }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; name: string; phone?: string }>>([]);
   const [selectedSeats, setSelectedSeats] = useState<SeatPosition[]>([]);
-  const [schedulePrice, setSchedulePrice] = useState<number>(0);
+  const [places, setPlaces] = useState<SchedulePlace[]>([]);
+  const [pickupPoint, setPickupPoint] = useState('');
+  const [destinationPoint, setDestinationPoint] = useState('');
+  const [unitPrice, setUnitPrice] = useState(0);
+  const [fareNote, setFareNote] = useState('');
+  const [manualPrice, setManualPrice] = useState(false);
   const [vehicleSeatLayout, setVehicleSeatLayout] = useState<string[]>([]);
   const [vehicleSeats, setVehicleSeats] = useState<Array<{ side: string; number: number }>>([]);
   const [bookedSeats, setBookedSeats] = useState<Set<string>>(new Set());
@@ -46,11 +51,13 @@ export default function VehicleTicketBookingForm() {
 
   const loadScheduleAndVehicle = useCallback(async (scheduleId: string) => {
     try {
-      const [schedule, bookingsRes] = await Promise.all([
-        vehicleScheduleApi.get(scheduleId),
-        vehicleTicketBookingApi.list({ vehicle_schedule: scheduleId, per_page: 500 }),
-      ]);
-      setSchedulePrice(Number(schedule.price) || 0);
+      const schedule = await vehicleScheduleApi.get(scheduleId);
+      const routePlaces = schedule.places || [];
+      setPlaces(routePlaces);
+      const first = routePlaces[0]?.id || '';
+      const last = routePlaces[routePlaces.length - 1]?.id || '';
+      setPickupPoint(first);
+      setDestinationPoint(last);
       const vehicleId = schedule.vehicle;
       if (vehicleId) {
         const vehicle = await vehicleApi.get(vehicleId);
@@ -60,22 +67,17 @@ export default function VehicleTicketBookingForm() {
         setVehicleSeatLayout([]);
         setVehicleSeats([]);
       }
-      const booked = new Set<string>();
-      for (const b of bookingsRes.results) {
-        const seatList = Array.isArray(b.seat) ? b.seat : (b.seat && typeof b.seat === 'object' && 'side' in b.seat ? [{ side: (b.seat as SeatEntry).side, number: (b.seat as SeatEntry).number }] : []);
-        for (const s of seatList) {
-          if (s && typeof s === 'object' && 'side' in s && 'number' in s) {
-            booked.add(`${s.side}${s.number}`);
-          }
-        }
-      }
-      setBookedSeats(booked);
       setSelectedSeats([]);
+      setManualPrice(false);
     } catch {
+      setPlaces([]);
+      setPickupPoint('');
+      setDestinationPoint('');
       setVehicleSeatLayout([]);
       setVehicleSeats([]);
       setBookedSeats(new Set());
-      setSchedulePrice(0);
+      setUnitPrice(0);
+      setFareNote('');
     }
   }, []);
 
@@ -86,10 +88,39 @@ export default function VehicleTicketBookingForm() {
   }, [formData.vehicle_schedule, isEdit, loadScheduleAndVehicle]);
 
   useEffect(() => {
-    if (schedulePrice >= 0 && selectedSeats.length > 0) {
-      setFormData((prev) => ({ ...prev, price: schedulePrice * selectedSeats.length }));
+    if (isEdit || !formData.vehicle_schedule || !pickupPoint || !destinationPoint) return;
+    let cancelled = false;
+    vehicleScheduleApi.fare(formData.vehicle_schedule, pickupPoint, destinationPoint)
+      .then((fare) => {
+        if (cancelled) return;
+        const unit = Number(fare.unit_price) || 0;
+        setUnitPrice(unit);
+        const km = Number(fare.distance_km) || 0;
+        setFareNote(
+          fare.is_full_route
+            ? `Full route fare Rs. ${unit.toFixed(2)} per seat`
+            : `${km.toFixed(2)} km × Rs. ${Number(fare.price_per_km).toFixed(2)} = Rs. ${unit.toFixed(2)} per seat`
+        );
+        setBookedSeats(new Set((fare.booked_seats || []).map((s) => `${s.side}${s.number}`)));
+        setSelectedSeats((prev) => prev.filter((s) => !(fare.booked_seats || []).some((b) => b.side === s.side && b.number === s.number)));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUnitPrice(0);
+          setFareNote('');
+          setBookedSeats(new Set());
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.vehicle_schedule, pickupPoint, destinationPoint, isEdit]);
+
+  useEffect(() => {
+    if (!manualPrice && unitPrice >= 0 && selectedSeats.length > 0) {
+      setFormData((prev) => ({ ...prev, price: Number((unitPrice * selectedSeats.length).toFixed(2)) }));
     }
-  }, [schedulePrice, selectedSeats.length]);
+  }, [unitPrice, selectedSeats.length, manualPrice]);
 
   useEffect(() => {
     if (isEdit && id) {
@@ -136,18 +167,28 @@ export default function VehicleTicketBookingForm() {
           setLoading(false);
           return;
         }
-        await vehicleTicketBookingApi.create({
+        if (!pickupPoint || !destinationPoint) {
+          toast.error('Select pickup and destination');
+          setLoading(false);
+          return;
+        }
+        const created = await vehicleTicketBookingApi.create({
           user: formData.user || undefined,
           is_guest: formData.is_guest,
           name: formData.name,
           phone: formData.phone,
           vehicle_schedule: formData.vehicle_schedule,
+          pickup_point: pickupPoint,
+          destination_point: destinationPoint,
           ticket_id: formData.ticket_id || undefined,
           seats: seatsPayload,
           price: formData.price,
+          manual_price: manualPrice,
           is_paid: formData.is_paid,
         });
         toast.success('Created');
+        navigate(`/admin/vehicle-ticket-bookings/${created.id}`);
+        return;
       }
       navigate('/admin/vehicle-ticket-bookings');
     } catch {
@@ -181,6 +222,37 @@ export default function VehicleTicketBookingForm() {
                 disabled={isEdit}
               />
             </div>
+            {!isEdit && places.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>From</Label>
+                  <SearchableSelect
+                    options={places.slice(0, -1).map((p) => ({ value: p.id, label: p.name }))}
+                    value={pickupPoint}
+                    onChange={(value) => {
+                      setPickupPoint(value);
+                      const fromIndex = places.findIndex((p) => p.id === value);
+                      const toIndex = places.findIndex((p) => p.id === destinationPoint);
+                      if (toIndex <= fromIndex) {
+                        const next = places[fromIndex + 1];
+                        if (next) setDestinationPoint(next.id);
+                      }
+                    }}
+                    placeholder="Pickup stop"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>To</Label>
+                  <SearchableSelect
+                    options={places.filter((p) => places.findIndex((x) => x.id === p.id) > places.findIndex((x) => x.id === pickupPoint)).map((p) => ({ value: p.id, label: p.name }))}
+                    value={destinationPoint}
+                    onChange={setDestinationPoint}
+                    placeholder="Destination stop"
+                  />
+                </div>
+              </div>
+            )}
+            {fareNote && <p className="text-xs text-muted-foreground">{fareNote}</p>}
           </section>
 
           {!isEdit && formData.vehicle_schedule && vehicleSeatLayout.length > 0 && (
@@ -198,7 +270,7 @@ export default function VehicleTicketBookingForm() {
               />
               {selectedSeats.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Selected: {selectedSeats.map((s) => `${s.side}${s.number}`).join(', ')} — Rs. {schedulePrice * selectedSeats.length}
+                  Selected: {selectedSeats.map((s) => `${s.side}${s.number}`).join(', ')} — Rs. {(manualPrice ? formData.price : unitPrice * selectedSeats.length).toFixed(2)}
                 </p>
               )}
             </section>
@@ -245,7 +317,21 @@ export default function VehicleTicketBookingForm() {
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Payment</h3>
             <div className="space-y-2">
               <Label>Price (Rs.)</Label>
-              <Input type="number" step="0.01" className="border-input" value={formData.price || ''} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })} required readOnly={!isEdit && selectedSeats.length > 0} />
+              <Input
+                type="number"
+                step="0.01"
+                className="border-input"
+                value={formData.price || ''}
+                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                required
+                readOnly={!isEdit && !manualPrice}
+              />
+              {!isEdit && (
+                <label className="flex items-center gap-2 pt-1">
+                  <input type="checkbox" checked={manualPrice} onChange={(e) => setManualPrice(e.target.checked)} />
+                  <span className="text-sm">Set price manually</span>
+                </label>
+              )}
             </div>
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={formData.is_paid} onChange={(e) => setFormData({ ...formData, is_paid: e.target.checked })} />
