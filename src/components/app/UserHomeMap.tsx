@@ -31,7 +31,7 @@ const MAP_FIT_RADIUS_METERS = MAP_FIT_RADIUS_KM * 1000;
 /** Fetch vehicles up to 200 km (e.g. Nepal radius); bookable when 5 km < distance <= 200 km. */
 const FETCH_RADIUS_KM = 200;
 
-const containerStyle = { width: "100%", height: "280px" };
+const containerStyle = { width: "100%", height: "360px" };
 
 const DEFAULT_BOOK_MIN_KM = 5;
 const DEFAULT_BOOK_MAX_KM = 200;
@@ -157,7 +157,7 @@ export function UserHomeMap() {
 
   if (!isLoaded) {
     return (
-      <div className="w-full bg-muted/30 flex items-center justify-center h-[280px]">
+      <div className="w-full bg-muted/30 flex items-center justify-center h-[360px]">
         <p className="text-sm text-muted-foreground">Loading map...</p>
       </div>
     );

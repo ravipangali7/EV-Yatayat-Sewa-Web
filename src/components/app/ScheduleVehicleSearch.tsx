@@ -81,14 +81,7 @@ export function ScheduleVehicleSearch({ bookingPath }: { bookingPath: string }) 
     <form onSubmit={handleSearch} className="space-y-3">
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">From</label>
-        <button
-          type="button"
-          onClick={handleSwap}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-primary hover:bg-primary/10"
-          aria-label="Swap from and to"
-        >
-          <ArrowLeftRight size={14} />
-        </button>
+        <span aria-hidden />
         <label className="text-xs font-medium text-muted-foreground">To</label>
 
         <SearchableSelect
@@ -101,7 +94,14 @@ export function ScheduleVehicleSearch({ bookingPath }: { bookingPath: string }) 
           getOptionFilterValue={(o) => getSearchableVariants(o.name || "")}
           className={fieldClass}
         />
-        <span aria-hidden className="w-7" />
+        <button
+          type="button"
+          onClick={handleSwap}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-primary hover:bg-primary/10"
+          aria-label="Swap from and to"
+        >
+          <ArrowLeftRight size={16} />
+        </button>
         <SearchableSelect
           options={toOptions}
           value={toPlaceId}
