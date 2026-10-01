@@ -58,9 +58,9 @@ export default function UserBooking() {
   const [mySeatBookingsLoading, setMySeatBookingsLoading] = useState(false);
   const [startPlaces, setStartPlaces] = useState<SchedulePlace[]>([]);
   const [endPlaces, setEndPlaces] = useState<SchedulePlace[]>([]);
-  const [fromPlaceId, setFromPlaceId] = useState("");
-  const [toPlaceId, setToPlaceId] = useState("");
-  const [date, setDate] = useState(todayStr());
+  const [fromPlaceId, setFromPlaceId] = useState(() => searchParams.get("from") ?? "");
+  const [toPlaceId, setToPlaceId] = useState(() => searchParams.get("to") ?? "");
+  const [date, setDate] = useState(() => searchParams.get("date") || todayStr());
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<VehicleScheduleExpandedRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -111,6 +111,30 @@ export default function UserBooking() {
       .then((res) => setStartPlaces(Array.isArray(res) ? res : []))
       .catch(() => setStartPlaces([]));
   }, []);
+
+  const fromQuery = searchParams.get("from") ?? "";
+  const toQuery = searchParams.get("to") ?? "";
+  const dateQuery = searchParams.get("date") ?? "";
+
+  useEffect(() => {
+    if (!fromQuery || !toQuery || !dateQuery) return;
+    setTab("book");
+    setFromPlaceId(fromQuery);
+    setToPlaceId(toQuery);
+    setDate(dateQuery);
+    setSearched(true);
+    setLoading(true);
+    vehicleScheduleApi
+      .list({ date: dateQuery, from_place: fromQuery, to_place: toQuery, expand: true, per_page: 50 })
+      .then((res) => {
+        setResults((res.results || []) as VehicleScheduleExpandedRecord[]);
+      })
+      .catch(() => {
+        setResults([]);
+        toast.error("Search failed");
+      })
+      .finally(() => setLoading(false));
+  }, [fromQuery, toQuery, dateQuery]);
 
   useEffect(() => {
     if (!fromPlaceId) {

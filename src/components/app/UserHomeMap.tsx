@@ -157,7 +157,7 @@ export function UserHomeMap() {
 
   if (!isLoaded) {
     return (
-      <div className="rounded-2xl overflow-hidden border border-border/50 bg-muted/30 flex items-center justify-center h-[280px]">
+      <div className="w-full bg-muted/30 flex items-center justify-center h-[280px]">
         <p className="text-sm text-muted-foreground">Loading map...</p>
       </div>
     );
@@ -165,11 +165,8 @@ export function UserHomeMap() {
 
   return (
     <>
-      <div className="rounded-2xl overflow-hidden border border-border/50 bg-white dark:bg-card/80 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">
-          Nearby vehicles (active trips only)
-        </p>
-        <div style={containerStyle} className="rounded-xl relative">
+      <div className="relative w-full">
+        <div style={containerStyle} className="relative w-full">
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={center}
@@ -231,12 +228,17 @@ export function UserHomeMap() {
               );
             })}
           </GoogleMap>
+          <p className="absolute top-3 left-3 z-10 text-[11px] font-semibold uppercase tracking-wider bg-white/90 text-foreground px-2 py-1 rounded-md shadow-sm">
+            Nearby vehicles
+          </p>
           <div className="absolute top-3 right-3 z-10">
             <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
           </div>
         </div>
         {loading && (
-          <p className="text-xs text-muted-foreground text-center py-2">Loading vehicles...</p>
+          <p className="absolute bottom-2 left-0 right-0 z-10 text-xs text-center text-white drop-shadow">
+            Loading vehicles...
+          </p>
         )}
       </div>
 

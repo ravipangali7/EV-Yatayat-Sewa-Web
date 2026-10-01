@@ -9,12 +9,14 @@ import {
   FileText,
   Send,
   TrendingUp,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
 import TransferModal from "@/components/app/TransferModal";
 import { UserHomeMap } from "@/components/app/UserHomeMap";
+import { ScheduleVehicleSearch } from "@/components/app/ScheduleVehicleSearch";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -55,8 +57,7 @@ export default function UserHome() {
   const basePath = config?.basePath ?? "/app/user";
   const gridCards = role === "ticket_dealer" ? dealerGridCards : userGridCards;
   const [balance, setBalance] = useState(0);
-  const [toReceive, setToReceive] = useState(0);
-  const [toPay, setToPay] = useState(0);
+  const [balanceVisible, setBalanceVisible] = useState(true);
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
   const [myBookings, setMyBookings] = useState<VehicleTicketBookingRecord[]>([]);
   const [homeTab, setHomeTab] = useState<"bookings" | "transactions">("bookings");
@@ -69,8 +70,6 @@ export default function UserHome() {
       const wallet = walletsRes.results[0];
       if (wallet) {
         setBalance(toNumber(wallet.balance, 0));
-        setToReceive(toNumber(wallet.to_receive, 0));
-        setToPay(toNumber(wallet.to_pay, 0));
         const [txRes, bookingsRes] = await Promise.all([
           transactionApi.list({ wallet: wallet.id, per_page: 20 }),
           vehicleTicketBookingApi.list({ user: user.id, per_page: 20, expand: true }),
@@ -90,26 +89,42 @@ export default function UserHome() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* White header with green accent - modern */}
-      <div className="bg-white dark:bg-card border-b border-border shadow-sm">
-        <div className="px-5 pt-5 pb-6">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-5">
-            <div>
-              <p className="text-muted-foreground text-xs font-medium">Welcome back</p>
-              <h2 className="text-xl font-bold text-foreground tracking-tight">{user?.name ?? "Passenger"}</h2>
+      <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-sm">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium opacity-80">Welcome back</p>
+            <h2 className="text-base font-bold tracking-tight truncate">{user?.name ?? "Passenger"}</h2>
+          </div>
+          <Link
+            to={`${basePath}/wallet`}
+            className="flex items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 px-2.5 py-1.5 shrink-0"
+          >
+            <Wallet size={14} />
+            <div className="leading-tight text-right">
+              <p className="text-[9px] uppercase tracking-wide opacity-80">Balance</p>
+              <p className="text-sm font-bold tabular-nums">
+                {balanceVisible ? `Rs. ${balance.toLocaleString()}` : "Rs. ••••"}
+              </p>
             </div>
-            <div className="w-11 h-11 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center ring-2 ring-primary/5">
-              <span className="text-sm font-bold text-primary">{user?.name?.charAt(0) ?? "P"}</span>
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl overflow-hidden border border-border/60 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 border-l-4 border-l-primary">
-            <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink={`${basePath}/deposit`} />
-          </motion.div>
-        </div>
-      </div>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setBalanceVisible((v) => !v)}
+            className="p-1.5 rounded-full hover:bg-white/15 shrink-0"
+            aria-label={balanceVisible ? "Hide balance" : "Show balance"}
+          >
+            {balanceVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+          </button>
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <span className="text-sm font-bold">{user?.name?.charAt(0) ?? "P"}</span>
+          </div>
+        </motion.div>
+      </header>
 
-      <div className="px-5 pt-5 pb-24 space-y-5 bg-background">
-        <UserHomeMap />
+      <UserHomeMap />
+
+      <div className="px-5 pt-4 pb-24 space-y-5 bg-background">
+        <ScheduleVehicleSearch bookingPath={`${basePath}/booking`} />
 
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</p>
         <div className="grid grid-cols-4 gap-3">
