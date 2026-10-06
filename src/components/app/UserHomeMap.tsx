@@ -23,6 +23,7 @@ import { Car, MapPin, User, Route } from "lucide-react";
 import { toast } from "sonner";
 import { DirectBookFlow } from "./DirectBookFlow";
 import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
+import { isAvailable as isFlutterBridgeAvailable, requestLocation } from "@/lib/flutterBridge";
 
 const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
 /** Map fits to this radius (visible area 10 km). */
@@ -35,6 +36,73 @@ const containerStyle = { width: "100%", height: "360px" };
 
 const DEFAULT_BOOK_MIN_KM = 5;
 const DEFAULT_BOOK_MAX_KM = 200;
+/** How long to wait for the Flutter WebView to inject FlutterBridge before using the browser. */
+const BRIDGE_WAIT_MS = 2000;
+/** Refresh nearby vehicles so a trip that just started still appears. */
+const NEARBY_REFRESH_MS = 12000;
+
+function waitForFlutterBridge(timeoutMs = BRIDGE_WAIT_MS): Promise<boolean> {
+  if (typeof window === "undefined") return Promise.resolve(false);
+  if (isFlutterBridgeAvailable()) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (available: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearInterval(timer);
+      window.clearTimeout(giveUp);
+      window.removeEventListener("flutterAuthReady", onReady);
+      resolve(available);
+    };
+    const onReady = () => finish(isFlutterBridgeAvailable());
+    window.addEventListener("flutterAuthReady", onReady);
+    const timer = window.setInterval(() => {
+      if (isFlutterBridgeAvailable()) finish(true);
+    }, 200);
+    const giveUp = window.setTimeout(() => finish(false), timeoutMs);
+  });
+}
+
+function browserGeolocation(): Promise<{ lat: number; lng: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location is not available in this browser."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => reject(new Error("Turn on location to see vehicles near you.")),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  });
+}
+
+function toPassengerLocationError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : "";
+  if (!raw || /denied|permission|location is off|turn on|not available|unavailable|timed out/i.test(raw)) {
+    return "Turn on location to see vehicles near you.";
+  }
+  return raw;
+}
+
+/** In the app, ask Flutter for GPS. In a normal browser, use the browser location API. */
+async function getPassengerLocation(): Promise<{ lat: number; lng: number }> {
+  const inApp = await waitForFlutterBridge();
+  if (inApp) {
+    const result = await requestLocation();
+    if (
+      result.success &&
+      result.lat != null &&
+      result.lng != null &&
+      Number.isFinite(result.lat) &&
+      Number.isFinite(result.lng)
+    ) {
+      return { lat: result.lat, lng: result.lng };
+    }
+    throw new Error(result.error || "Turn on location to see vehicles near you.");
+  }
+  return browserGeolocation();
+}
 
 export function UserHomeMap() {
   const { isLoaded, mapType, setMapType } = useGoogleMaps();
@@ -47,6 +115,8 @@ export function UserHomeMap() {
   const [loadingDirectBook, setLoadingDirectBook] = useState(false);
   const [bookMinKm, setBookMinKm] = useState(DEFAULT_BOOK_MIN_KM);
   const [bookMaxKm, setBookMaxKm] = useState(DEFAULT_BOOK_MAX_KM);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationAttempt, setLocationAttempt] = useState(0);
 
   const center = userPosition
     ? { lat: userPosition.lat, lng: userPosition.lng }
@@ -54,8 +124,8 @@ export function UserHomeMap() {
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const fetchNearby = useCallback(async (lat: number, lng: number) => {
-    setLoading(true);
+  const fetchNearby = useCallback(async (lat: number, lng: number, options?: { silent?: boolean }) => {
+    if (!options?.silent) setLoading(true);
     try {
       const res = await vehicleApi.nearby({
         latitude: lat,
@@ -65,10 +135,12 @@ export function UserHomeMap() {
       });
       setNearbyVehicles(res.results ?? []);
     } catch {
-      setNearbyVehicles([]);
-      toast.error("Could not load nearby vehicles");
+      if (!options?.silent) {
+        setNearbyVehicles([]);
+        toast.error("Could not load nearby vehicles");
+      }
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, []);
 
@@ -97,21 +169,34 @@ export function UserHomeMap() {
   }, [userPosition]);
 
   useEffect(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+    let cancelled = false;
+    setLocationError(null);
+    getPassengerLocation()
+      .then(({ lat, lng }) => {
+        if (cancelled) return;
         setUserPosition({ lat, lng });
         fetchNearby(lat, lng);
-      },
-      () => {
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
         setUserPosition(null);
-        fetchNearby(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
-  }, [fetchNearby]);
+        setNearbyVehicles([]);
+        const message = toPassengerLocationError(err);
+        setLocationError(message);
+        toast.error(message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchNearby, locationAttempt]);
+
+  useEffect(() => {
+    if (!userPosition) return;
+    const id = window.setInterval(() => {
+      fetchNearby(userPosition.lat, userPosition.lng, { silent: true });
+    }, NEARBY_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [userPosition, fetchNearby]);
 
   useEffect(() => {
     superSettingApi.list({ per_page: 1 }).then((res) => {
@@ -239,6 +324,14 @@ export function UserHomeMap() {
           <p className="absolute bottom-2 left-0 right-0 z-10 text-xs text-center text-white drop-shadow">
             Loading vehicles...
           </p>
+        )}
+        {locationError && !loading && (
+          <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between gap-2 rounded-lg bg-white/95 px-3 py-2 text-xs text-foreground shadow-sm">
+            <span>{locationError}</span>
+            <Button type="button" size="sm" variant="outline" className="h-7 shrink-0" onClick={() => setLocationAttempt((n) => n + 1)}>
+              Try again
+            </Button>
+          </div>
         )}
       </div>
 
