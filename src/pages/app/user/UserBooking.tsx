@@ -18,6 +18,7 @@ import { seatBookingApi } from "@/modules/seat-bookings/services/seatBookingApi"
 import type { SeatBooking } from "@/types";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { paymentApi } from "@/modules/payments/services/paymentApi";
+import { GatewayQrDialog, type GatewayQrSession } from "@/modules/payments/GatewayQrDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -75,6 +76,7 @@ export default function UserBooking() {
   const [checkoutName, setCheckoutName] = useState("");
   const [checkoutPhone, setCheckoutPhone] = useState("");
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
+  const [qrSession, setQrSession] = useState<GatewayQrSession | null>(null);
   const [checkoutStep, setCheckoutStep] = useState<"form" | "confirm">("form");
   const [showPayConfirm, setShowPayConfirm] = useState(false);
   const [checkoutWalletBalance, setCheckoutWalletBalance] = useState<number | null>(null);
@@ -265,7 +267,7 @@ export default function UserBooking() {
   const handlePayWithConnectIPS = async () => {
     if (!checkoutSchedule || !user) return;
     if (totalAmount < MIN_NCHL) {
-      toast.error(`Minimum amount for ConnectIPS is Rs. ${MIN_NCHL}.`);
+      toast.error(`Minimum amount for NepalPay is Rs. ${MIN_NCHL}.`);
       return;
     }
     setCheckoutSubmitting(true);
@@ -287,27 +289,15 @@ export default function UserBooking() {
         purpose: "vehicle_ticket_booking",
         vehicle_ticket_booking_id: created.id,
       });
-      const gatewayUrl = formData.gateway_url;
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = gatewayUrl;
-      form.style.display = "none";
-      const keys = ["MERCHANTID", "APPID", "APPNAME", "TXNID", "TXNDATE", "TXNCRNCY", "TXNAMT", "REFERENCEID", "REMARKS", "PARTICULARS", "TOKEN"];
-      for (const key of keys) {
-        const value = (formData as Record<string, string>)[key];
-        if (value != null) {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        }
-      }
-      document.body.appendChild(form);
-      form.submit();
+      setQrSession({
+        qr_string: formData.qr_string,
+        payment_id: formData.payment_id,
+        reference_id: formData.reference_id,
+        amount: formData.amount,
+      });
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { error?: string } } };
-      toast.error(ax?.response?.data?.error || "Failed to start payment");
+      const ax = err as { response?: { data?: { error?: string; detail?: string } } };
+      toast.error(ax?.response?.data?.detail || ax?.response?.data?.error || "Failed to start payment");
     } finally {
       setCheckoutSubmitting(false);
     }
@@ -362,6 +352,15 @@ export default function UserBooking() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <GatewayQrDialog
+        session={qrSession}
+        onClose={() => setQrSession(null)}
+        onPaid={() => {
+          setQrSession(null);
+          toast.success("Ticket payment received");
+          setTab("my-booking");
+        }}
+      />
       <AppBar title="Book a Ride" />
       <div className="px-5 pt-4">
       <div className="flex gap-1 p-1 bg-muted/70 rounded-2xl mb-4">
@@ -848,7 +847,7 @@ export default function UserBooking() {
                         onClick={handlePayWithConnectIPS}
                         disabled={checkoutSubmitting || totalAmount < 10}
                       >
-                        {checkoutSubmitting ? "Redirecting..." : "Pay from e/banking"}
+                        {checkoutSubmitting ? "Generating QR..." : "Pay with NepalPay QR"}
                       </Button>
                       <Button variant="outline" className="w-full h-12 rounded-xl" onClick={handleCheckoutCancel}>
                         Cancel

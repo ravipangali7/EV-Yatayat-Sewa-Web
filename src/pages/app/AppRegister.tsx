@@ -106,7 +106,7 @@ export default function AppRegister() {
         >
           <div className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl shadow-black/5 p-6 mb-5">
             {step === "form" ? (
-              <form onSubmit={handleSendOtp} className="space-y-3">
+              <form onSubmit={handleSendOtp} autoComplete="off" className="space-y-3">
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="pl-10 h-12 rounded-xl" />

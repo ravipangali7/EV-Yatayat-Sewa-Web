@@ -3,20 +3,14 @@
 export type PaymentPurpose = 'wallet_deposit' | 'card_topup' | 'vehicle_ticket_booking' | 'pay_due';
 
 export interface PaymentFormData {
-  MERCHANTID: string;
-  APPID: string;
-  APPNAME: string;
-  TXNID: string;
-  TXNDATE: string;
-  TXNCRNCY: string;
-  TXNAMT: string;
-  REFERENCEID: string;
-  REMARKS: string;
-  PARTICULARS: string;
-  TOKEN: string;
-  gateway_url: string;
-  success_url: string;
-  failure_url: string;
+  qr_string: string;
+  validation_trace_id: string;
+  reference_id: string;
+  txn_id: string;
+  payment_id: number;
+  amount: string;
+  success_url?: string;
+  failure_url?: string;
 }
 
 export interface PaymentInitiateRequest {

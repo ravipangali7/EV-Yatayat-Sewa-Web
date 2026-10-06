@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { paymentApi } from "@/modules/payments/services/paymentApi";
+import { GatewayQrDialog, type GatewayQrSession } from "@/modules/payments/GatewayQrDialog";
 import { toNumber } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ export default function DriverPayDue() {
   const [toPay, setToPay] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [qrSession, setQrSession] = useState<GatewayQrSession | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user?.id) return;
@@ -48,27 +50,15 @@ export default function DriverPayDue() {
         remarks: "Pay due",
         return_to: "pay_due",
       });
-      const gatewayUrl = formData.gateway_url;
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = gatewayUrl;
-      form.style.display = "none";
-      const keys = ["MERCHANTID", "APPID", "APPNAME", "TXNID", "TXNDATE", "TXNCRNCY", "TXNAMT", "REFERENCEID", "REMARKS", "PARTICULARS", "TOKEN"];
-      for (const key of keys) {
-        const value = (formData as Record<string, string>)[key];
-        if (value != null) {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        }
-      }
-      document.body.appendChild(form);
-      form.submit();
+      setQrSession({
+        qr_string: formData.qr_string,
+        payment_id: formData.payment_id,
+        reference_id: formData.reference_id,
+        amount: formData.amount,
+      });
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { error?: string } } };
-      toast.error(ax?.response?.data?.error || "Failed to start payment");
+      const ax = err as { response?: { data?: { error?: string; detail?: string } } };
+      toast.error(ax?.response?.data?.detail || ax?.response?.data?.error || "Failed to start payment");
     } finally {
       setSubmitting(false);
     }
@@ -76,6 +66,15 @@ export default function DriverPayDue() {
 
   return (
     <div className="min-h-screen bg-background">
+      <GatewayQrDialog
+        session={qrSession}
+        onClose={() => setQrSession(null)}
+        onPaid={() => {
+          setQrSession(null);
+          toast.success("Due payment received");
+          refresh();
+        }}
+      />
       <AppBar title="Pay Due" showBack />
       <div className="px-5 pt-6 pb-24">
         <motion.div
@@ -97,7 +96,7 @@ export default function DriverPayDue() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground mb-5">
-            Pay your outstanding dues via NCHL ConnectIPS. The amount will be deducted from your due balance upon success.
+            Pay your outstanding dues with NepalPay QR. The amount will be deducted from your due balance upon success.
           </p>
           {toPay >= MIN_AMOUNT_NPR ? (
             <Button
@@ -107,7 +106,7 @@ export default function DriverPayDue() {
               onClick={handlePay}
             >
               <CreditCard size={18} className="mr-2" />
-              {submitting ? "Redirecting..." : "Pay Now"}
+              {submitting ? "Generating QR..." : "Pay Now"}
             </Button>
           ) : (
             <Button asChild variant="outline" className="w-full h-12 rounded-xl" size="lg">

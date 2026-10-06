@@ -8,9 +8,22 @@ export interface PasswordInputProps
   leftIcon?: React.ReactNode;
 }
 
+const canMaskPasswordText =
+  typeof CSS !== "undefined" &&
+  typeof CSS.supports === "function" &&
+  (CSS.supports("(-webkit-text-security: disc)") || CSS.supports("(text-security: disc)"));
+
+function fieldKeyWithoutPassword(value?: string) {
+  if (!value || !/pass|pwd/i.test(value)) return value;
+  return value.replace(/pass(word)?|pwd/gi, "secret");
+}
+
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ className, leftIcon, ...props }, ref) => {
+  ({ className, leftIcon, name, id, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
+    const hideCharacters = !showPassword && canMaskPasswordText;
+    const safeName = fieldKeyWithoutPassword(name);
+    const safeId = fieldKeyWithoutPassword(id);
 
     return (
       <div className="relative">
@@ -20,14 +33,25 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           </span>
         )}
         <Input
-          type={showPassword ? "text" : "password"}
+          {...props}
+          id={safeId}
+          name={safeName}
+          type={hideCharacters || showPassword ? "text" : "password"}
+          autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          aria-autocomplete="none"
+          data-1p-ignore="true"
+          data-lpignore="true"
+          data-form-type="other"
           className={cn(
             leftIcon && "pl-10",
             "pr-10",
+            hideCharacters && "password-mask",
             className,
           )}
           ref={ref}
-          {...props}
         />
         <button
           type="button"

@@ -27,7 +27,8 @@ export const paymentApi = {
     );
   },
 
-  getPaymentTransactionById: async (id: string): Promise<PaymentTransaction> => {
-    return api.get<PaymentTransaction>(`payment/transactions/${id}/`);
+  getPaymentTransactionById: async (id: string, sync = false): Promise<PaymentTransaction> => {
+    const query = sync ? "?sync=1" : "";
+    return api.get<PaymentTransaction>(`payment/transactions/${id}/${query}`);
   },
 };

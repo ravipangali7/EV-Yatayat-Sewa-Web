@@ -61,7 +61,7 @@ export default function Login() {
             <p className="text-muted-foreground text-sm mt-1">Sign in to your account</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} autoComplete="off" className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
               <div className="relative">
@@ -79,7 +79,7 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="secret">Password</Label>
               <PasswordInput
                 id="password"
                 leftIcon={<Lock className="w-5 h-5 text-muted-foreground" />}

@@ -69,7 +69,7 @@ export default function AppLogin() {
             <h2 className="text-xl font-bold mb-1">Welcome Back</h2>
             <p className="text-sm text-muted-foreground mb-5">Sign in to continue</p>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} autoComplete="off" className="space-y-4">
               <div className="relative">
                 <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input

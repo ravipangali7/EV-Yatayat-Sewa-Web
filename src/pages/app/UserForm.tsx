@@ -250,7 +250,7 @@ export default function UserForm() {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="password">Password {isEdit && '(leave blank to keep current)'}</Label>
+            <Label htmlFor="secret">Password {isEdit && '(leave blank to keep current)'}</Label>
             <PasswordInput
               id="password"
               value={formData.password}
@@ -263,9 +263,9 @@ export default function UserForm() {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="confirmPassword">Confirm Password {isEdit && '(leave blank to keep current)'}</Label>
+            <Label htmlFor="confirm-secret">Confirm Password {isEdit && '(leave blank to keep current)'}</Label>
             <PasswordInput
-              id="confirmPassword"
+              id="confirm-secret"
               value={formData.confirmPassword}
               onChange={(e) => {
                 handleChange('confirmPassword', e.target.value);

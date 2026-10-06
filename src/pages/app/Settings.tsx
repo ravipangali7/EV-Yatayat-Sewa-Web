@@ -3,6 +3,7 @@ import { Edit, Save } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { superSettingApi } from '@/modules/settings/services/superSettingApi';
@@ -350,10 +351,8 @@ export default function Settings() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="luna_api_token">Luna API token</Label>
-                <Input
+                <PasswordInput
                   id="luna_api_token"
-                  type="password"
-                  autoComplete="new-password"
                   placeholder={settings?.luna_api_token ? '(unchanged — enter new token to replace)' : 'Bearer token from Luna'}
                   value={lunaTokenInput}
                   onChange={(e) => setLunaTokenInput(e.target.value)}

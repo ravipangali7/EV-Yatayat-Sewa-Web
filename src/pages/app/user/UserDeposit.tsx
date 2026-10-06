@@ -6,6 +6,7 @@ import AppBar from "@/components/app/AppBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { paymentApi } from "@/modules/payments/services/paymentApi";
+import { GatewayQrDialog, type GatewayQrSession } from "@/modules/payments/GatewayQrDialog";
 import { toNumber } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -18,6 +19,7 @@ export default function UserDeposit() {
   const [amount, setAmount] = useState("");
   const [remarks, setRemarks] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [qrSession, setQrSession] = useState<GatewayQrSession | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -43,27 +45,15 @@ export default function UserDeposit() {
         purpose: "wallet_deposit",
         remarks: remarks.trim() || undefined,
       });
-      const gatewayUrl = formData.gateway_url;
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = gatewayUrl;
-      form.style.display = "none";
-      const keys = ["MERCHANTID", "APPID", "APPNAME", "TXNID", "TXNDATE", "TXNCRNCY", "TXNAMT", "REFERENCEID", "REMARKS", "PARTICULARS", "TOKEN"];
-      for (const key of keys) {
-        const value = (formData as Record<string, string>)[key];
-        if (value != null) {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        }
-      }
-      document.body.appendChild(form);
-      form.submit();
+      setQrSession({
+        qr_string: formData.qr_string,
+        payment_id: formData.payment_id,
+        reference_id: formData.reference_id,
+        amount: formData.amount,
+      });
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { error?: string } } };
-      toast.error(ax?.response?.data?.error || "Failed to start payment");
+      const ax = err as { response?: { data?: { error?: string; detail?: string } } };
+      toast.error(ax?.response?.data?.detail || ax?.response?.data?.error || "Failed to start payment");
     } finally {
       setSubmitting(false);
     }
@@ -71,6 +61,19 @@ export default function UserDeposit() {
 
   return (
     <div className="min-h-screen bg-background">
+      <GatewayQrDialog
+        session={qrSession}
+        onClose={() => setQrSession(null)}
+        onPaid={() => {
+          setQrSession(null);
+          toast.success("Payment received");
+          if (!user?.id) return;
+          walletApi.list({ user: user.id, per_page: 1 }).then((res) => {
+            const w = res.results[0];
+            if (w) setBalance(toNumber(w.balance, 0));
+          }).catch(() => {});
+        }}
+      />
       <AppBar title="Add Fund" showBack onBack={() => navigate(-1)} />
       <div className="px-5 pt-4 pb-24 space-y-5">
         <div className="rounded-2xl border border-border/60 border-l-4 border-l-emerald-500 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 p-5">
@@ -104,9 +107,9 @@ export default function UserDeposit() {
             />
           </div>
           <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold" disabled={submitting}>
-            {submitting ? "Redirecting..." : "Proceed to Payment"}
+            {submitting ? "Generating QR..." : "Proceed to Payment"}
           </Button>
-          <p className="text-xs text-muted-foreground text-center">You will be redirected to NCHL ConnectIPS</p>
+          <p className="text-xs text-muted-foreground text-center">A NepalPay QR will open for you to scan</p>
         </form>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cardApi } from "@/modules/cards/services/cardApi";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { paymentApi } from "@/modules/payments/services/paymentApi";
+import { GatewayQrDialog, type GatewayQrSession } from "@/modules/payments/GatewayQrDialog";
 import { toNumber } from "@/lib/utils";
 import { toast } from "sonner";
 import { Card as CardType } from "@/types";
@@ -59,6 +60,7 @@ export default function CardTopup() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [qrSession, setQrSession] = useState<GatewayQrSession | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -106,7 +108,7 @@ export default function CardTopup() {
   const handlePayWithConnectIPS = async () => {
     if (!card || !validAmount) return;
     if (numAmount < MIN_NCHL) {
-      toast.error(`Minimum amount for ConnectIPS is Rs. ${MIN_NCHL}`);
+      toast.error(`Minimum amount for NepalPay is Rs. ${MIN_NCHL}`);
       return;
     }
     setSubmitting(true);
@@ -116,27 +118,15 @@ export default function CardTopup() {
         purpose: "card_topup",
         card_id: card.id,
       });
-      const gatewayUrl = formData.gateway_url;
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = gatewayUrl;
-      form.style.display = "none";
-      const keys = ["MERCHANTID", "APPID", "APPNAME", "TXNID", "TXNDATE", "TXNCRNCY", "TXNAMT", "REFERENCEID", "REMARKS", "PARTICULARS", "TOKEN"];
-      for (const key of keys) {
-        const value = (formData as Record<string, string>)[key];
-        if (value != null) {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        }
-      }
-      document.body.appendChild(form);
-      form.submit();
+      setQrSession({
+        qr_string: formData.qr_string,
+        payment_id: formData.payment_id,
+        reference_id: formData.reference_id,
+        amount: formData.amount,
+      });
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { error?: string } } };
-      toast.error(ax?.response?.data?.error || "Failed to start payment");
+      const ax = err as { response?: { data?: { error?: string; detail?: string } } };
+      toast.error(ax?.response?.data?.detail || ax?.response?.data?.error || "Failed to start payment");
     } finally {
       setSubmitting(false);
     }
@@ -167,6 +157,15 @@ export default function CardTopup() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <GatewayQrDialog
+        session={qrSession}
+        onClose={() => setQrSession(null)}
+        onPaid={() => {
+          setQrSession(null);
+          toast.success("Card topup payment received");
+          navigate("/app/user/card");
+        }}
+      />
       <AppBar title="Card Topup" showBack onBack={() => navigate(-1)} />
       <div className="px-5 pt-4 space-y-5">
         <div className="flex items-center justify-between px-1">
@@ -227,10 +226,10 @@ export default function CardTopup() {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded-lg">NPR</span>
               </div>
               {validAmount && walletBalance < numAmount && (
-                <p className="text-xs text-muted-foreground mt-1">Insufficient wallet balance. Use ConnectIPS or recharge wallet first.</p>
+                <p className="text-xs text-muted-foreground mt-1">Insufficient wallet balance. Use NepalPay QR or recharge wallet first.</p>
               )}
               {validAmount && numAmount > 0 && numAmount < MIN_NCHL && (
-                <p className="text-xs text-muted-foreground mt-1">ConnectIPS requires minimum Rs. {MIN_NCHL}.</p>
+                <p className="text-xs text-muted-foreground mt-1">NepalPay requires minimum Rs. {MIN_NCHL}.</p>
               )}
             </div>
             <div className="flex flex-col gap-3">
@@ -247,7 +246,7 @@ export default function CardTopup() {
                 disabled={submitting || !canDirectPay}
                 onClick={handlePayWithConnectIPS}
               >
-                {submitting ? "Redirecting..." : "Pay from e/banking"}
+                {submitting ? "Generating QR..." : "Pay with NepalPay QR"}
               </Button>
               <Button variant="outline" className="w-full h-12 rounded-xl" onClick={() => navigate(-1)}>
                 Cancel

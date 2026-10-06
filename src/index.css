@@ -489,6 +489,12 @@
   background: linear-gradient(180deg, hsl(142 55% 32%), hsl(142 50% 26%));
 }
 
+/* Mask secrets without type=password so Chrome/Google do not suggest saved passwords. */
+.password-mask {
+  -webkit-text-security: disc;
+  text-security: disc;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-fade-in-up,

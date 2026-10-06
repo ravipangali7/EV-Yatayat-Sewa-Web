@@ -72,7 +72,7 @@ export default function AppResetPassword() {
 
         <div className="flex-1 px-6 pt-8">
           <div className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl shadow-black/5 p-6 mb-5">
-            <form onSubmit={handleReset} className="space-y-4">
+            <form onSubmit={handleReset} autoComplete="off" className="space-y-4">
               <PasswordInput
                 leftIcon={<Lock size={16} />}
                 placeholder="New Password"
