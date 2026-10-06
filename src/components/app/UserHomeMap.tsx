@@ -85,23 +85,38 @@ function toPassengerLocationError(error: unknown): string {
   return raw;
 }
 
-/** In the app, ask Flutter for GPS. In a normal browser, use the browser location API. */
+function coordsFromFlutter(result: { success: boolean; lat?: number; lng?: number }): { lat: number; lng: number } | null {
+  if (
+    result.success &&
+    result.lat != null &&
+    result.lng != null &&
+    Number.isFinite(result.lat) &&
+    Number.isFinite(result.lng)
+  ) {
+    return { lat: result.lat, lng: result.lng };
+  }
+  return null;
+}
+
+/**
+ * In the app, ask Flutter first. If that fails, use the page location API,
+ * which the WebView now grants the same way Chrome does.
+ */
 async function getPassengerLocation(): Promise<{ lat: number; lng: number }> {
   const inApp = await waitForFlutterBridge();
   if (inApp) {
-    const result = await requestLocation();
-    if (
-      result.success &&
-      result.lat != null &&
-      result.lng != null &&
-      Number.isFinite(result.lat) &&
-      Number.isFinite(result.lng)
-    ) {
-      return { lat: result.lat, lng: result.lng };
-    }
-    throw new Error(result.error || "Turn on location to see vehicles near you.");
+    const native = coordsFromFlutter(await requestLocation());
+    if (native) return native;
   }
-  return browserGeolocation();
+  try {
+    return await browserGeolocation();
+  } catch (browserError) {
+    if (isFlutterBridgeAvailable()) {
+      const native = coordsFromFlutter(await requestLocation());
+      if (native) return native;
+    }
+    throw browserError;
+  }
 }
 
 export function UserHomeMap() {
