@@ -358,12 +358,11 @@ export default function Vehicle() {
   const driverTargetRef = useRef<LiveTargetSnapshot | null>(null);
   const lastLocationUpdateTimeRef = useRef<number>(0);
   const mapLocationRequestedRef = useRef(false);
+  const [mapLocationAttempt, setMapLocationAttempt] = useState(0);
   const DRIVER_POSITION_THROTTLE_MS = 120;
   const [showSeatsBookedModal, setShowSeatsBookedModal] = useState(false);
   const [seatsBookedDetails, setSeatsBookedDetails] = useState<Array<{ label: string; user_name?: string; from_address?: string; to_name?: string }>>([]);
   const [tripDirectionReverse, setTripDirectionReverse] = useState(false);
-
-  const NEPAL_CENTER = { lat: 27.7172, lng: 85.324 };
 
   useEffect(() => {
     const load = async () => {
@@ -564,12 +563,11 @@ export default function Vehicle() {
         setLastLocation({ lat: loc.lat, lng: loc.lng });
         setMapInitialCenter(loc);
       })
-      .catch(() => {
-        driverTargetRef.current = { center: NEPAL_CENTER, previousCenter: null, heading: null };
-        setMapInitialCenter(NEPAL_CENTER);
-        setLastLocation({ lat: NEPAL_CENTER.lat, lng: NEPAL_CENTER.lng });
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : "Turn on location to continue.";
+        toast.error(message);
       });
-  }, [driverState, tripTab, lastLocation]);
+  }, [driverState, tripTab, lastLocation, mapLocationAttempt]);
   useEffect(() => {
     if (driverState !== "trip_started") mapLocationRequestedRef.current = false;
   }, [driverState]);
@@ -790,6 +788,22 @@ export default function Vehicle() {
     });
   };
 
+  const requireGps = async (context: "end_trip" | "start_trip" | "checkout"): Promise<{ lat: number; lng: number }> => {
+    const live = liveLocationRef.current;
+    if (live && Number.isFinite(live.lat) && Number.isFinite(live.lng)) return live;
+    if (lastLocation && Number.isFinite(lastLocation.lat) && Number.isFinite(lastLocation.lng)) {
+      return { lat: lastLocation.lat, lng: lastLocation.lng };
+    }
+    const loc = await getCurrentLocation({ requiredBridge: true, context });
+    if (!Number.isFinite(loc.lat) || !Number.isFinite(loc.lng)) {
+      throw new Error("Turn on location to continue.");
+    }
+    liveLocationRef.current = { lat: loc.lat, lng: loc.lng };
+    setLastLocation({ lat: loc.lat, lng: loc.lng });
+    setMapInitialCenter(loc);
+    return loc;
+  };
+
   const handleStartTrip = async () => {
     if (!selectedVehicle?.id) return;
     try {
@@ -938,7 +952,14 @@ export default function Vehicle() {
 
   const handleConfirmCheckinWithDestination = async () => {
     if (!selectedVehicle?.id || !activeTrip?.id || !selectedDestination || !checkinAmount) return;
-    const checkInLoc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+    let checkInLoc: { lat: number; lng: number };
+    try {
+      checkInLoc = await requireGps("checkout");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Turn on location to continue.";
+      toast.error(message);
+      return;
+    }
     const now = new Date().toISOString();
     const checkInAddress = "";
     const checkOutAddress = selectedDestination.name;
@@ -997,7 +1018,14 @@ export default function Vehicle() {
         toast.error(`Selected seats don't match passengers to drop off at this stop. Expected: ${[...requiredLabels].sort().join(", ")}`);
         return;
       }
-      const loc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+      let loc: { lat: number; lng: number };
+      try {
+        loc = await requireGps("checkout");
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Turn on location to continue.";
+        toast.error(message);
+        return;
+      }
       try {
         const outOfRange: OutOfRangeItem[] = [];
         for (const d of dropoffData.dropoffs) {
@@ -1046,7 +1074,14 @@ export default function Vehicle() {
         return;
       }
     } else {
-      const loc = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+      let loc: { lat: number; lng: number };
+      try {
+        loc = await requireGps("checkout");
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Turn on location to continue.";
+        toast.error(message);
+        return;
+      }
       const seatIds = bookedSelected.map((s) => ({ seat: s, vehicleSeatId: getVehicleSeatId(s.id) }));
       const missing = seatIds.filter((p) => !p.vehicleSeatId);
       if (missing.length > 0) {
@@ -1273,12 +1308,11 @@ export default function Vehicle() {
     }
   };
 
-  const currentLocationPoint = lastLocation
+  const currentLocation: MapPoint | null = lastLocation
     ? { name: "Current Location", lat: lastLocation.lat, lng: lastLocation.lng, type: "current" as const }
     : mapInitialCenter
       ? { name: "Current Location", lat: mapInitialCenter.lat, lng: mapInitialCenter.lng, type: "current" as const }
-      : { name: "Current Location", lat: NEPAL_CENTER.lat, lng: NEPAL_CENTER.lng, type: "current" as const };
-  const currentLocation: MapPoint = currentLocationPoint;
+      : null;
 
   const routePointsForAnnounce = useMemo(() => {
     if (!selectedRoute) return [];
@@ -1664,7 +1698,24 @@ export default function Vehicle() {
         <div className="flex-1 min-h-0 relative">
           <div className="absolute inset-0">
             {(() => {
-              const navCenter = lastLocation ?? mapInitialCenter ?? NEPAL_CENTER;
+              const navCenter = lastLocation ?? mapInitialCenter;
+              if (!navCenter) {
+                return (
+                  <div className="h-full w-full min-h-[240px] flex flex-col items-center justify-center gap-3 px-6 text-center bg-muted/30">
+                    <p className="text-sm">Turn on location to see the trip map.</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        mapLocationRequestedRef.current = false;
+                        setMapLocationAttempt((n) => n + 1);
+                      }}
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                );
+              }
               const navCenterPoint = { lat: navCenter.lat, lng: navCenter.lng };
               const routeWaypoints: Array<{ lat: number; lng: number }> = selectedRoute
                 ? [
@@ -1903,7 +1954,7 @@ export default function Vehicle() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">Amount will be confirmed at checkout.</p>
-          <MiniMap points={[currentLocation]} className="mt-2" />
+          {currentLocation && <MiniMap points={[currentLocation]} className="mt-2" />}
         </div>
       </ConfirmModal>
 

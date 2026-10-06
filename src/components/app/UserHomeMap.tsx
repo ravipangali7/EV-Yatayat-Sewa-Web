@@ -25,7 +25,6 @@ import { DirectBookFlow } from "./DirectBookFlow";
 import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
 import { isAvailable as isFlutterBridgeAvailable, requestLocation } from "@/lib/flutterBridge";
 
-const DEFAULT_CENTER = { lat: 27.7172, lng: 85.324 };
 /** Map fits to this radius (visible area 10 km). */
 const MAP_FIT_RADIUS_KM = 10;
 const MAP_FIT_RADIUS_METERS = MAP_FIT_RADIUS_KM * 1000;
@@ -132,10 +131,6 @@ export function UserHomeMap() {
   const [bookMaxKm, setBookMaxKm] = useState(DEFAULT_BOOK_MAX_KM);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationAttempt, setLocationAttempt] = useState(0);
-
-  const center = userPosition
-    ? { lat: userPosition.lat, lng: userPosition.lng }
-    : DEFAULT_CENTER;
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -255,6 +250,19 @@ export function UserHomeMap() {
     setMapType(mapType === "satellite" ? "roadmap" : "satellite");
   };
 
+  if (!userPosition) {
+    return (
+      <div className="w-full bg-muted/30 flex flex-col items-center justify-center gap-3 h-[360px] px-6 text-center">
+        <p className="text-sm text-foreground">{locationError ?? "Getting your location..."}</p>
+        {locationError && (
+          <Button type="button" variant="outline" onClick={() => setLocationAttempt((n) => n + 1)}>
+            Try again
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   if (!isLoaded) {
     return (
       <div className="w-full bg-muted/30 flex items-center justify-center h-[360px]">
@@ -269,7 +277,7 @@ export function UserHomeMap() {
         <div style={containerStyle} className="relative w-full">
           <GoogleMap
             mapContainerStyle={containerStyle}
-            center={center}
+            center={userPosition}
             zoom={12}
             onLoad={onMapLoad}
             onUnmount={onMapUnmount}
@@ -339,14 +347,6 @@ export function UserHomeMap() {
           <p className="absolute bottom-2 left-0 right-0 z-10 text-xs text-center text-white drop-shadow">
             Loading vehicles...
           </p>
-        )}
-        {locationError && !loading && (
-          <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between gap-2 rounded-lg bg-white/95 px-3 py-2 text-xs text-foreground shadow-sm">
-            <span>{locationError}</span>
-            <Button type="button" size="sm" variant="outline" className="h-7 shrink-0" onClick={() => setLocationAttempt((n) => n + 1)}>
-              Try again
-            </Button>
-          </div>
         )}
       </div>
 
