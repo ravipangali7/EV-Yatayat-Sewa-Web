@@ -81,7 +81,7 @@ export default function DriverProfile() {
   return (
     <div className="min-h-screen bg-background">
       <AppBar title="Profile" />
-      <div className="px-5 pt-6 pb-24">
+      <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-6 sm:px-6">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <div className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-md p-6 flex flex-col items-center">
             <div className="relative mb-3">

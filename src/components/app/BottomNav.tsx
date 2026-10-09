@@ -14,7 +14,7 @@ const BottomNav = ({ items }: BottomNavProps) => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-[#E4EEE8] shadow-[0_-4px_16px_rgba(22,48,36,0.06)] z-50">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[#E4EEE8] bg-white shadow-[0_-4px_16px_rgba(22,48,36,0.06)]">
       <div className="flex items-center justify-around py-2 pb-[env(safe-area-inset-bottom,8px)]">
         {items.map((item) => {
           const isActive = location.pathname.startsWith(item.path);

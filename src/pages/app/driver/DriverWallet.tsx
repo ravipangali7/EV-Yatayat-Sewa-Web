@@ -45,7 +45,7 @@ export default function DriverWallet() {
   return (
     <div className="min-h-screen bg-background">
       <AppBar title="Wallet" />
-      <div className="px-5 pt-4 pb-24 space-y-5">
+      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8 pt-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}

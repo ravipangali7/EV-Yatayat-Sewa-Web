@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
 import { BrandLockup } from "@/components/app/ride/BrandLockup";
-import { RideScene } from "@/components/app/ride/RideScene";
 import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
@@ -60,28 +59,25 @@ export default function DriverHome() {
   }, [refreshWallet]);
 
   return (
-    <div className="ride-shell min-h-screen">
-      <div className="px-5 pb-2 pt-6">
-        <BrandLockup size="sm" />
-        <div className="mt-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-[#6D7B74]">On duty</p>
-            <h2 className="text-xl font-extrabold tracking-tight text-[#163024]">{user?.name ?? "Driver"}</h2>
+    <div className="min-h-screen">
+      <div className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <BrandLockup layout="row" />
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-xs font-medium text-[#6D7B74]">On duty</p>
+              <h2 className="text-xl font-extrabold tracking-tight text-[#163024]">{user?.name ?? "Driver"}</h2>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E7F8EC] text-sm font-bold text-[#1C8C42]">
+              {user?.name?.charAt(0) ?? "D"}
+            </div>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E7F8EC] text-sm font-bold text-[#1C8C42]">
-            {user?.name?.charAt(0) ?? "D"}
-          </div>
-        </div>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-[#E4EEE8] border-l-4 border-l-[#1C8C42] bg-white shadow-sm">
+        </header>
+        <div className="overflow-hidden rounded-2xl border border-[#E4EEE8] border-l-4 border-l-[#1C8C42] bg-white shadow-sm">
           <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" />
         </div>
-      </div>
-
-      <RideScene vehicle="van" />
-
-      <div className="space-y-5 px-5 pb-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-[#6D7B74]">Quick actions</p>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
           {gridCards.map((item) => (
             <Link
               key={item.to + item.label}
@@ -97,7 +93,7 @@ export default function DriverHome() {
         </div>
 
         <div>
-          <div className="flex gap-2 mb-3 p-1 rounded-xl bg-muted/30 border border-border/50">
+          <div className="mb-3 flex gap-2 rounded-xl border border-[#E4EEE8] bg-white p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setHomeTab("seat-bookings")}

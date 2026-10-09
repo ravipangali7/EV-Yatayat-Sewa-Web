@@ -96,7 +96,7 @@ export default function UserShortTripDetail() {
   return (
     <div className="ride-shell min-h-screen">
       <AppBar title={tripEnded ? "Trip Ended" : "On Trip"} showBack variant="green" />
-      <div className="space-y-4 px-5 pb-8 pt-6">
+      <div className="mx-auto w-full max-w-lg space-y-4 px-5 pb-8 pt-6">
         {tripEnded ? (
           <div className="text-center">
             <SuccessMark />
@@ -124,20 +124,7 @@ export default function UserShortTripDetail() {
           </div>
         )}
 
-        <div className="flex items-center gap-3 rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-sm">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
-            <SvgIcon name="bus" className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="font-bold text-[#163024]">{booking.vehicle_details?.name ?? booking.vehicle ?? "Vehicle"}</p>
-            <p className="text-sm text-[#6D7B74]">{booking.vehicle_details?.vehicle_no ?? ""}</p>
-            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${booking.is_paid ? "bg-[#E7F8EC] text-[#1C8C42]" : "bg-amber-100 text-amber-700"}`}>
-              {booking.is_paid ? "Paid" : "Pending"}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-card/80 rounded-2xl border border-border/50 p-4 shadow-sm">
+        <div className="rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Booking info</p>
           <DetailRow label="Seat" value={booking.vehicle_seat_details ? `${booking.vehicle_seat_details.side}${booking.vehicle_seat_details.number}` : booking.vehicle_seat ?? "—"} />
           {booking.trip_details?.trip_id && <DetailRow label="Trip" value={booking.trip_details.trip_id} />}

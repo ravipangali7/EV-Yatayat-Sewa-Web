@@ -393,7 +393,7 @@ export default function UserTrackTrip() {
         }
       />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-4">
-        <div className="pointer-events-auto rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-lg">
+        <div className="pointer-events-auto mx-auto w-full max-w-lg rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-lg">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
               <SvgIcon name="bus" className="h-5 w-5" />

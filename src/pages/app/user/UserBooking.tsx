@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Calendar, Search, Users, Clock, ArrowRight, Car, X, FileDown, Printer, Wallet } from "lucide-react";
+import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -351,7 +352,7 @@ export default function UserBooking() {
   const toOptions = endPlaces.map((p) => ({ id: p.id, name: p.name, code: p.code }));
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen pb-6">
       <GatewayQrDialog
         session={qrSession}
         onClose={() => setQrSession(null)}
@@ -362,7 +363,7 @@ export default function UserBooking() {
         }}
       />
       <AppBar title="Book a Ride" />
-      <div className="px-5 pt-4">
+      <div className="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
       <div className="flex gap-1 p-1 bg-muted/70 rounded-2xl mb-4">
         <button
           type="button"
@@ -536,7 +537,10 @@ export default function UserBooking() {
       <form onSubmit={handleSearch} className="space-y-3 mb-5 bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 p-4 shadow-md">
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-muted-foreground">From</label>
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-[#163024]">
+              <SvgIcon name="bus" className="h-4 w-4 text-[#1C8C42]" />
+              Where to board?
+            </label>
             <VoiceSearchButton
               onResult={(t) => {
                 const match = fromOptions.find((o) => matchesSearch(o.name, t));
@@ -559,7 +563,10 @@ export default function UserBooking() {
         </div>
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-muted-foreground">To</label>
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-[#163024]">
+              <SvgIcon name="map-pin" className="h-4 w-4 text-[#E23B3B]" />
+              Where to go?
+            </label>
             <VoiceSearchButton
               onResult={(t) => {
                 const match = toOptions.find((o) => matchesSearch(o.name, t));

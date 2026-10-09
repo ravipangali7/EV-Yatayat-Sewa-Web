@@ -72,7 +72,7 @@ export default function DriverTripHistoryDetail() {
   return (
     <div className="ride-shell min-h-screen">
       <AppBar title={completed ? "Trip Ended" : "On Trip"} showBack variant="green" />
-      <div className="space-y-4 px-5 pb-8 pt-6">
+      <div className="mx-auto w-full max-w-lg space-y-4 px-5 pb-8 pt-6">
         {completed ? (
           <div className="text-center">
             <SuccessMark />

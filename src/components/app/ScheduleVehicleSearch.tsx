@@ -78,92 +78,89 @@ export function ScheduleVehicleSearch({ bookingPath }: { bookingPath: string }) 
   const fieldClass = "h-12 rounded-xl border border-[#E4EEE8] bg-white px-3 pl-10 text-sm font-normal text-[#1C2430] shadow-sm";
 
   return (
-    <form onSubmit={handleSearch} className="space-y-3">
-      <div>
-        <p className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-[#163024]">
-          <SvgIcon name="bus" className="h-4 w-4 text-[#1C8C42]" />
-          Where to board?
-        </p>
-        <div className="relative">
-          <SvgIcon name="bus" className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#1C8C42]" />
-          <SearchableSelect
-            options={fromOptions}
-            value={fromPlaceId}
-            onChange={setFromPlaceId}
-            placeholder="e.g. Bus Park"
-            getOptionLabel={(o) => o.name}
-            getOptionValue={(o) => o.id}
-            getOptionFilterValue={(o) => getSearchableVariants(o.name || "")}
-            className={fieldClass}
-          />
+    <form onSubmit={handleSearch} className="space-y-4 rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-sm">
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <p className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-[#163024]">
+            <SvgIcon name="bus" className="h-4 w-4 text-[#1C8C42]" />
+            Where to board?
+          </p>
+          <div className="relative">
+            <SvgIcon name="bus" className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#1C8C42]" />
+            <SearchableSelect
+              options={fromOptions}
+              value={fromPlaceId}
+              onChange={setFromPlaceId}
+              placeholder="e.g. Bus Park"
+              getOptionLabel={(o) => o.name}
+              getOptionValue={(o) => o.id}
+              getOptionFilterValue={(o) => getSearchableVariants(o.name || "")}
+              className={fieldClass}
+            />
+          </div>
+        </div>
+        <div>
+          <p className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-[#163024]">
+            <SvgIcon name="map-pin" className="h-4 w-4 text-[#E23B3B]" />
+            Where to go?
+          </p>
+          <div className="relative">
+            <SvgIcon name="map-pin" className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#E23B3B]" />
+            <SearchableSelect
+              options={toOptions}
+              value={toPlaceId}
+              onChange={setToPlaceId}
+              placeholder={loadingEndPlaces ? "Loading..." : !fromPlaceId ? "Choose boarding point first" : "e.g. Kathmandu"}
+              disabled={!fromPlaceId || loadingEndPlaces}
+              getOptionLabel={(o) => o.name}
+              getOptionValue={(o) => o.id}
+              getOptionFilterValue={(o) => getSearchableVariants(o.name || "")}
+              className={fieldClass}
+            />
+          </div>
         </div>
       </div>
 
-      <div>
-        <p className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-[#163024]">
-          <SvgIcon name="map-pin" className="h-4 w-4 text-[#E23B3B]" />
-          Where to go?
-        </p>
-        <div className="relative">
-          <SvgIcon name="map-pin" className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#E23B3B]" />
-          <SearchableSelect
-            options={toOptions}
-            value={toPlaceId}
-            onChange={setToPlaceId}
-            placeholder={loadingEndPlaces ? "Loading..." : !fromPlaceId ? "Select boarding point first" : "e.g. Kathmandu"}
-            disabled={!fromPlaceId || loadingEndPlaces}
-            getOptionLabel={(o) => o.name}
-            getOptionValue={(o) => o.id}
-            getOptionFilterValue={(o) => getSearchableVariants(o.name || "")}
-            className={fieldClass}
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-end">
-        <button
-          type="button"
-          onClick={handleSwap}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-[#1C8C42]"
-        >
-          <SvgIcon name="arrow-left-right" className="h-3.5 w-3.5" />
-          Swap
-        </button>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setDate(todayStr())}
-          className={`shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-            date === todayStr() ? "bg-[#1C8C42] text-white" : "border border-[#E4EEE8] bg-white text-[#5E6B66]"
-          }`}
-        >
-          Today
-        </button>
-        <button
-          type="button"
-          onClick={() => setDate(tomorrowStr())}
-          className={`shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-            date === tomorrowStr() ? "bg-[#1C8C42] text-white" : "border border-[#E4EEE8] bg-white text-[#5E6B66]"
-          }`}
-        >
-          Tomorrow
-        </button>
-        <div className="relative min-w-0 flex-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-1 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setDate(todayStr())}
+            className={`shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+              date === todayStr() ? "bg-[#1C8C42] text-white" : "border border-[#E4EEE8] bg-white text-[#5E6B66]"
+            }`}
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={() => setDate(tomorrowStr())}
+            className={`shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+              date === tomorrowStr() ? "bg-[#1C8C42] text-white" : "border border-[#E4EEE8] bg-white text-[#5E6B66]"
+            }`}
+          >
+            Tomorrow
+          </button>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             aria-label="Date"
-            className="h-12 w-full rounded-xl border border-[#E4EEE8] bg-white px-3 text-sm shadow-sm outline-none"
+            className="h-12 min-w-0 flex-1 rounded-xl border border-[#E4EEE8] bg-white px-3 text-sm shadow-sm outline-none"
           />
+          <button
+            type="button"
+            onClick={handleSwap}
+            className="inline-flex h-12 shrink-0 items-center gap-1 rounded-xl border border-[#E4EEE8] px-3 text-xs font-semibold text-[#1C8C42]"
+          >
+            <SvgIcon name="arrow-left-right" className="h-3.5 w-3.5" />
+            Swap
+          </button>
         </div>
+        <Button type="submit" className={`${rideBtn} sm:w-44`}>
+          <SvgIcon name="search" className="mr-2 h-4 w-4" /> Search
+        </Button>
       </div>
-
-      <Button type="submit" className={rideBtn}>
-        <SvgIcon name="search" className="mr-2 h-4 w-4" /> Search
-      </Button>
     </form>
   );
 }

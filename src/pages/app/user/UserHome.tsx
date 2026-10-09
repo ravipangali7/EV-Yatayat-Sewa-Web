@@ -5,7 +5,6 @@ import TransferModal from "@/components/app/TransferModal";
 import { UserHomeMap } from "@/components/app/UserHomeMap";
 import { ScheduleVehicleSearch } from "@/components/app/ScheduleVehicleSearch";
 import { BrandLockup } from "@/components/app/ride/BrandLockup";
-import { RideScene } from "@/components/app/ride/RideScene";
 import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
@@ -76,18 +75,18 @@ export default function UserHome() {
   }, [refreshWallet]);
 
   return (
-    <div className="ride-shell min-h-screen">
-      <header className="px-5 pb-2 pt-6">
-        <BrandLockup size="sm" />
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-[#6D7B74]">Welcome back</p>
-            <h2 className="truncate text-lg font-extrabold text-[#163024]">{user?.name ?? "Passenger"}</h2>
-          </div>
-          <div className="flex items-center gap-1">
-            <Link to={`${basePath}/wallet`} className="rounded-full bg-white px-3 py-1.5 text-right shadow-sm border border-[#E4EEE8]">
-              <p className="text-[9px] uppercase tracking-wide text-[#6D7B74]">Balance</p>
-              <p className="text-sm font-bold text-[#1C8C42] tabular-nums">
+    <div className="min-h-screen">
+      <div className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <BrandLockup layout="row" />
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 text-right">
+              <p className="text-xs font-medium text-[#6D7B74]">Welcome back</p>
+              <h2 className="truncate text-lg font-extrabold text-[#163024]">{user?.name ?? "Passenger"}</h2>
+            </div>
+            <Link to={`${basePath}/wallet`} className="rounded-2xl border border-[#E4EEE8] bg-white px-3 py-2 text-right shadow-sm">
+              <p className="text-[10px] uppercase tracking-wide text-[#6D7B74]">Balance</p>
+              <p className="text-sm font-bold tabular-nums text-[#1C8C42]">
                 {balanceVisible ? `Rs. ${balance.toLocaleString()}` : "Rs. ••••"}
               </p>
             </Link>
@@ -100,21 +99,20 @@ export default function UserHome() {
               <SvgIcon name={balanceVisible ? "eye" : "eye-off"} className="h-4 w-4" />
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="space-y-5 px-5 pb-8 pt-2">
-        <div>
-          <h3 className="text-lg font-extrabold text-[#163024]">Where to go?</h3>
+        <section>
+          <h3 className="text-xl font-extrabold text-[#163024]">Where to go?</h3>
           <p className="mb-3 text-sm text-[#6D7B74]">Select your destination</p>
           <ScheduleVehicleSearch bookingPath={`${basePath}/booking`} />
-        </div>
-        <RideScene vehicle="bus" />
+        </section>
 
-        <UserHomeMap />
+        <section className="overflow-hidden rounded-2xl border border-[#E4EEE8] bg-white shadow-sm">
+          <UserHomeMap />
+        </section>
 
         <p className="text-xs font-semibold uppercase tracking-wider text-[#6D7B74]">Quick actions</p>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
           {gridCards.map((item) => {
             const key = "to" in item ? item.to + item.label : item.label;
             const tile = (
@@ -157,7 +155,7 @@ export default function UserHome() {
         />
 
         <div>
-          <div className="flex gap-2 mb-3 p-1 rounded-xl bg-muted/30 border border-border/50">
+          <div className="mb-3 flex gap-2 rounded-xl border border-[#E4EEE8] bg-white p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setHomeTab("bookings")}
