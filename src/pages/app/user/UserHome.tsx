@@ -4,7 +4,7 @@ import TransactionCard from "@/components/app/TransactionCard";
 import TransferModal from "@/components/app/TransferModal";
 import { UserHomeMap } from "@/components/app/UserHomeMap";
 import { ScheduleVehicleSearch } from "@/components/app/ScheduleVehicleSearch";
-import { BrandLockup } from "@/components/app/ride/BrandLockup";
+import { HomeHeader } from "@/components/app/HomeHeader";
 import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
@@ -80,37 +80,16 @@ export default function UserHome() {
 
   return (
     <div className="min-h-screen">
+      <HomeHeader
+        eyebrow="Welcome back"
+        name={user?.name ?? "Passenger"}
+        balance={balance}
+        balanceLoading={balanceLoading}
+        balanceVisible={balanceVisible}
+        onToggleBalance={() => setBalanceVisible((v) => !v)}
+        walletPath={`${basePath}/wallet`}
+      />
       <div className="mx-auto w-full space-y-5 px-5 py-5">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <BrandLockup layout="row" />
-          <div className="flex items-center gap-3">
-            <div className="min-w-0 text-right">
-              <p className="text-xs font-medium text-[#6D7B74]">Welcome back</p>
-              <h2 className="truncate text-lg font-extrabold text-[#163024]">{user?.name ?? "Passenger"}</h2>
-            </div>
-            <Link to={`${basePath}/wallet`} className="rounded-2xl border border-[#E4EEE8] bg-white px-3 py-2 text-right shadow-sm">
-              <p className="text-[10px] uppercase tracking-wide text-[#6D7B74]">Balance</p>
-              <p className="text-sm font-bold tabular-nums text-[var(--ev-primary)]">
-                {balanceLoading ? (
-                  <span className="inline-block h-4 w-16 animate-pulse rounded bg-[var(--ev-mint-100)]" />
-                ) : balanceVisible ? (
-                  `Rs. ${balance.toLocaleString()}`
-                ) : (
-                  "Rs. ••••"
-                )}
-              </p>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setBalanceVisible((v) => !v)}
-              className="rounded-full p-2 text-[#1C8C42]"
-              aria-label={balanceVisible ? "Hide balance" : "Show balance"}
-            >
-              <SvgIcon name={balanceVisible ? "eye" : "eye-off"} className="h-4 w-4" />
-            </button>
-          </div>
-        </header>
-
         <section>
           <h3 className="text-xl font-extrabold text-[#163024]">Where to go?</h3>
           <p className="mb-3 text-sm text-[#6D7B74]">Select your destination</p>

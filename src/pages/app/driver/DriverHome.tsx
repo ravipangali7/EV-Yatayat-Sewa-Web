@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
-import { BrandLockup } from "@/components/app/ride/BrandLockup";
+import { HomeHeader } from "@/components/app/HomeHeader";
 import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
@@ -64,19 +64,12 @@ export default function DriverHome() {
 
   return (
     <div className="min-h-screen">
+      <HomeHeader
+        eyebrow="On duty"
+        name={user?.name ?? "Driver"}
+        avatarInitial={user?.name?.charAt(0) ?? "D"}
+      />
       <div className="mx-auto w-full space-y-5 px-5 py-5">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <BrandLockup layout="row" />
-          <div className="flex items-center gap-3">
-            <div>
-              <p className="text-xs font-medium text-[#6D7B74]">On duty</p>
-              <h2 className="text-xl font-extrabold tracking-tight text-[#163024]">{user?.name ?? "Driver"}</h2>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E7F8EC] text-sm font-bold text-[#1C8C42]">
-              {user?.name?.charAt(0) ?? "D"}
-            </div>
-          </div>
-        </header>
         <div className="overflow-hidden rounded-2xl border border-[#E4EEE8] border-l-4 border-l-[#1C8C42] bg-white shadow-sm">
           <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" loading={walletLoading} />
         </div>
