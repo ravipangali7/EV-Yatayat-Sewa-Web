@@ -13,8 +13,6 @@ function money(value: number) {
 }
 
 export function HomeHeader({
-  name,
-  tagline = "Travel smart. Travel green.",
   balance,
   balanceLoading,
   walletPath,
@@ -22,8 +20,6 @@ export function HomeHeader({
   profilePicture,
   avatarInitial,
 }: {
-  name: string;
-  tagline?: string;
   balance?: number;
   balanceLoading?: boolean;
   balanceVisible?: boolean;
@@ -72,13 +68,8 @@ export function HomeHeader({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-[26px] font-bold leading-none tracking-tight text-[var(--ev-text)]">{name},</p>
-          <p className="mt-1.5 text-[13px] font-medium text-[var(--ev-text-muted)]">{tagline}</p>
-        </div>
-
-        {showBalance && (
+      {showBalance && (
+        <div className="mt-4 flex justify-end">
           <Link
             to={walletPath}
             className="flex h-[62px] min-w-[158px] max-w-[52%] shrink-0 items-center gap-2 rounded-2xl bg-[var(--ev-wallet)] px-2.5 text-white shadow-[var(--ev-shadow-btn)]"
@@ -98,8 +89,8 @@ export function HomeHeader({
             </span>
             <ChevronRight size={16} className="shrink-0 text-white/80" />
           </Link>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 }

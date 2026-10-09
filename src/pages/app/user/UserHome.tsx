@@ -81,8 +81,6 @@ export default function UserHome() {
   return (
     <div className="min-h-screen">
       <HomeHeader
-        name={user?.name ?? "Passenger"}
-        tagline="Travel smart. Travel green."
         balance={balance}
         balanceLoading={balanceLoading}
         balanceVisible={balanceVisible}
