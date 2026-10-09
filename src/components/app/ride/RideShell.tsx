@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { HillsFooter } from "@/components/illustrations/HillsFooter";
 import { cn } from "@/lib/utils";
 
 export function RideShell({
@@ -11,15 +12,9 @@ export function RideShell({
   className?: string;
 }) {
   return (
-    <div className={cn("ride-shell relative min-h-screen", className)}>
+    <div className={cn("ride-shell relative min-h-dvh overflow-hidden", className)}>
       <div className="relative z-10">{children}</div>
-      {hills && (
-        <img
-          src="/icons/hills.svg"
-          alt=""
-          className="pointer-events-none absolute bottom-0 left-0 z-0 h-36 w-full"
-        />
-      )}
+      {hills && <HillsFooter />}
     </div>
   );
 }

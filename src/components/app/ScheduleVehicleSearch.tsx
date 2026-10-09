@@ -29,13 +29,23 @@ export function ScheduleVehicleSearch({ bookingPath }: { bookingPath: string }) 
   const [toPlaceId, setToPlaceId] = useState("");
   const [date, setDate] = useState(todayStr());
   const [loadingEndPlaces, setLoadingEndPlaces] = useState(false);
+  const [stopsError, setStopsError] = useState(false);
   const keepToOnEmptyFrom = useRef(false);
 
-  useEffect(() => {
+  const loadStartPlaces = () => {
+    setStopsError(false);
     vehicleScheduleApi
       .startPlaces()
       .then((res) => setStartPlaces(Array.isArray(res) ? res : []))
-      .catch(() => setStartPlaces([]));
+      .catch((err) => {
+        console.error("Failed to load boarding stops", err);
+        setStartPlaces([]);
+        setStopsError(true);
+      });
+  };
+
+  useEffect(() => {
+    loadStartPlaces();
   }, []);
 
   useEffect(() => {
@@ -79,7 +89,7 @@ export function ScheduleVehicleSearch({ bookingPath }: { bookingPath: string }) 
 
   return (
     <form onSubmit={handleSearch} className="space-y-4 rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-sm">
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3">
         <div>
           <p className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-[#163024]">
             <SvgIcon name="bus" className="h-4 w-4 text-[#1C8C42]" />
@@ -95,9 +105,15 @@ export function ScheduleVehicleSearch({ bookingPath }: { bookingPath: string }) 
               getOptionLabel={(o) => o.name}
               getOptionValue={(o) => o.id}
               getOptionFilterValue={(o) => getSearchableVariants(o.name || "")}
+              emptyText={stopsError || fromOptions.length === 0 ? "No stops available right now" : "No results found."}
               className={fieldClass}
             />
           </div>
+          {stopsError && (
+            <button type="button" onClick={loadStartPlaces} className="mt-1 text-xs font-semibold text-[var(--ev-primary)]">
+              Try again
+            </button>
+          )}
         </div>
         <div>
           <p className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-[#163024]">
@@ -121,7 +137,7 @@ export function ScheduleVehicleSearch({ bookingPath }: { bookingPath: string }) 
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-1 items-center gap-2">
           <button
             type="button"
@@ -157,7 +173,7 @@ export function ScheduleVehicleSearch({ bookingPath }: { bookingPath: string }) 
             Swap
           </button>
         </div>
-        <Button type="submit" className={`${rideBtn} sm:w-44`}>
+        <Button type="submit" className={rideBtn}>
           <SvgIcon name="search" className="mr-2 h-4 w-4" /> Search
         </Button>
       </div>

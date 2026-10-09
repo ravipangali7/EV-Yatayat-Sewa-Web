@@ -36,6 +36,7 @@ interface SearchableSelectProps<T = SelectOption> {
   /** Options shown above the search input; selecting one calls onLeadingSelect instead of onChange */
   leadingOptions?: { value: string; label: string }[];
   onLeadingSelect?: (value: string) => void;
+  emptyText?: string;
 }
 
 export function SearchableSelect<T = SelectOption>({
@@ -50,6 +51,7 @@ export function SearchableSelect<T = SelectOption>({
   getOptionFilterValue,
   leadingOptions,
   onLeadingSelect,
+  emptyText = "No results found.",
 }: SearchableSelectProps<T>) {
   const [open, setOpen] = useState(false);
   
@@ -109,7 +111,7 @@ export function SearchableSelect<T = SelectOption>({
           )}
           <CommandInput placeholder="Search..." />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => {
                 const optionValue = getValue(option);

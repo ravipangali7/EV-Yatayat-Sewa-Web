@@ -61,10 +61,8 @@ export default function AppResetPassword() {
 
   return (
     <AppLayout>
-      <div className="ride-app min-h-screen">
-        <div className="mx-auto min-h-screen w-full max-w-[430px] shadow-xl shadow-[#163024]/5">
-          <RideShell>
-            <div className="px-6 pb-40 pt-8">
+      <RideShell>
+        <div className="px-5 pb-40 pt-8">
               <Link to="/app/login" className="mb-2 inline-flex text-[#163024]" aria-label="Back">
                 <SvgIcon name="chevron-left" className="h-6 w-6" />
               </Link>
@@ -89,7 +87,7 @@ export default function AppResetPassword() {
                     className={rideField}
                   />
                   <Button type="submit" className={`${rideBtn} mt-2`} disabled={isLoading}>
-                    {isLoading ? "Saving..." : "Register"}
+                    {isLoading ? "Saving..." : "Update Password"}
                   </Button>
                 </form>
               ) : (
@@ -105,9 +103,7 @@ export default function AppResetPassword() {
                 </div>
               )}
             </div>
-          </RideShell>
-        </div>
-      </div>
+      </RideShell>
     </AppLayout>
   );
 }

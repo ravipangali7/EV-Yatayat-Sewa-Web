@@ -25,6 +25,9 @@ import DealerProfile from "@/pages/app/user/DealerProfile";
 import UserShortTripDetail from "@/pages/app/user/UserShortTripDetail";
 import UserTicketDetail from "@/pages/app/user/UserTicketDetail";
 import UserTrackTrip from "@/pages/app/user/UserTrackTrip";
+import UserTripMap from "@/pages/app/user/UserTripMap";
+import UserTripEnded from "@/pages/app/user/UserTripEnded";
+import UserTripThanks from "@/pages/app/user/UserTripThanks";
 import AppTransactions from "@/pages/app/AppTransactions";
 import AppTransactionDetail from "@/pages/app/AppTransactionDetail";
 import WalkieTalkie from "@/pages/app/WalkieTalkie";
@@ -101,6 +104,10 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
       "booking/short-trip/:id": UserShortTripDetail,
       "booking/ticket/:id": UserTicketDetail,
       "booking/track/:tripId": UserTrackTrip,
+      "trip/map": UserTripMap,
+      "trip/:id/ended": UserTripEnded,
+      "trip/:id/thanks": UserTripThanks,
+      "trip/:id": UserTrackTrip,
       walkietalkie: WalkieTalkie,
       wallet: UserWallet,
       card: UserCard,
@@ -126,6 +133,10 @@ const APP_ROLE_CONFIG: Record<AppRoleId, AppRoleConfig> = {
       "booking/short-trip/:id": UserShortTripDetail,
       "booking/ticket/:id": UserTicketDetail,
       "booking/track/:tripId": UserTrackTrip,
+      "trip/map": UserTripMap,
+      "trip/:id/ended": UserTripEnded,
+      "trip/:id/thanks": UserTripThanks,
+      "trip/:id": UserTrackTrip,
       walkietalkie: WalkieTalkie,
       wallet: UserWallet,
       card: UserCard,

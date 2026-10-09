@@ -16,6 +16,7 @@ import { toNumber } from "@/lib/utils";
 export default function DriverWallet() {
   const { user } = useAuth();
   const [balance, setBalance] = useState(0);
+  const [walletLoading, setWalletLoading] = useState(true);
   const [toReceive, setToReceive] = useState(0);
   const [toPay, setToPay] = useState(0);
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
@@ -23,6 +24,7 @@ export default function DriverWallet() {
 
   const refreshWallet = useCallback(async () => {
     if (!user?.id) return;
+    setWalletLoading(true);
     try {
       const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
       const wallet = walletsRes.results[0];
@@ -35,6 +37,8 @@ export default function DriverWallet() {
       }
     } catch {
       setTransactions([]);
+    } finally {
+      setWalletLoading(false);
     }
   }, [user?.id]);
 
@@ -45,29 +49,27 @@ export default function DriverWallet() {
   return (
     <div className="min-h-screen bg-background">
       <AppBar title="Wallet" />
-      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-8 pt-4 sm:px-6">
+      <div className="mx-auto w-full space-y-5 px-5 pb-8 pt-4">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl overflow-hidden border border-border/60 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 border-l-4 border-l-primary"
         >
-          <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" />
+          <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" loading={walletLoading} />
         </motion.div>
 
         <div className="flex gap-3">
-          {toPay > 0 && (
-            <Link
-              to="/app/driver/pay-due"
-              className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-semibold text-sm hover:bg-rose-500/20 transition-colors"
-            >
-              <Receipt size={16} />
-              Pay Due
-            </Link>
-          )}
+          <Link
+            to="/app/driver/pay-due"
+            className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--ev-danger)] text-sm font-semibold text-white"
+          >
+            <Receipt size={16} />
+            Pay Due
+          </Link>
           <button
             type="button"
             onClick={() => setShowTransferModal(true)}
-            className={`${toPay > 0 ? "flex-1" : "w-full"} flex items-center justify-center gap-2 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-semibold text-sm hover:bg-blue-500/20 transition-colors`}
+            className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--ev-info)] text-sm font-semibold text-white"
           >
             <Send size={16} />
             Transfer

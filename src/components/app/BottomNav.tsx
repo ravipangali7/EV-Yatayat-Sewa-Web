@@ -14,28 +14,28 @@ const BottomNav = ({ items }: BottomNavProps) => {
   const location = useLocation();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[#E4EEE8] bg-white shadow-[0_-4px_16px_rgba(22,48,36,0.06)]">
-      <div className="flex items-center justify-around py-2 pb-[env(safe-area-inset-bottom,8px)]">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50" aria-label="Primary">
+      <div className="pointer-events-auto mx-auto flex h-16 max-w-[480px] items-stretch justify-around border-t border-[var(--ev-border)] bg-[var(--ev-surface)] pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => {
-          const isActive = location.pathname.startsWith(item.path);
+          const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
           return (
             <NavLink
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all ${
-                isActive ? "text-primary" : "text-muted-foreground"
-              }`}
+              className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1"
             >
               <span
-                className={`flex items-center justify-center transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary/15 text-primary rounded-xl px-2.5 py-1 scale-105"
-                    : ""
+                className={`flex h-7 items-center justify-center rounded-full px-3 ${
+                  isActive ? "bg-[var(--ev-mint-100)] text-[var(--ev-primary)]" : "text-[var(--ev-text-muted)]"
                 }`}
               >
                 {item.icon}
               </span>
-              <span className={`text-[10px] font-medium transition-colors ${isActive ? "text-primary" : ""}`}>
+              <span
+                className={`max-w-full truncate text-center text-[11px] font-medium leading-tight ${
+                  isActive ? "text-[var(--ev-primary)]" : "text-[var(--ev-text-muted)]"
+                }`}
+              >
                 {item.label}
               </span>
             </NavLink>

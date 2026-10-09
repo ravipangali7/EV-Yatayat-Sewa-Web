@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AppBar from "@/components/app/AppBar";
 import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { api } from "@/lib/api";
@@ -62,7 +62,10 @@ interface TripDetailResponse {
 }
 
 export default function UserTrackTrip() {
-  const { tripId } = useParams<{ tripId: string }>();
+  const { tripId: tripIdParam, id } = useParams<{ tripId?: string; id?: string }>();
+  const tripId = tripIdParam ?? id;
+  const location = useLocation();
+  const navigate = useNavigate();
   const [trip, setTrip] = useState<TripDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +89,12 @@ export default function UserTrackTrip() {
   useEffect(() => {
     fetchTrip();
   }, [tripId]);
+
+  useEffect(() => {
+    if (!trip?.end_time || !tripId) return;
+    if (!/\/trip\/[^/]+$/.test(location.pathname)) return;
+    navigate(`${location.pathname}/ended`, { replace: true });
+  }, [trip?.end_time, tripId, location.pathname, navigate]);
 
   useEffect(() => {
     if (!tripId || !trip || trip.end_time) return;

@@ -42,7 +42,7 @@ export default function UserCard() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <AppBar title="My Card" />
-      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pt-4 sm:px-6">
+      <div className="mx-auto w-full space-y-5 px-5 pt-4">
         {cards.length > 0 ? (
           <div className="space-y-4">
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">

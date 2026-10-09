@@ -10,6 +10,7 @@ import {
   type AppRoleId,
 } from "@/config/appRoles";
 import { useEffect } from "react";
+import { useI18n } from "@/i18n/I18nProvider";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export default function AppRoleLayout({ role }: AppRoleLayoutProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useI18n();
   const config = getAppRoleConfig(role);
   const paymentCallback = location.state?.paymentCallback as PaymentCallbackState | undefined;
   const basePath = config.basePath;
@@ -50,13 +52,22 @@ export default function AppRoleLayout({ role }: AppRoleLayoutProps) {
     }
   }, [isWrongRole, userAppRole, navigate]);
 
+  const navLabelKey: Record<string, string> = {
+    Home: "nav.home",
+    Booking: "nav.booking",
+    Book: "nav.book",
+    Wallet: "nav.wallet",
+    Card: "nav.card",
+    Profile: "nav.profile",
+    Vehicle: "nav.vehicle",
+  };
   const navItems = visibleNavItems.map((item) => {
     const Icon = APP_NAV_ICON_MAP[item.icon];
     const path = `${config.basePath}/${item.path}`.replace(/\/+/g, "/");
     return {
-      label: item.label,
+      label: t(navLabelKey[item.label] ?? item.label),
       path,
-      icon: Icon ? <Icon size={20} /> : null,
+      icon: Icon ? <Icon size={22} /> : null,
     };
   });
 

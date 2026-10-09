@@ -9,6 +9,7 @@ import { RideShell } from "@/components/app/ride/RideShell";
 import { SuccessMark } from "@/components/app/ride/SuccessMark";
 import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { rideBtn, rideField } from "@/components/app/ride/rideStyles";
+import { LanguageToggle } from "@/components/ev/LanguageToggle";
 import { authApi } from "@/modules/auth/services/authApi";
 import { getDefaultPathForRole } from "@/config/appRoles";
 import { toast } from "sonner";
@@ -110,10 +111,11 @@ export default function AppRegister() {
 
   return (
     <AppLayout>
-      <div className="ride-app min-h-screen">
-        <div className="mx-auto min-h-screen w-full max-w-[430px] shadow-xl shadow-[#163024]/5">
-          <RideShell hills={step !== "otp"}>
-            <div className="px-6 pb-40 pt-8">
+      <RideShell hills={step !== "otp"}>
+        <div className="relative px-5 pb-40 pt-8">
+          <div className="absolute right-5 top-5">
+            <LanguageToggle />
+          </div>
               {step === "otp" && (
                 <button type="button" onClick={() => setStep("form")} className="mb-4 flex items-center text-[#163024]" aria-label="Back">
                   <SvgIcon name="chevron-left" className="h-6 w-6" />
@@ -217,9 +219,7 @@ export default function AppRegister() {
                 </div>
               )}
             </div>
-          </RideShell>
-        </div>
-      </div>
+      </RideShell>
     </AppLayout>
   );
 }

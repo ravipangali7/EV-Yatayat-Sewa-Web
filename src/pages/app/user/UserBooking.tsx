@@ -363,7 +363,7 @@ export default function UserBooking() {
         }}
       />
       <AppBar title="Book a Ride" />
-      <div className="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+      <div className="mx-auto w-full px-5 pt-4">
       <div className="flex gap-1 p-1 bg-muted/70 rounded-2xl mb-4">
         <button
           type="button"

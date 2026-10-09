@@ -44,6 +44,7 @@ export default function UserHome() {
   const basePath = config?.basePath ?? "/app/user";
   const gridCards = role === "ticket_dealer" ? dealerGridCards : userGridCards;
   const [balance, setBalance] = useState(0);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
   const [myBookings, setMyBookings] = useState<VehicleTicketBookingRecord[]>([]);
@@ -52,6 +53,7 @@ export default function UserHome() {
 
   const refreshWallet = useCallback(async () => {
     if (!user?.id) return;
+    setBalanceLoading(true);
     try {
       const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
       const wallet = walletsRes.results[0];
@@ -67,6 +69,8 @@ export default function UserHome() {
     } catch {
       setTransactions([]);
       setMyBookings([]);
+    } finally {
+      setBalanceLoading(false);
     }
   }, [user?.id]);
 
@@ -76,7 +80,7 @@ export default function UserHome() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+      <div className="mx-auto w-full space-y-5 px-5 py-5">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <BrandLockup layout="row" />
           <div className="flex items-center gap-3">
@@ -86,8 +90,14 @@ export default function UserHome() {
             </div>
             <Link to={`${basePath}/wallet`} className="rounded-2xl border border-[#E4EEE8] bg-white px-3 py-2 text-right shadow-sm">
               <p className="text-[10px] uppercase tracking-wide text-[#6D7B74]">Balance</p>
-              <p className="text-sm font-bold tabular-nums text-[#1C8C42]">
-                {balanceVisible ? `Rs. ${balance.toLocaleString()}` : "Rs. ••••"}
+              <p className="text-sm font-bold tabular-nums text-[var(--ev-primary)]">
+                {balanceLoading ? (
+                  <span className="inline-block h-4 w-16 animate-pulse rounded bg-[var(--ev-mint-100)]" />
+                ) : balanceVisible ? (
+                  `Rs. ${balance.toLocaleString()}`
+                ) : (
+                  "Rs. ••••"
+                )}
               </p>
             </Link>
             <button
@@ -112,7 +122,7 @@ export default function UserHome() {
         </section>
 
         <p className="text-xs font-semibold uppercase tracking-wider text-[#6D7B74]">Quick actions</p>
-        <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
+        <div className="grid grid-cols-4 gap-3">
           {gridCards.map((item) => {
             const key = "to" in item ? item.to + item.label : item.label;
             const tile = (

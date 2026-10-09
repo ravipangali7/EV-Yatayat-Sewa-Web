@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { SvgIcon } from "@/components/app/ride/SvgIcon";
+import { ArrowLeft } from "lucide-react";
 
 interface AppBarProps {
   title: string;
@@ -19,25 +19,25 @@ export default function AppBar({ title, showBack, onBack, right, className = "",
   return (
     <header
       className={
-        "sticky top-0 z-40 flex items-center justify-between px-4 py-3 " +
+        "sticky top-0 z-40 flex h-14 items-center justify-between px-5 " +
         (green
-          ? "bg-[#1C8C42] text-white shadow-sm "
-          : "backdrop-blur-xl bg-white dark:bg-card border-b border-[#E4EEE8] text-foreground shadow-sm ") +
+          ? "bg-[var(--ev-primary)] text-white "
+          : "border-b border-[var(--ev-border)] bg-[var(--ev-surface)] text-[var(--ev-text)] ") +
         className
       }
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex min-w-0 items-center gap-2">
         {showBack && (
           <button
             type="button"
             onClick={handleBack}
-            className={`p-1.5 -ml-1 rounded-lg transition-colors shrink-0 ${green ? "hover:bg-white/15 text-white" : "hover:bg-muted text-foreground"}`}
+            className={`-ml-1 shrink-0 rounded-lg p-2 ${green ? "text-white hover:bg-white/15" : "text-[var(--ev-text)] hover:bg-[var(--ev-mint-50)]"}`}
             aria-label="Back"
           >
-            <SvgIcon name="chevron-left" className="h-6 w-6" />
+            <ArrowLeft className="h-5 w-5" strokeWidth={1.75} />
           </button>
         )}
-        <h1 className="text-lg font-bold truncate">{title}</h1>
+        <h1 className="ev-wordmark truncate text-lg font-semibold">{title}</h1>
       </div>
       {right && <div className="shrink-0">{right}</div>}
     </header>

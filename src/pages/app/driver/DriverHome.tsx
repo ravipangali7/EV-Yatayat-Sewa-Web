@@ -26,6 +26,7 @@ const gridCards = [
 export default function DriverHome() {
   const { user } = useAuth();
   const [balance, setBalance] = useState(0);
+  const [walletLoading, setWalletLoading] = useState(true);
   const [toReceive, setToReceive] = useState(0);
   const [toPay, setToPay] = useState(0);
   const [transactions, setTransactions] = useState<AppTransaction[]>([]);
@@ -34,6 +35,7 @@ export default function DriverHome() {
 
   const refreshWallet = useCallback(async () => {
     if (!user?.id) return;
+    setWalletLoading(true);
     try {
       const walletsRes = await walletApi.list({ user: user.id, per_page: 1 });
       const wallet = walletsRes.results[0];
@@ -51,6 +53,8 @@ export default function DriverHome() {
     } catch {
       setTransactions([]);
       setSeatBookings([]);
+    } finally {
+      setWalletLoading(false);
     }
   }, [user?.id]);
 
@@ -60,7 +64,7 @@ export default function DriverHome() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+      <div className="mx-auto w-full space-y-5 px-5 py-5">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <BrandLockup layout="row" />
           <div className="flex items-center gap-3">
@@ -74,10 +78,19 @@ export default function DriverHome() {
           </div>
         </header>
         <div className="overflow-hidden rounded-2xl border border-[#E4EEE8] border-l-4 border-l-[#1C8C42] bg-white shadow-sm">
-          <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" />
+          <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" loading={walletLoading} />
         </div>
+        {!walletLoading && toPay > 0 && (
+          <Link
+            to="/app/driver/pay-due"
+            className="flex items-center justify-between rounded-xl border border-[var(--ev-danger)]/20 bg-[var(--ev-danger-soft)] px-4 py-3 text-sm text-[var(--ev-danger)]"
+          >
+            <span>Outstanding due Rs. {toPay.toLocaleString()}</span>
+            <span className="font-semibold">Pay now</span>
+          </Link>
+        )}
         <p className="text-xs font-semibold uppercase tracking-wider text-[#6D7B74]">Quick actions</p>
-        <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
+        <div className="grid grid-cols-4 gap-3">
           {gridCards.map((item) => (
             <Link
               key={item.to + item.label}

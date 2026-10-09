@@ -46,10 +46,11 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           data-lpignore="true"
           data-form-type="other"
           className={cn(
+            "px-3",
+            className,
             leftIcon && "pl-10",
             "pr-10",
             hideCharacters && "password-mask",
-            className,
           )}
           ref={ref}
         />

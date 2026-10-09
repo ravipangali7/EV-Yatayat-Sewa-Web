@@ -1,4 +1,4 @@
-import logo from "@/assets/logo.png";
+import { LogoMark } from "@/components/brand/LogoMark";
 import { cn } from "@/lib/utils";
 
 export function BrandLockup({
@@ -12,17 +12,15 @@ export function BrandLockup({
 }) {
   const compact = size === "sm" || layout === "row";
   return (
-    <div className={cn(layout === "row" ? "flex items-center gap-3 text-left" : "flex flex-col items-center text-center", className)}>
-      <img
-        src={logo}
-        alt="EV Yatayat"
-        className={cn("object-contain", compact ? "h-12 w-12" : "h-[72px] w-[72px]")}
-      />
+    <div className={cn(layout === "row" ? "flex items-center gap-2.5 text-left" : "flex flex-col items-center text-center", className)}>
+      <LogoMark size={compact ? 32 : 72} />
       <div>
-        <h1 className={cn("font-extrabold tracking-tight text-[#163024]", compact ? "text-xl" : "mt-2 text-[26px]")}>
+        <h1 className={cn("ev-wordmark font-bold tracking-tight text-[var(--ev-primary)]", compact ? "text-base leading-tight" : "mt-2 text-[28px] leading-none")}>
           EV Yatayat
         </h1>
-        <p className="text-sm font-semibold text-[#1C8C42]">Go Electric. Go Smarter.</p>
+        <p className={cn("font-medium text-[var(--ev-primary-dark)]", compact ? "text-[11px]" : "mt-1 text-[13px]")}>
+          Go Electric. Go Smarter.
+        </p>
       </div>
     </div>
   );

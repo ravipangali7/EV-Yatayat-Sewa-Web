@@ -10,13 +10,17 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      position="bottom-center"
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+            "group toast group-[.toaster]:bg-white group-[.toaster]:text-[var(--ev-text)] group-[.toaster]:border group-[.toaster]:border-[var(--ev-border)] group-[.toaster]:rounded-xl group-[.toaster]:shadow-[var(--ev-shadow-card)] group-[.toaster]:border-l-4 group-[.toaster]:border-l-[var(--ev-primary)]",
+          description: "group-[.toast]:text-[var(--ev-text-muted)]",
+          success: "group-[.toaster]:border-l-[var(--ev-primary)]",
+          error: "group-[.toaster]:border-l-[var(--ev-danger)]",
+          info: "group-[.toaster]:border-l-[var(--ev-info)]",
+          actionButton: "group-[.toast]:bg-[var(--ev-primary)] group-[.toast]:text-white",
+          cancelButton: "group-[.toast]:bg-[var(--ev-mint-50)] group-[.toast]:text-[var(--ev-text)]",
         },
       }}
       {...props}

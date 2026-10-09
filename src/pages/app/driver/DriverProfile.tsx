@@ -7,6 +7,8 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Link, useNavigate } from "react-router-dom";
 import AppBar from "@/components/app/AppBar";
+import { LanguageToggle } from "@/components/ev/LanguageToggle";
+import { useI18n } from "@/i18n/I18nProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { walletApi } from "@/modules/wallets/services/walletApi";
@@ -29,6 +31,8 @@ export default function DriverProfile() {
   const navigate = useNavigate();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const { t } = useI18n();
   const [saving, setSaving] = useState(false);
   const [toPay, setToPay] = useState(0);
   const [name, setName] = useState(user?.name ?? "");
@@ -74,6 +78,7 @@ export default function DriverProfile() {
   }, [refreshToPay]);
 
   const handleLogout = () => {
+    setShowLogoutConfirm(false);
     logout();
     navigate("/app/login", { replace: true });
   };
@@ -81,7 +86,7 @@ export default function DriverProfile() {
   return (
     <div className="min-h-screen bg-background">
       <AppBar title="Profile" />
-      <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-6 sm:px-6">
+      <div className="mx-auto w-full px-5 pb-8 pt-6">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <div className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-md p-6 flex flex-col items-center">
             <div className="relative mb-3">
@@ -142,13 +147,29 @@ export default function DriverProfile() {
           })}
         </div>
 
+        <div className="mt-3 flex items-center justify-between rounded-2xl border border-[var(--ev-border)] bg-[var(--ev-surface)] px-4 py-3">
+          <span className="text-sm font-medium">{t("lang.label")}</span>
+          <LanguageToggle />
+        </div>
+
         <Button
           variant="outline"
-          onClick={handleLogout}
-          className="w-full mt-6 h-12 rounded-xl text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="w-full mt-6 h-12 rounded-xl text-[var(--ev-danger)] border-[var(--ev-danger)] hover:bg-[var(--ev-danger-soft)]"
         >
-          <LogOut size={16} className="mr-2" /> Logout
+          <LogOut size={16} className="mr-2" /> {t("logout")}
         </Button>
+
+        <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+          <DialogContent className="max-w-[340px] rounded-2xl">
+            <DialogHeader><DialogTitle>{t("logout")}</DialogTitle></DialogHeader>
+            <p className="text-sm text-muted-foreground">{t("logout.confirm")}</p>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowLogoutConfirm(false)}>{t("cancel")}</Button>
+              <Button variant="destructive" className="flex-1" onClick={handleLogout}>{t("logout")}</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
           <DialogContent className="max-w-[380px] rounded-2xl">

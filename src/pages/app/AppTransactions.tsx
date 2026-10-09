@@ -54,6 +54,9 @@ export default function AppTransactions() {
       }
       const res = await transactionApi.list(params);
       setTransactions(res.results ?? []);
+      // TODO(api): Wallet lists the same wallet without date filters and can show rows
+      // (e.g. Mar 2026) that this page hides for "30 days". "All time" sends no date_from/date_to.
+      // If All time is still empty while Wallet is not, the filter is server-side — do not change the API.
     } catch {
       setTransactions([]);
     } finally {
@@ -95,8 +98,8 @@ export default function AppTransactions() {
                 type="button"
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                   datePreset === preset
-                    ? "bg-primary/10 text-primary border-primary/20"
-                    : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
+                    ? "ev-chip-active"
+                    : "bg-[var(--ev-surface)] text-[var(--ev-text-muted)] border-[var(--ev-border)]"
                 }`}
                 onClick={() => setDatePreset(preset)}
               >
