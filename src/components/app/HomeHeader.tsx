@@ -43,6 +43,22 @@ export function HomeHeader({
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {showBalance && (
+            <Link
+              to={walletPath}
+              className="ev-wallet-card flex h-10 max-w-[148px] items-center gap-1.5 rounded-full px-2.5 text-white"
+            >
+              <Briefcase size={14} strokeWidth={1.75} className="shrink-0" />
+              <span className="min-w-0 truncate text-[13px] font-bold leading-none tabular-nums">
+                {balanceLoading ? (
+                  <span className="inline-block h-3.5 w-14 animate-pulse rounded bg-white/30" />
+                ) : (
+                  money(Number(balance ?? 0))
+                )}
+              </span>
+              <ChevronRight size={14} className="shrink-0 text-white/80" />
+            </Link>
+          )}
+          {showBalance && (
             <span
               className="grid h-10 w-10 place-items-center rounded-full border border-[var(--ev-border)] bg-[var(--ev-surface)] text-[var(--ev-text)] shadow-[var(--ev-shadow-card)]"
               aria-hidden
@@ -67,30 +83,6 @@ export function HomeHeader({
           ) : null}
         </div>
       </div>
-
-      {showBalance && (
-        <div className="mt-4 flex justify-end">
-          <Link
-            to={walletPath}
-            className="flex h-[62px] min-w-[158px] max-w-[52%] shrink-0 items-center gap-2 rounded-2xl bg-[var(--ev-wallet)] px-2.5 text-white shadow-[var(--ev-shadow-btn)]"
-          >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/20">
-              <Briefcase size={16} strokeWidth={1.75} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[11px] font-medium leading-none text-white/85">Balance</span>
-              <span className="mt-1 block truncate text-[15px] font-bold leading-none tabular-nums">
-                {balanceLoading ? (
-                  <span className="inline-block h-4 w-20 animate-pulse rounded bg-white/30" />
-                ) : (
-                  money(Number(balance ?? 0))
-                )}
-              </span>
-            </span>
-            <ChevronRight size={16} className="shrink-0 text-white/80" />
-          </Link>
-        </div>
-      )}
     </header>
   );
 }

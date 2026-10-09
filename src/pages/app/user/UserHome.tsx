@@ -89,7 +89,7 @@ export default function UserHome() {
         profilePath={`${basePath}/profile`}
         profilePicture={user?.profile_picture}
       />
-      <div className="mx-auto w-full space-y-5 px-5 pb-5 pt-4">
+      <div className="mx-auto w-full space-y-5 px-5 pb-5 pt-3">
         <ScheduleVehicleSearch bookingPath={`${basePath}/booking`} />
 
         <section className="overflow-hidden rounded-2xl border border-[#E4EEE8] bg-white shadow-sm">
