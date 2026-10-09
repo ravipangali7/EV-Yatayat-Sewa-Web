@@ -74,8 +74,10 @@ export default function AppRoleLayout({ role }: AppRoleLayoutProps) {
 
   return (
     <AppLayout>
-      <div className="pb-20">
-        <Outlet />
+      <div className="ride-app min-h-screen">
+        <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#F7FCF8] pb-20 shadow-xl shadow-[#163024]/5">
+          <Outlet />
+        </div>
       </div>
       <BottomNav items={navItems} />
 

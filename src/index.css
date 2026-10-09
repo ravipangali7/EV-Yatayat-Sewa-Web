@@ -220,6 +220,17 @@
     @apply min-h-screen bg-background;
   }
 
+  .ride-shell {
+    background: linear-gradient(180deg, #f7fcf8 0%, #f3faf5 48%, #e7f6ec 100%);
+    color: #1c2430;
+    font-family: "Plus Jakarta Sans", Inter, sans-serif;
+  }
+
+  .ride-app {
+    background: #e7f3ea;
+    font-family: "Plus Jakarta Sans", Inter, sans-serif;
+  }
+
   .app-surface {
     @apply bg-card border border-border;
   }

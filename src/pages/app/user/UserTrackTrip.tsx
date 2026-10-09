@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Crosshair } from "lucide-react";
 import AppBar from "@/components/app/AppBar";
+import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { api } from "@/lib/api";
 import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
 import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
@@ -352,7 +352,7 @@ export default function UserTrackTrip() {
             options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false, gestureHandling: "greedy", mapTypeId: mapType }}
           >
             {path.length > 0 && (
-              <Polyline path={path} options={{ strokeColor: "#2563eb", strokeWeight: 4, strokeOpacity: 0.8 }} />
+              <Polyline path={path} options={{ strokeColor: "#1C8C42", strokeWeight: 5, strokeOpacity: 0.9 }} />
             )}
             {path.length > 0 && (
               <Marker position={path[0]} label="S" title="Start" />
@@ -369,33 +369,49 @@ export default function UserTrackTrip() {
             <button
               type="button"
               onClick={handleFollowPress}
-              className="absolute bottom-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background/90 shadow-sm backdrop-blur-sm hover:bg-muted aria-pressed:bg-muted"
+              className="absolute bottom-44 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[#E4EEE8] bg-white shadow-sm"
               title="Follow vehicle"
               aria-label="Follow vehicle"
             >
-              <Crosshair className="h-5 w-5 text-foreground" />
+              <SvgIcon name="locate" className="h-5 w-5 text-[#1C8C42]" />
             </button>
-            <div className="absolute bottom-4 right-16 z-10">
+            <div className="absolute bottom-44 right-16 z-10">
               <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
             </div>
           </>
         )}
       </div>
       <AppBar
-        title="Live tracking"
+        title="Live Tracking"
         showBack
-        className="relative z-10 bg-background/80 backdrop-blur-sm border-b border-border/50"
+        variant="green"
+        className="relative z-10"
         right={
           isActive ? (
-            <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold">
-              Live
-            </span>
+            <span className="rounded-full bg-white/20 px-2 py-1 text-[10px] font-semibold text-white">Live</span>
           ) : null
         }
       />
-      <div className="relative z-10 mx-4 mt-2 px-3 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm max-w-md">
-        <p className="text-sm font-semibold">{trip.vehicle_name ?? trip.vehicle_no ?? "Vehicle"}</p>
-        <p className="text-xs text-muted-foreground">Trip: {trip.trip_id}</p>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-4">
+        <div className="pointer-events-auto rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
+              <SvgIcon name="bus" className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-[#163024]">{trip.vehicle_name ?? "EV Yatayat"}</p>
+              <p className="text-xs text-[#6D7B74]">{trip.vehicle_no ?? trip.trip_id}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-semibold uppercase text-[#6D7B74]">Trip</p>
+              <p className="text-xs font-bold text-[#1C8C42]">{isActive ? "On the way" : "Ended"}</p>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#1C8C42] py-2.5 text-sm font-semibold text-white">
+            <SvgIcon name="map-pin" className="h-4 w-4" />
+            {isActive ? "Tracking..." : "Trip ended"}
+          </div>
+        </div>
       </div>
       {path.length === 0 && isLoaded && (
         <div className="relative z-10 mx-4 mt-2 px-4 py-3 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 text-center text-sm text-muted-foreground">

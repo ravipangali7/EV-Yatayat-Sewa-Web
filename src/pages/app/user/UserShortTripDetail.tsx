@@ -4,8 +4,12 @@ import AppBar from "@/components/app/AppBar";
 import { seatBookingApi } from "@/modules/seat-bookings/services/seatBookingApi";
 import type { SeatBooking } from "@/types";
 import { format } from "date-fns";
-import { FileText, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SuccessMark } from "@/components/app/ride/SuccessMark";
+import { SvgIcon } from "@/components/app/ride/SvgIcon";
+import { ThankYouPanel } from "@/components/app/ride/ThankYouPanel";
+import { TripTimeline } from "@/components/app/ride/TripTimeline";
+import { rideBtn } from "@/components/app/ride/rideStyles";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveAppRole, getAppRoleConfig } from "@/config/appRoles";
 
@@ -78,18 +82,56 @@ export default function UserShortTripDetail() {
     );
   }
 
+  const clockTime = (value: string | undefined) => {
+    if (!value) return undefined;
+    try {
+      return format(new Date(value), "hh:mm a");
+    } catch {
+      return undefined;
+    }
+  };
+  const boardedTime = clockTime(booking.check_in_datetime);
+  const arrivedTime = clockTime(booking.check_out_datetime);
+
   return (
-    <div className="min-h-screen bg-background">
-      <AppBar title="Short trip details" showBack />
-      <div className="px-5 pt-6 pb-24 space-y-4">
-        <div className={`rounded-2xl border border-l-4 p-5 flex items-center gap-4 ${booking.is_paid ? "border-emerald-200 dark:border-emerald-800 border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/10" : "border-amber-200 dark:border-amber-800 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/10"}`}>
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${booking.is_paid ? "icon-emerald" : "icon-amber"}`}>
-            <FileText size={20} />
+    <div className="ride-shell min-h-screen">
+      <AppBar title={tripEnded ? "Trip Ended" : "On Trip"} showBack variant="green" />
+      <div className="space-y-4 px-5 pb-8 pt-6">
+        {tripEnded ? (
+          <div className="text-center">
+            <SuccessMark />
+            <h2 className="mt-4 text-2xl font-extrabold text-[#163024]">Trip Ended</h2>
+            <p className="text-sm text-[#6D7B74]">You have reached your destination</p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
+                <SvgIcon name="bus" className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-[#163024]">{booking.vehicle_details?.name ?? "EV Yatayat"}</p>
+                <p className="text-xs text-[#6D7B74]">{booking.vehicle_details?.vehicle_no ?? "EV Microbus"}</p>
+              </div>
+            </div>
+            <TripTimeline
+              steps={[
+                { title: "Boarded", detail: booking.check_in_address || "Your location", time: boardedTime, state: booking.check_in_datetime ? "done" : "current" },
+                { title: "On the way", detail: booking.destination_place_details?.name || "Destination", time: canLiveTrack ? "Live" : undefined, state: canLiveTrack ? "current" : booking.check_in_datetime ? "done" : "upcoming" },
+                { title: "Arriving", detail: booking.destination_place_details?.name || "Destination", time: arrivedTime, state: tripEnded ? "done" : "upcoming" },
+              ]}
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-sm">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
+            <SvgIcon name="bus" className="h-5 w-5" />
           </div>
           <div>
-            <p className="font-bold text-base">{booking.vehicle_details?.name ?? booking.vehicle ?? "Vehicle"}</p>
-            <p className="text-sm text-muted-foreground">{booking.vehicle_details?.vehicle_no ?? ""}</p>
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold mt-1 inline-block ${booking.is_paid ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+            <p className="font-bold text-[#163024]">{booking.vehicle_details?.name ?? booking.vehicle ?? "Vehicle"}</p>
+            <p className="text-sm text-[#6D7B74]">{booking.vehicle_details?.vehicle_no ?? ""}</p>
+            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${booking.is_paid ? "bg-[#E7F8EC] text-[#1C8C42]" : "bg-amber-100 text-amber-700"}`}>
               {booking.is_paid ? "Paid" : "Pending"}
             </span>
           </div>
@@ -142,13 +184,14 @@ export default function UserShortTripDetail() {
           {tripEnded && <p className="text-sm text-muted-foreground">Trip has ended. Live tracking is no longer available.</p>}
           {canLiveTrack && booking.trip_details?.id && (
             <Button
-              className="w-full rounded-xl gap-2"
+              className={rideBtn}
               onClick={() => navigate(`${trackPath}/${booking.trip_details!.id}`)}
             >
-              <MapPin size={18} /> Live tracking
+              <SvgIcon name="map-pin" className="mr-2 h-4 w-4" /> Live Tracking
             </Button>
           )}
         </div>
+        {tripEnded && <ThankYouPanel />}
       </div>
     </div>
   );

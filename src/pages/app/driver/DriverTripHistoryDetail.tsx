@@ -4,7 +4,10 @@ import AppBar from "@/components/app/AppBar";
 import { tripApi } from "@/modules/trips/services/tripApi";
 import type { ActiveTrip } from "@/modules/trips/services/tripApi";
 import { format } from "date-fns";
-import { Clock } from "lucide-react";
+import { SuccessMark } from "@/components/app/ride/SuccessMark";
+import { SvgIcon } from "@/components/app/ride/SvgIcon";
+import { ThankYouPanel } from "@/components/app/ride/ThankYouPanel";
+import { TripTimeline } from "@/components/app/ride/TripTimeline";
 
 interface TripDetail extends ActiveTrip {
   vehicle?: string;
@@ -67,17 +70,44 @@ export default function DriverTripHistoryDetail() {
   const completed = !!trip.end_time;
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppBar title="Trip Details" showBack />
-      <div className="px-5 pt-6 pb-24 space-y-4">
-        <div className="rounded-2xl border border-primary/20 border-l-4 border-l-primary bg-primary/5 p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl icon-primary flex items-center justify-center">
-            <Clock size={20} />
+    <div className="ride-shell min-h-screen">
+      <AppBar title={completed ? "Trip Ended" : "On Trip"} showBack variant="green" />
+      <div className="space-y-4 px-5 pb-8 pt-6">
+        {completed ? (
+          <div className="text-center">
+            <SuccessMark />
+            <h2 className="mt-4 text-2xl font-extrabold text-[#163024]">Trip Ended</h2>
+            <p className="text-sm text-[#6D7B74]">Your trip has been completed.</p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-[#E4EEE8] bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
+                <SvgIcon name="bus" className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-[#163024]">{trip.vehicle_details?.name ?? "EV Yatayat"}</p>
+                <p className="text-xs text-[#6D7B74]">{trip.vehicle_details?.vehicle_no ?? "EV Microbus"}</p>
+              </div>
+            </div>
+            <TripTimeline
+              steps={[
+                { title: "Boarded", detail: "Trip started", time: formatTime(trip.start_time), state: "done" },
+                { title: "On the way", detail: trip.route_details?.name ?? "Route", state: "current" },
+                { title: "Arriving", detail: "Destination", state: "upcoming" },
+              ]}
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 rounded-2xl border border-[#E4EEE8] border-l-4 border-l-[#1C8C42] bg-white p-5 shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
+            <SvgIcon name="clock" className="h-5 w-5" />
           </div>
           <div>
-            <p className="font-bold text-base">{trip.route_details?.name ?? trip.route ?? "Trip"}</p>
-            <p className="text-sm text-muted-foreground">{trip.vehicle_details?.vehicle_no ?? trip.vehicle ?? "—"}</p>
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold mt-1 inline-block ${completed ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600"}`}>
+            <p className="text-base font-bold text-[#163024]">{trip.route_details?.name ?? trip.route ?? "Trip"}</p>
+            <p className="text-sm text-[#6D7B74]">{trip.vehicle_details?.vehicle_no ?? trip.vehicle ?? "—"}</p>
+            <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${completed ? "bg-[#E7F8EC] text-[#1C8C42]" : "bg-amber-100 text-amber-700"}`}>
               {completed ? "Completed" : "In Progress"}
             </span>
           </div>
@@ -95,6 +125,7 @@ export default function DriverTripHistoryDetail() {
           <DetailRow label="Start Time" value={formatTime(trip.start_time)} />
           <DetailRow label="End Time" value={formatTime(trip.end_time)} />
         </div>
+        {completed && <ThankYouPanel detail="Thank you for driving with EV Yatayat. We look forward to your next trip." />}
       </div>
     </div>
   );

@@ -1,18 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import {
-  Car,
-  Wallet,
-  User,
-  CreditCard,
-  Receipt,
-  FileText,
-  Clock,
-  MapPin,
-} from "lucide-react";
 import { Link } from "react-router-dom";
 import WalletCard from "@/components/app/WalletCard";
 import TransactionCard from "@/components/app/TransactionCard";
+import { BrandLockup } from "@/components/app/ride/BrandLockup";
+import { RideScene } from "@/components/app/ride/RideScene";
+import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -20,17 +12,16 @@ import { seatBookingApi } from "@/modules/seat-bookings/services/seatBookingApi"
 import { transactionToAppTransaction } from "@/lib/transactionMap";
 import type { AppTransaction } from "@/components/app/TransactionCard";
 import { toNumber } from "@/lib/utils";
-import { iconColorClasses } from "@/lib/appHomeStyles";
 
 const gridCards = [
-  { label: "Vehicle", icon: Car, to: "/app/driver/vehicle" },
-  { label: "Trip History", icon: Clock, to: "/app/driver/trip-history" },
-  { label: "Seat Booking", icon: FileText, to: "/app/driver/seat-booking" },
-  { label: "Map", icon: MapPin, to: "/app/driver/vehicle" },
-  { label: "Deposit", icon: CreditCard, to: "/app/driver/deposit" },
-  { label: "Pay Dues", icon: Receipt, to: "/app/driver/pay-due" },
-  { label: "Wallet", icon: Wallet, to: "/app/driver/wallet" },
-  { label: "Profile", icon: User, to: "/app/driver/profile" },
+  { label: "Vehicle", icon: "car", to: "/app/driver/vehicle" },
+  { label: "Trip History", icon: "clock", to: "/app/driver/trip-history" },
+  { label: "Seat Booking", icon: "file-text", to: "/app/driver/seat-booking" },
+  { label: "Map", icon: "map-pin", to: "/app/driver/vehicle" },
+  { label: "Deposit", icon: "credit-card", to: "/app/driver/deposit" },
+  { label: "Pay Dues", icon: "receipt", to: "/app/driver/pay-due" },
+  { label: "Wallet", icon: "wallet", to: "/app/driver/wallet" },
+  { label: "Profile", icon: "user", to: "/app/driver/profile" },
 ];
 
 export default function DriverHome() {
@@ -69,44 +60,40 @@ export default function DriverHome() {
   }, [refreshWallet]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* White header with green accent - modern */}
-      <div className="bg-white dark:bg-card border-b border-border shadow-sm">
-        <div className="px-5 pt-5 pb-6">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-5">
-            <div>
-              <p className="text-muted-foreground text-xs font-medium">Good Morning</p>
-              <h2 className="text-xl font-bold text-foreground tracking-tight">{user?.name ?? "Driver"}</h2>
-            </div>
-            <div className="w-11 h-11 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center ring-2 ring-primary/5">
-              <span className="text-sm font-bold text-primary">{user?.name?.charAt(0) ?? "D"}</span>
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl overflow-hidden border border-border/60 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg shadow-primary/5 border-l-4 border-l-primary">
-            <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" />
-          </motion.div>
+    <div className="ride-shell min-h-screen">
+      <div className="px-5 pb-2 pt-6">
+        <BrandLockup size="sm" />
+        <div className="mt-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-[#6D7B74]">On duty</p>
+            <h2 className="text-xl font-extrabold tracking-tight text-[#163024]">{user?.name ?? "Driver"}</h2>
+          </div>
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E7F8EC] text-sm font-bold text-[#1C8C42]">
+            {user?.name?.charAt(0) ?? "D"}
+          </div>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-2xl border border-[#E4EEE8] border-l-4 border-l-[#1C8C42] bg-white shadow-sm">
+          <WalletCard balance={balance} toReceive={toReceive} toPay={toPay} addFundLink="/app/driver/deposit" />
         </div>
       </div>
 
-      <div className="px-5 pt-5 pb-24 space-y-5 bg-background">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</p>
+      <RideScene vehicle="van" />
+
+      <div className="space-y-5 px-5 pb-8">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#6D7B74]">Quick actions</p>
         <div className="grid grid-cols-4 gap-3">
-          {gridCards.map((item, idx) => {
-            const Icon = item.icon;
-            const iconClass = iconColorClasses[idx % iconColorClasses.length];
-            return (
-              <Link
-                key={item.to + item.label}
-                to={item.to}
-                className="bg-white dark:bg-card/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md hover:border-primary/20 transition-all"
-              >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
-                  <Icon size={20} />
-                </div>
-                <span className="text-[11px] font-medium text-center leading-tight text-foreground">{item.label}</span>
-              </Link>
-            );
-          })}
+          {gridCards.map((item) => (
+            <Link
+              key={item.to + item.label}
+              to={item.to}
+              className="flex flex-col items-center justify-center rounded-2xl border border-[#E4EEE8] bg-white p-3 shadow-sm"
+            >
+              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
+                <SvgIcon name={item.icon} className="h-5 w-5" />
+              </div>
+              <span className="text-center text-[11px] font-medium leading-tight text-[#163024]">{item.label}</span>
+            </Link>
+          ))}
         </div>
 
         <div>

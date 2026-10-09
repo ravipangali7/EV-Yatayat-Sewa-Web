@@ -1,22 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import {
-  CalendarDays,
-  Wallet,
-  CreditCard,
-  User,
-  PlusCircle,
-  FileText,
-  Send,
-  TrendingUp,
-  Eye,
-  EyeOff,
-} from "lucide-react";
 import { Link } from "react-router-dom";
 import TransactionCard from "@/components/app/TransactionCard";
 import TransferModal from "@/components/app/TransferModal";
 import { UserHomeMap } from "@/components/app/UserHomeMap";
 import { ScheduleVehicleSearch } from "@/components/app/ScheduleVehicleSearch";
+import { BrandLockup } from "@/components/app/ride/BrandLockup";
+import { RideScene } from "@/components/app/ride/RideScene";
+import { SvgIcon } from "@/components/app/ride/SvgIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { walletApi } from "@/modules/wallets/services/walletApi";
 import { transactionApi } from "@/modules/transactions/services/transactionApi";
@@ -26,28 +16,26 @@ import { transactionToAppTransaction } from "@/lib/transactionMap";
 import type { AppTransaction } from "@/components/app/TransactionCard";
 import { toNumber } from "@/lib/utils";
 import { resolveAppRole, getAppRoleConfig } from "@/config/appRoles";
-import { iconColorClasses } from "@/lib/appHomeStyles";
-
 const userGridCards = [
-  { label: "Book Trip", icon: CalendarDays, to: "booking", gradient: true },
-  { label: "History", icon: FileText, to: "booking?tab=my-booking", iconClass: "bg-primary/15 text-primary" },
-  { label: "Deposit", icon: PlusCircle, to: "deposit" },
-  { label: "Transfer", icon: Send, action: "transfer" as const },
-  { label: "Topup Card", icon: CreditCard, to: "card/topup" },
-  { label: "Card", icon: CreditCard, to: "card" },
-  { label: "Wallet", icon: Wallet, to: "wallet" },
-  { label: "Profile", icon: User, to: "profile" },
+  { label: "Book Trip", icon: "bus", to: "booking" },
+  { label: "History", icon: "file-text", to: "booking?tab=my-booking" },
+  { label: "Deposit", icon: "circle-plus", to: "deposit" },
+  { label: "Transfer", icon: "send", action: "transfer" as const },
+  { label: "Topup Card", icon: "credit-card", to: "card/topup" },
+  { label: "Card", icon: "credit-card", to: "card" },
+  { label: "Wallet", icon: "wallet", to: "wallet" },
+  { label: "Profile", icon: "user", to: "profile" },
 ];
 
 const dealerGridCards = [
-  { label: "Book Trip", icon: CalendarDays, to: "booking", gradient: true },
-  { label: "Booking", icon: FileText, to: "booking", iconClass: "bg-primary/15 text-primary" },
-  { label: "Deposit", icon: PlusCircle, to: "deposit" },
-  { label: "Transfer", icon: Send, action: "transfer" as const },
-  { label: "Revenue", icon: TrendingUp, to: "revenue" },
-  { label: "Card", icon: CreditCard, to: "card" },
-  { label: "Wallet", icon: Wallet, to: "wallet" },
-  { label: "Profile", icon: User, to: "profile" },
+  { label: "Book Trip", icon: "bus", to: "booking" },
+  { label: "Booking", icon: "file-text", to: "booking" },
+  { label: "Deposit", icon: "circle-plus", to: "deposit" },
+  { label: "Transfer", icon: "send", action: "transfer" as const },
+  { label: "Revenue", icon: "trending-up", to: "revenue" },
+  { label: "Card", icon: "credit-card", to: "card" },
+  { label: "Wallet", icon: "wallet", to: "wallet" },
+  { label: "Profile", icon: "user", to: "profile" },
 ];
 
 export default function UserHome() {
@@ -88,67 +76,64 @@ export default function UserHome() {
   }, [refreshWallet]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-sm">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium opacity-80">Welcome back</p>
-            <h2 className="text-base font-bold tracking-tight truncate">{user?.name ?? "Passenger"}</h2>
+    <div className="ride-shell min-h-screen">
+      <header className="px-5 pb-2 pt-6">
+        <BrandLockup size="sm" />
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-[#6D7B74]">Welcome back</p>
+            <h2 className="truncate text-lg font-extrabold text-[#163024]">{user?.name ?? "Passenger"}</h2>
           </div>
-          <Link
-            to={`${basePath}/wallet`}
-            className="flex items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 px-2.5 py-1.5 shrink-0"
-          >
-            <Wallet size={14} />
-            <div className="leading-tight text-right">
-              <p className="text-[9px] uppercase tracking-wide opacity-80">Balance</p>
-              <p className="text-sm font-bold tabular-nums">
+          <div className="flex items-center gap-1">
+            <Link to={`${basePath}/wallet`} className="rounded-full bg-white px-3 py-1.5 text-right shadow-sm border border-[#E4EEE8]">
+              <p className="text-[9px] uppercase tracking-wide text-[#6D7B74]">Balance</p>
+              <p className="text-sm font-bold text-[#1C8C42] tabular-nums">
                 {balanceVisible ? `Rs. ${balance.toLocaleString()}` : "Rs. ••••"}
               </p>
-            </div>
-          </Link>
-          <button
-            type="button"
-            onClick={() => setBalanceVisible((v) => !v)}
-            className="p-1.5 rounded-full hover:bg-white/15 shrink-0"
-            aria-label={balanceVisible ? "Hide balance" : "Show balance"}
-          >
-            {balanceVisible ? <Eye size={16} /> : <EyeOff size={16} />}
-          </button>
-          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <span className="text-sm font-bold">{user?.name?.charAt(0) ?? "P"}</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setBalanceVisible((v) => !v)}
+              className="rounded-full p-2 text-[#1C8C42]"
+              aria-label={balanceVisible ? "Hide balance" : "Show balance"}
+            >
+              <SvgIcon name={balanceVisible ? "eye" : "eye-off"} className="h-4 w-4" />
+            </button>
           </div>
-        </motion.div>
+        </div>
       </header>
 
-      <UserHomeMap />
+      <div className="space-y-5 px-5 pb-8 pt-2">
+        <div>
+          <h3 className="text-lg font-extrabold text-[#163024]">Where to go?</h3>
+          <p className="mb-3 text-sm text-[#6D7B74]">Select your destination</p>
+          <ScheduleVehicleSearch bookingPath={`${basePath}/booking`} />
+        </div>
+        <RideScene vehicle="bus" />
 
-      <div className="px-5 pt-4 pb-24 space-y-5 bg-background">
-        <ScheduleVehicleSearch bookingPath={`${basePath}/booking`} />
+        <UserHomeMap />
 
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#6D7B74]">Quick actions</p>
         <div className="grid grid-cols-4 gap-3">
-          {gridCards.map((item, idx) => {
-            const Icon = item.icon;
+          {gridCards.map((item) => {
             const key = "to" in item ? item.to + item.label : item.label;
-            const iconClass =
-              "iconClass" in item && item.iconClass
-                ? item.iconClass
-                : "gradient" in item && item.gradient
-                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                  : iconColorClasses[idx % iconColorClasses.length];
+            const tile = (
+              <>
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#E7F8EC] text-[#1C8C42]">
+                  <SvgIcon name={item.icon} className="h-5 w-5" />
+                </div>
+                <span className="text-center text-[11px] font-medium leading-tight text-[#163024]">{item.label}</span>
+              </>
+            );
             if ("action" in item && item.action === "transfer") {
               return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setShowTransferModal(true)}
-                  className="bg-white dark:bg-card/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md hover:border-primary/20 transition-all"
+                  className="flex flex-col items-center justify-center rounded-2xl border border-[#E4EEE8] bg-white p-3 shadow-sm"
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
-                    <Icon size={20} />
-                  </div>
-                  <span className="text-[11px] font-medium text-center leading-tight text-foreground">{item.label}</span>
+                  {tile}
                 </button>
               );
             }
@@ -157,12 +142,9 @@ export default function UserHome() {
               <Link
                 key={key}
                 to={to}
-                className="bg-white dark:bg-card/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 rounded-2xl border border-border/50 hover:shadow-md hover:border-primary/20 transition-all"
+                className="flex flex-col items-center justify-center rounded-2xl border border-[#E4EEE8] bg-white p-3 shadow-sm"
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconClass}`}>
-                  <Icon size={20} />
-                </div>
-                <span className="text-[11px] font-medium text-center leading-tight text-foreground">{item.label}</span>
+                {tile}
               </Link>
             );
           })}

@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Lock, ArrowLeft, ShieldCheck } from "lucide-react";
-import { motion } from "framer-motion";
 import AppLayout from "@/components/app/AppLayout";
+import { BrandLockup } from "@/components/app/ride/BrandLockup";
+import { RideShell } from "@/components/app/ride/RideShell";
+import { SvgIcon } from "@/components/app/ride/SvgIcon";
+import { rideBtn, rideField } from "@/components/app/ride/rideStyles";
 import { authApi } from "@/modules/auth/services/authApi";
 import { toast } from "sonner";
 
@@ -15,6 +17,7 @@ export default function AppResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [done, setDone] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,8 +41,7 @@ export default function AppResetPassword() {
     try {
       await authApi.changePassword(resetToken, password);
       sessionStorage.removeItem(RESET_TOKEN_KEY);
-      toast.success("Password reset successfully!");
-      navigate("/app/login", { replace: true });
+      setDone(true);
     } catch {
       toast.error("Failed to reset password. Token may have expired.");
     } finally {
@@ -50,8 +52,8 @@ export default function AppResetPassword() {
   if (resetToken === null) {
     return (
       <AppLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+        <div className="ride-shell flex min-h-screen items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1C8C42] border-t-transparent" />
         </div>
       </AppLayout>
     );
@@ -59,43 +61,51 @@ export default function AppResetPassword() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen flex flex-col bg-background">
-        <div className="bg-gradient-to-br from-primary via-primary/90 to-emerald-600 pt-14 pb-12 px-6 rounded-b-3xl shadow-xl shadow-primary/20">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
-              <ShieldCheck size={22} className="text-primary-foreground" />
+      <div className="ride-app min-h-screen">
+        <div className="mx-auto min-h-screen w-full max-w-[430px] shadow-xl shadow-[#163024]/5">
+          <RideShell>
+            <div className="px-6 pb-40 pt-8">
+              <Link to="/app/login" className="mb-2 inline-flex text-[#163024]" aria-label="Back">
+                <SvgIcon name="chevron-left" className="h-6 w-6" />
+              </Link>
+              <BrandLockup size="sm" />
+              <h2 className="mt-6 text-[22px] font-extrabold text-[#163024]">Set Password</h2>
+              <p className="mt-1 text-sm text-[#6D7B74]">Create a strong password to secure your account.</p>
+
+              {!done ? (
+                <form onSubmit={handleReset} autoComplete="off" className="mt-5 space-y-3">
+                  <PasswordInput
+                    leftIcon={<SvgIcon name="lock" className="h-4 w-4" />}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={rideField}
+                  />
+                  <PasswordInput
+                    leftIcon={<SvgIcon name="lock" className="h-4 w-4" />}
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={rideField}
+                  />
+                  <Button type="submit" className={`${rideBtn} mt-2`} disabled={isLoading}>
+                    {isLoading ? "Saving..." : "Register"}
+                  </Button>
+                </form>
+              ) : (
+                <div className="mt-6 rounded-2xl border border-[#D7F0DF] bg-[#F3FBF6] p-5 text-center shadow-sm">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#1C8C42]">
+                    <SvgIcon name="check" className="h-6 w-6 text-white" />
+                  </div>
+                  <p className="mt-3 text-base font-extrabold text-[#1C8C42]">Registration Successful!</p>
+                  <p className="mt-1 text-sm text-[#6D7B74]">Your password has been updated.</p>
+                  <Button className={`${rideBtn} mt-4`} onClick={() => navigate("/app/login", { replace: true })}>
+                    Continue
+                  </Button>
+                </div>
+              )}
             </div>
-            <h1 className="text-xl font-bold text-primary-foreground">Reset Password</h1>
-            <p className="text-primary-foreground/75 text-xs mt-1">Set your new secure password</p>
-          </motion.div>
-        </div>
-
-        <div className="flex-1 px-6 pt-8">
-          <div className="bg-white dark:bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl shadow-black/5 p-6 mb-5">
-            <form onSubmit={handleReset} autoComplete="off" className="space-y-4">
-              <PasswordInput
-                leftIcon={<Lock size={16} />}
-                placeholder="New Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-12 rounded-xl"
-              />
-              <PasswordInput
-                leftIcon={<Lock size={16} />}
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="h-12 rounded-xl"
-              />
-              <Button type="submit" className="w-full h-12 rounded-xl font-semibold" disabled={isLoading}>
-                {isLoading ? "Resetting..." : "Reset Password"}
-              </Button>
-            </form>
-          </div>
-
-          <Link to="/app/login" className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-            <ArrowLeft size={14} /> Back to Login
-          </Link>
+          </RideShell>
         </div>
       </div>
     </AppLayout>
