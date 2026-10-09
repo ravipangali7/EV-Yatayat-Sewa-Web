@@ -1,89 +1,103 @@
 import { Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Bell, Briefcase, ChevronRight, UserRound } from "lucide-react";
+import { API_ORIGIN } from "@/lib/api";
 import { LogoMark } from "@/components/brand/LogoMark";
 
-function BrandRow() {
-  return (
-    <div className="flex min-w-0 items-center gap-2.5">
-      <LogoMark size={36} className="shrink-0" />
-      <div className="min-w-0 leading-tight">
-        <p className="ev-wordmark truncate text-[15px] font-bold text-[var(--ev-primary)]">EV Yatayat</p>
-        <p className="truncate text-[11px] font-medium text-[var(--ev-primary-dark)]">Go Electric. Go Smarter.</p>
-      </div>
-    </div>
-  );
+function pictureSrc(src?: string | null) {
+  if (!src) return undefined;
+  return src.startsWith("http") ? src : `${API_ORIGIN}${src}`;
+}
+
+function money(value: number) {
+  return `Rs. ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function HomeHeader({
-  eyebrow,
   name,
+  tagline = "Travel smart. Travel green.",
   balance,
   balanceLoading,
-  balanceVisible,
-  onToggleBalance,
   walletPath,
+  profilePath,
+  profilePicture,
   avatarInitial,
 }: {
-  eyebrow: string;
   name: string;
+  tagline?: string;
   balance?: number;
   balanceLoading?: boolean;
   balanceVisible?: boolean;
   onToggleBalance?: () => void;
   walletPath?: string;
+  profilePath?: string;
+  profilePicture?: string | null;
   avatarInitial?: string;
 }) {
   const showBalance = walletPath != null;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--ev-border)] bg-[var(--ev-bg)]/95 px-5 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-md">
-      <BrandRow />
-      <div className="mt-3.5 flex items-center justify-between gap-3">
+    <header className="px-5 pt-[max(0.875rem,env(safe-area-inset-top))]">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <LogoMark size={40} className="shrink-0" />
+          <div className="min-w-0 leading-tight">
+            <p className="ev-wordmark truncate text-[17px] font-bold text-[var(--ev-primary)]">EV Yatayat</p>
+            <p className="truncate text-[11px] font-medium text-[var(--ev-primary)]/80">Go Electric. Go Smarter.</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {showBalance && (
+            <span
+              className="grid h-10 w-10 place-items-center rounded-full border border-[var(--ev-border)] bg-[var(--ev-surface)] text-[var(--ev-text)] shadow-[var(--ev-shadow-card)]"
+              aria-hidden
+            >
+              <Bell size={18} strokeWidth={1.75} />
+            </span>
+          )}
+          {profilePath ? (
+            <Link
+              to={profilePath}
+              className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-[var(--ev-border)] bg-[var(--ev-mint-100)] text-[var(--ev-primary)] shadow-[var(--ev-shadow-card)]"
+              aria-label="Profile"
+            >
+              {pictureSrc(profilePicture) ? (
+                <img src={pictureSrc(profilePicture)} alt="" className="h-full w-full object-cover" />
+              ) : avatarInitial ? (
+                <span className="text-sm font-bold">{avatarInitial}</span>
+              ) : (
+                <UserRound size={18} strokeWidth={1.75} />
+              )}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--ev-text-muted)]">
-            {avatarInitial != null && (
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ev-primary)]" aria-hidden />
-            )}
-            {eyebrow}
-          </p>
-          <p className="truncate text-[17px] font-bold leading-snug text-[var(--ev-text)]">{name}</p>
+          <p className="truncate text-[26px] font-bold leading-none tracking-tight text-[var(--ev-text)]">{name},</p>
+          <p className="mt-1.5 text-[13px] font-medium text-[var(--ev-text-muted)]">{tagline}</p>
         </div>
 
-        {showBalance ? (
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              to={walletPath}
-              className="rounded-full border border-[var(--ev-border)] bg-[var(--ev-surface)] px-3 py-1.5 shadow-[var(--ev-shadow-card)]"
-            >
-              <span className="block text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--ev-text-muted)]">
-                Balance
-              </span>
-              <span className="mt-0.5 block text-[13px] font-bold leading-none tabular-nums text-[var(--ev-primary)]">
+        {showBalance && (
+          <Link
+            to={walletPath}
+            className="flex h-[62px] min-w-[158px] max-w-[52%] shrink-0 items-center gap-2 rounded-2xl bg-[var(--ev-wallet)] px-2.5 text-white shadow-[var(--ev-shadow-btn)]"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/20">
+              <Briefcase size={16} strokeWidth={1.75} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[11px] font-medium leading-none text-white/85">Balance</span>
+              <span className="mt-1 block truncate text-[15px] font-bold leading-none tabular-nums">
                 {balanceLoading ? (
-                  <span className="inline-block h-3.5 w-16 animate-pulse rounded bg-[var(--ev-mint-100)]" />
-                ) : balanceVisible ? (
-                  `Rs. ${Number(balance ?? 0).toLocaleString()}`
+                  <span className="inline-block h-4 w-20 animate-pulse rounded bg-white/30" />
                 ) : (
-                  "Rs. ••••"
+                  money(Number(balance ?? 0))
                 )}
               </span>
-            </Link>
-            <button
-              type="button"
-              onClick={onToggleBalance}
-              className="grid h-10 w-10 place-items-center rounded-full border border-[var(--ev-border)] bg-[var(--ev-surface)] text-[var(--ev-primary)] shadow-[var(--ev-shadow-card)]"
-              aria-label={balanceVisible ? "Hide balance" : "Show balance"}
-            >
-              {balanceVisible ? <Eye size={18} strokeWidth={1.75} /> : <EyeOff size={18} strokeWidth={1.75} />}
-            </button>
-          </div>
-        ) : (
-          <div
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--ev-mint-100)] text-sm font-bold text-[var(--ev-primary)]"
-            aria-hidden
-          >
-            {avatarInitial || "D"}
-          </div>
+            </span>
+            <ChevronRight size={16} className="shrink-0 text-white/80" />
+          </Link>
         )}
       </div>
     </header>

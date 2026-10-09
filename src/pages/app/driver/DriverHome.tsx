@@ -65,8 +65,10 @@ export default function DriverHome() {
   return (
     <div className="min-h-screen">
       <HomeHeader
-        eyebrow="On duty"
         name={user?.name ?? "Driver"}
+        tagline="On duty"
+        profilePath="/app/driver/profile"
+        profilePicture={user?.profile_picture}
         avatarInitial={user?.name?.charAt(0) ?? "D"}
       />
       <div className="mx-auto w-full space-y-5 px-5 py-5">

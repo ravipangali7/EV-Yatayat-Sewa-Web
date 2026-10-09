@@ -81,20 +81,18 @@ export default function UserHome() {
   return (
     <div className="min-h-screen">
       <HomeHeader
-        eyebrow="Welcome back"
         name={user?.name ?? "Passenger"}
+        tagline="Travel smart. Travel green."
         balance={balance}
         balanceLoading={balanceLoading}
         balanceVisible={balanceVisible}
         onToggleBalance={() => setBalanceVisible((v) => !v)}
         walletPath={`${basePath}/wallet`}
+        profilePath={`${basePath}/profile`}
+        profilePicture={user?.profile_picture}
       />
-      <div className="mx-auto w-full space-y-5 px-5 py-5">
-        <section>
-          <h3 className="text-xl font-extrabold text-[#163024]">Where to go?</h3>
-          <p className="mb-3 text-sm text-[#6D7B74]">Select your destination</p>
-          <ScheduleVehicleSearch bookingPath={`${basePath}/booking`} />
-        </section>
+      <div className="mx-auto w-full space-y-5 px-5 pb-5 pt-4">
+        <ScheduleVehicleSearch bookingPath={`${basePath}/booking`} />
 
         <section className="overflow-hidden rounded-2xl border border-[#E4EEE8] bg-white shadow-sm">
           <UserHomeMap />

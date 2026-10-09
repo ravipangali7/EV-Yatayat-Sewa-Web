@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronRight, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,6 +37,8 @@ interface SearchableSelectProps<T = SelectOption> {
   leadingOptions?: { value: string; label: string }[];
   onLeadingSelect?: (value: string) => void;
   emptyText?: string;
+  /** Small caption above the selected value, for stacked field triggers. */
+  fieldLabel?: string;
 }
 
 export function SearchableSelect<T = SelectOption>({
@@ -52,6 +54,7 @@ export function SearchableSelect<T = SelectOption>({
   leadingOptions,
   onLeadingSelect,
   emptyText = "No results found.",
+  fieldLabel,
 }: SearchableSelectProps<T>) {
   const [open, setOpen] = useState(false);
   
@@ -87,8 +90,21 @@ export function SearchableSelect<T = SelectOption>({
           className={cn('w-full justify-between', className)}
           disabled={disabled}
         >
-          {selectedOption ? getLabel(selectedOption) : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          {fieldLabel ? (
+            <span className="min-w-0 flex-1 text-left">
+              <span className="block text-[11px] font-medium leading-tight text-[var(--ev-text-muted)]">{fieldLabel}</span>
+              <span className={`block truncate text-sm font-semibold leading-snug ${selectedOption ? "text-[var(--ev-text)]" : "font-medium text-[var(--ev-text-muted)]"}`}>
+                {selectedOption ? getLabel(selectedOption) : placeholder}
+              </span>
+            </span>
+          ) : (
+            selectedOption ? getLabel(selectedOption) : placeholder
+          )}
+          {fieldLabel ? (
+            <ChevronRight className="ml-2 h-4 w-4 shrink-0 text-[var(--ev-text-muted)]" />
+          ) : (
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
