@@ -16,7 +16,9 @@ export interface CurrentStopResponse {
     announcement_text?: string;
     has_destination_booking?: boolean;
     pickups: Array<{ pnr: string; name: string; phone?: string; seat: string }>;
-    dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string }>;
+    dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string; trip_amount?: string }>;
+    crossed?: boolean;
+    auto_released?: boolean;
   } | null;
 }
 

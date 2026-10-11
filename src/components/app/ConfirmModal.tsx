@@ -18,6 +18,7 @@ interface ConfirmModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "default" | "destructive";
+  confirming?: boolean;
 }
 
 const ConfirmModal = ({
@@ -30,9 +31,10 @@ const ConfirmModal = ({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   variant = "default",
+  confirming = false,
 }: ConfirmModalProps) => {
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent className="max-w-[380px] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-base">{title}</DialogTitle>
@@ -42,15 +44,17 @@ const ConfirmModal = ({
         </DialogHeader>
         {children}
         <DialogFooter className="flex flex-row gap-2">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={confirming}>
             {cancelLabel}
           </Button>
           <Button
+            type="button"
             onClick={onConfirm}
+            disabled={confirming}
             variant={variant === "destructive" ? "destructive" : "default"}
             className="flex-1"
           >
-            {confirmLabel}
+            {confirming ? "Please wait…" : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

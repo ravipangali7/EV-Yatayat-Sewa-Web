@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -28,21 +28,30 @@ const SwipeButton = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const isBidirectional = typeof onCancel === "function";
+  const [trackWidth, setTrackWidth] = useState(300);
 
-  const containerWidth = 300;
-  const threshold = containerWidth * 0.55;
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setTrackWidth(el.offsetWidth || 300);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  const maxDrag = Math.max(48, trackWidth - 56);
+  const threshold = maxDrag * 0.72;
 
   const bgOpacity = useTransform(x, [-threshold, 0, threshold], [0.5, 0.3, 1]);
   const textOpacity = useTransform(x, [-150, 0, 150], [0, 1, 0]);
 
   const handleDragEnd = () => {
-    const w = containerRef.current?.offsetWidth ?? containerWidth;
     const pos = x.get();
-    if (pos > w * 0.55) {
+    if (pos > threshold) {
       setCompleted(true);
       onSwipe();
-    } else if (isBidirectional && pos < -w * 0.55) {
-      onCancel();
+    } else if (isBidirectional && pos < -threshold) {
+      onCancel?.();
     }
   };
 
@@ -54,6 +63,7 @@ const SwipeButton = ({
       className={`relative h-14 rounded-full overflow-hidden ${
         variant === "destructive" ? "bg-destructive/20" : "gradient-primary"
       }`}
+      style={{ touchAction: "none" }}
     >
       <motion.div
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -67,10 +77,11 @@ const SwipeButton = ({
       {!completed && (
         <motion.div
           drag="x"
-          dragConstraints={isBidirectional ? { left: -containerWidth, right: containerWidth } : { left: 0, right: containerWidth }}
+          dragConstraints={isBidirectional ? { left: -maxDrag, right: maxDrag } : { left: 0, right: maxDrag }}
           dragElastic={0}
+          dragMomentum={false}
           onDragEnd={handleDragEnd}
-          style={{ x }}
+          style={{ x, touchAction: "none" }}
           className={`absolute left-1 top-1 bottom-1 w-12 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shrink-0 ${
             variant === "destructive" ? "bg-destructive" : "bg-primary-foreground"
           }`}

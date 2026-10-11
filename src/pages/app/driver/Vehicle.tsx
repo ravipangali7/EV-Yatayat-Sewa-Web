@@ -326,9 +326,11 @@ export default function Vehicle() {
   const [checkinAmount, setCheckinAmount] = useState<{ distanceKm: number; totalAmount: number; perKmCharge: number } | null>(null);
   const [isCreatingCheckin, setIsCreatingCheckin] = useState(false);
   const [showDropoffModal, setShowDropoffModal] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [dropoffData, setDropoffData] = useState<{ placeId: string; placeName: string; dropoffs: Array<{ booking_id: string; vehicle_seat_id: string; seat_label: string; name: string; pnr: string; trip_amount?: string }> } | null>(null);
   const lastDropoffPlaceIdRef = useRef<string | null>(null);
   const lastAnnouncedPlaceIdRef = useRef<string | null>(null);
+  const lastAutoReleasedPlaceIdRef = useRef<string | null>(null);
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [pickupData, setPickupData] = useState<{ placeId: string; placeName: string; pickups: Array<{ pnr: string; name: string; phone?: string; seat: string }> } | null>(null);
   const lastPickupPlaceIdRef = useRef<string | null>(null);
@@ -526,7 +528,21 @@ export default function Vehicle() {
         const announcementText = (at.announcement_text?.trim() || at.name || "We reached a stop").trim();
         playReachedStop(announcementText || "We reached a stop");
       }
-      if (at?.dropoffs?.length && at.place_id !== lastDropoffPlaceIdRef.current) {
+      if (at?.auto_released && at.place_id !== lastAutoReleasedPlaceIdRef.current) {
+        lastAutoReleasedPlaceIdRef.current = at.place_id;
+        lastDropoffPlaceIdRef.current = at.place_id;
+        const labels = new Set((at.dropoffs ?? []).map((d) => d.seat_label));
+        setSeats((prev) => prev.map((s) => (
+          labels.has(s.id) ? { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined } : s
+        )));
+        setSelectedSeats([]);
+        setShowDropoffModal(false);
+        setDropoffData(null);
+        void refetchVehicleAndSeats();
+        fetchCurrentTripBookings();
+        refreshVehicle();
+        toast.success(at.name ? `Seats released at ${at.name}` : "Seats released");
+      } else if (at?.dropoffs?.length && !at.auto_released && at.place_id !== lastDropoffPlaceIdRef.current) {
         lastDropoffPlaceIdRef.current = at.place_id;
         const labels = new Set(at.dropoffs.map((d: { seat_label: string }) => d.seat_label));
         setDropoffData({ placeId: at.place_id, placeName: at.name, dropoffs: at.dropoffs });
@@ -1009,132 +1025,136 @@ export default function Vehicle() {
     }
   };
 
+  const finishReleasedSeats = async (labels: string[]) => {
+    const labelSet = new Set(labels);
+    setSeats((prev) => prev.map((s) => (
+      labelSet.has(s.id) ? { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined } : s
+    )));
+    setSelectedSeats([]);
+    setShowDropoffModal(false);
+    setDropoffData(null);
+    setShowCheckoutModal(false);
+    lastDropoffPlaceIdRef.current = null;
+    await refetchVehicleAndSeats();
+    fetchCurrentTripBookings();
+    refreshVehicle();
+  };
+
   const confirmCheckOut = async () => {
-    if (dropoffData) {
-      const requiredLabels = new Set(dropoffData.dropoffs.map((d) => d.seat_label));
-      const selectedLabels = new Set(bookedSelected.map((s) => s.id));
-      const match = requiredLabels.size === selectedLabels.size && [...requiredLabels].every((l) => selectedLabels.has(l));
-      if (!match) {
-        toast.error(`Selected seats don't match passengers to drop off at this stop. Expected: ${[...requiredLabels].sort().join(", ")}`);
-        return;
-      }
-      let loc: { lat: number; lng: number };
-      try {
-        loc = await requireGps("checkout");
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : "Turn on location to continue.";
-        toast.error(message);
-        return;
-      }
-      try {
-        const outOfRange: OutOfRangeItem[] = [];
-        for (const d of dropoffData.dropoffs) {
-          const res = await seatBookingApi.checkout({
-            vehicle_seat_id: d.vehicle_seat_id,
-            check_out_lat: loc.lat,
-            check_out_lng: loc.lng,
-            check_out_address: dropoffData.placeName,
-            is_paid: true,
-            place_id: dropoffData.placeId,
-          });
-          if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
-            outOfRange.push({
+    if (isCheckingOut) return;
+    setIsCheckingOut(true);
+    try {
+      if (dropoffData) {
+        let loc: { lat: number; lng: number };
+        try {
+          loc = await requireGps("checkout");
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : "Turn on location to continue.";
+          toast.error(message);
+          return;
+        }
+        try {
+          const outOfRange: OutOfRangeItem[] = [];
+          for (const d of dropoffData.dropoffs) {
+            const res = await seatBookingApi.checkout({
               vehicle_seat_id: d.vehicle_seat_id,
-              seat_label: d.seat_label,
               check_out_lat: loc.lat,
               check_out_lng: loc.lng,
               check_out_address: dropoffData.placeName,
+              is_paid: true,
               place_id: dropoffData.placeId,
-              preview: res as CheckoutPreviewResponse,
             });
+            if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
+              outOfRange.push({
+                vehicle_seat_id: d.vehicle_seat_id,
+                seat_label: d.seat_label,
+                check_out_lat: loc.lat,
+                check_out_lng: loc.lng,
+                check_out_address: dropoffData.placeName,
+                place_id: dropoffData.placeId,
+                preview: res as CheckoutPreviewResponse,
+              });
+            }
           }
+          if (outOfRange.length > 0) {
+            setShowDropoffModal(false);
+            setOutOfRangeCheckouts(outOfRange);
+            return;
+          }
+          await finishReleasedSeats(dropoffData.dropoffs.map((d) => d.seat_label));
+          toast.success("Check-out successful!");
+        } catch (e: unknown) {
+          const err = e as { response?: { data?: { error?: string } }; message?: string };
+          const message = err?.response?.data?.error ?? err?.message ?? "Check-out failed";
+          if (/no active booking/i.test(message)) {
+            await finishReleasedSeats(dropoffData.dropoffs.map((d) => d.seat_label));
+            toast.success("Seat released");
+            return;
+          }
+          toast.error(message);
         }
-        if (outOfRange.length > 0) {
-          setOutOfRangeCheckouts(outOfRange);
+      } else {
+        let loc: { lat: number; lng: number };
+        try {
+          loc = await requireGps("checkout");
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : "Turn on location to continue.";
+          toast.error(message);
           return;
         }
-        const updatedSeatsAfterDropoff = seats.map((s) => {
-          if (dropoffData.dropoffs.some((d) => d.seat_label === s.id)) {
-            return { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined };
-          }
-          return s;
-        });
-        setSeats(updatedSeatsAfterDropoff);
-        setSelectedSeats([]);
-        setShowDropoffModal(false);
-        setDropoffData(null);
-        lastDropoffPlaceIdRef.current = null;
-        await refetchVehicleAndSeats();
-        fetchCurrentTripBookings();
-        refreshVehicle();
-        toast.success("Check-out successful!");
-      } catch (e: unknown) {
-        const err = e as { response?: { data?: { error?: string } }; message?: string };
-        toast.error(err?.response?.data?.error ?? err?.message ?? "Check-out failed");
-        return;
-      }
-    } else {
-      let loc: { lat: number; lng: number };
-      try {
-        loc = await requireGps("checkout");
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : "Turn on location to continue.";
-        toast.error(message);
-        return;
-      }
-      const seatIds = bookedSelected.map((s) => ({ seat: s, vehicleSeatId: getVehicleSeatId(s.id) }));
-      const missing = seatIds.filter((p) => !p.vehicleSeatId);
-      if (missing.length > 0) {
-        toast.error(`Seat ${missing[0].seat.id} not found`);
-        return;
-      }
-      try {
-        const outOfRange: OutOfRangeItem[] = [];
-        for (const { seat, vehicleSeatId } of seatIds) {
-          const res = await seatBookingApi.checkout({
-            vehicle_seat_id: vehicleSeatId!,
-            check_out_lat: loc.lat,
-            check_out_lng: loc.lng,
-            check_out_address: "",
-            is_paid: false,
-          });
-          if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
-            outOfRange.push({
+        const seatIds = bookedSelected.map((s) => ({ seat: s, vehicleSeatId: getVehicleSeatId(s.id) }));
+        const missing = seatIds.filter((p) => !p.vehicleSeatId);
+        if (missing.length > 0) {
+          toast.error(`Seat ${missing[0].seat.id} not found`);
+          return;
+        }
+        try {
+          const outOfRange: OutOfRangeItem[] = [];
+          for (const { seat, vehicleSeatId } of seatIds) {
+            const res = await seatBookingApi.checkout({
               vehicle_seat_id: vehicleSeatId!,
-              seat_label: seat.id,
               check_out_lat: loc.lat,
               check_out_lng: loc.lng,
               check_out_address: "",
-              preview: res as CheckoutPreviewResponse,
+              is_paid: false,
             });
+            if (res && typeof res === "object" && "within_destination" in res && res.within_destination === false) {
+              outOfRange.push({
+                vehicle_seat_id: vehicleSeatId!,
+                seat_label: seat.id,
+                check_out_lat: loc.lat,
+                check_out_lng: loc.lng,
+                check_out_address: "",
+                preview: res as CheckoutPreviewResponse,
+              });
+            }
           }
-        }
-        if (outOfRange.length > 0) {
-          setOutOfRangeCheckouts(outOfRange);
-          return;
-        }
-        const updatedSeats = seats.map((s) => {
-          if (bookedSelected.some((sel) => sel.id === s.id)) {
-            return { ...s, status: "available" as const, passengerName: undefined, bookingId: undefined };
+          if (outOfRange.length > 0) {
+            setShowCheckoutModal(false);
+            setOutOfRangeCheckouts(outOfRange);
+            return;
           }
-          return s;
-        });
-        setSeats(updatedSeats);
-        setSelectedSeats([]);
-        setShowCheckoutModal(false);
-        await refetchVehicleAndSeats();
-        fetchCurrentTripBookings();
-        refreshVehicle();
-        toast.success("Check-out successful!");
-      } catch {
-        toast.error("Check-out failed");
-        return;
+          await finishReleasedSeats(bookedSelected.map((s) => s.id));
+          toast.success("Check-out successful!");
+        } catch (e: unknown) {
+          const err = e as { response?: { data?: { error?: string } }; message?: string };
+          const message = err?.response?.data?.error ?? err?.message ?? "Check-out failed";
+          if (/no active booking/i.test(message)) {
+            await finishReleasedSeats(bookedSelected.map((s) => s.id));
+            toast.success("Seat released");
+            return;
+          }
+          toast.error(message);
+        }
       }
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
   const confirmCheckOutOutOfRange = async () => {
-    if (!outOfRangeCheckouts?.length) return;
+    if (!outOfRangeCheckouts?.length || isCheckingOut) return;
+    setIsCheckingOut(true);
     try {
       const checkedOutIds = new Set(outOfRangeCheckouts.map((o) => o.vehicle_seat_id));
       for (const item of outOfRangeCheckouts) {
@@ -1186,6 +1206,8 @@ export default function Vehicle() {
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
       toast.error(err?.response?.data?.error ?? err?.message ?? "Check-out failed");
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -1209,6 +1231,8 @@ export default function Vehicle() {
     setDriverState("route_selected");
     setActiveTrip(null);
     lastAnnouncedPlaceIdRef.current = null;
+    lastAutoReleasedPlaceIdRef.current = null;
+    lastDropoffPlaceIdRef.current = null;
     setPendingEndTripLocation(null);
     setSeats(buildSeatsFromVehicle(selectedVehicle, superSettingSeatLayout ?? undefined));
     setShowEndTripOutOfRangeModal(false);
@@ -1817,7 +1841,7 @@ export default function Vehicle() {
           )}
         </DialogContent>
       </Dialog>
-      <Dialog open={showDropoffModal} onOpenChange={(open) => { if (!open) { setShowDropoffModal(false); setDropoffData(null); } }}>
+      <Dialog open={showDropoffModal} onOpenChange={(open) => { if (!open) setShowDropoffModal(false); }}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>Check out at {dropoffData?.placeName ?? "stop"}</DialogTitle>
@@ -1844,10 +1868,13 @@ export default function Vehicle() {
                   </p>
                 )}
               </div>
+              <Button type="button" className="w-full h-11 rounded-xl" onClick={() => { void confirmCheckOut(); }} disabled={isCheckingOut}>
+                {isCheckingOut ? "Releasing…" : "Release seats"}
+              </Button>
               <SwipeButton
                 labelRight="Swipe right to check out"
                 labelLeft="Swipe left to cancel"
-                onSwipe={() => confirmCheckOut()}
+                onSwipe={() => { void confirmCheckOut(); }}
                 onCancel={() => { setShowDropoffModal(false); setDropoffData(null); }}
               />
             </div>
@@ -1939,10 +1966,11 @@ export default function Vehicle() {
       <ConfirmModal open={showCheckinModal} onClose={() => setShowCheckinModal(false)} onConfirm={confirmCheckIn} title="Confirm Check-In" description={`Check in ${availableSelected.length} passenger(s)?`} confirmLabel="Check In" />
       <ConfirmModal
         open={showCheckoutModal}
-        onClose={() => setShowCheckoutModal(false)}
-        onConfirm={confirmCheckOut}
+        onClose={() => { if (!isCheckingOut) setShowCheckoutModal(false); }}
+        onConfirm={() => { void confirmCheckOut(); }}
         title={`Confirm Check-Out – Seats ${bookedSelected.map((s) => s.label).join(", ") || "—"}`}
         confirmLabel="Check Out"
+        confirming={isCheckingOut}
       >
         <div className="space-y-2 mb-3">
           <p className="text-sm font-medium">Check out {bookedSelected.length} seat{bookedSelected.length !== 1 ? "s" : ""} at once:</p>
@@ -1988,8 +2016,9 @@ export default function Vehicle() {
 
       <ConfirmModal
         open={!!outOfRangeCheckouts?.length}
-        onClose={() => setOutOfRangeCheckouts(null)}
-        onConfirm={confirmCheckOutOutOfRange}
+        onClose={() => { if (!isCheckingOut) setOutOfRangeCheckouts(null); }}
+        onConfirm={() => { void confirmCheckOutOutOfRange(); }}
+        confirming={isCheckingOut}
         title="Not at destination"
         confirmLabel="Confirm"
       >
