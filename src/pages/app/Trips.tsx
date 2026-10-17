@@ -200,7 +200,14 @@ export default function Trips() {
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs">Vehicle</Label>
-          <Select value={vehicleInput} onValueChange={setVehicleInput}>
+          <Select
+            value={vehicleInput}
+            onValueChange={(v) => {
+              setVehicleInput(v);
+              setAppliedVehicle(v);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="All vehicles" />
             </SelectTrigger>
@@ -216,7 +223,14 @@ export default function Trips() {
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs">Driver</Label>
-          <Select value={driverInput} onValueChange={setDriverInput}>
+          <Select
+            value={driverInput}
+            onValueChange={(v) => {
+              setDriverInput(v);
+              setAppliedDriver(v);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="All drivers" />
             </SelectTrigger>
@@ -232,7 +246,14 @@ export default function Trips() {
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs">Route</Label>
-          <Select value={routeInput} onValueChange={setRouteInput}>
+          <Select
+            value={routeInput}
+            onValueChange={(v) => {
+              setRouteInput(v);
+              setAppliedRoute(v);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="All routes" />
             </SelectTrigger>
@@ -250,7 +271,12 @@ export default function Trips() {
           <Label className="text-xs">Type</Label>
           <Select
             value={isScheduledInput}
-            onValueChange={(v) => setIsScheduledInput(v as 'all' | 'true' | 'false')}
+            onValueChange={(v) => {
+              const next = v as 'all' | 'true' | 'false';
+              setIsScheduledInput(next);
+              setAppliedIsScheduled(next);
+              setPage(1);
+            }}
           >
             <SelectTrigger className="w-[130px]">
               <SelectValue />
@@ -267,6 +293,7 @@ export default function Trips() {
           Search
         </Button>
       </div>
+
 
       {loading ? (
         <p className="text-muted-foreground py-8">Loading...</p>

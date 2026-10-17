@@ -16,7 +16,7 @@ export default function UserTripMap() {
     <div className="flex min-h-screen flex-col">
       <AppBar title={t("where.title")} showBack />
       <div className="relative min-h-[70vh] flex-1">
-        <UserHomeMap />
+        <UserHomeMap height="70vh" className="h-full" />
       </div>
       <div className="px-5 pb-24">
         <p className="py-3 text-center text-xs text-[var(--ev-text-muted)]">{t("where.caption")}</p>

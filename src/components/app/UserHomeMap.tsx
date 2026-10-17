@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { GoogleMap, Marker, Circle } from "@react-google-maps/api";
 import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
 import {
@@ -19,7 +19,7 @@ import {
   MARKER_WIDTH,
   VEHICLE_MARKER_ICON,
 } from "@/config/mapConstants";
-import { Car, MapPin, User, Route } from "lucide-react";
+import { Car, MapPin, User, Route, LocateFixed } from "lucide-react";
 import { toast } from "sonner";
 import { DirectBookFlow } from "./DirectBookFlow";
 import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
@@ -30,8 +30,9 @@ const MAP_FIT_RADIUS_KM = 10;
 const MAP_FIT_RADIUS_METERS = MAP_FIT_RADIUS_KM * 1000;
 /** Fetch vehicles up to 200 km (e.g. Nepal radius); bookable when 5 km < distance <= 200 km. */
 const FETCH_RADIUS_KM = 200;
+const DEFAULT_MAP_ZOOM = 12;
 
-const containerStyle = { width: "100%", height: "360px" };
+const defaultContainerStyle = { width: "100%", height: "360px" };
 
 const DEFAULT_BOOK_MIN_KM = 5;
 const DEFAULT_BOOK_MAX_KM = 200;
@@ -118,7 +119,12 @@ async function getPassengerLocation(): Promise<{ lat: number; lng: number }> {
   }
 }
 
-export function UserHomeMap() {
+export interface UserHomeMapProps {
+  height?: string;
+  className?: string;
+}
+
+export function UserHomeMap({ height = "360px", className = "" }: UserHomeMapProps = {}) {
   const { isLoaded, mapType, setMapType } = useGoogleMaps();
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [nearbyVehicles, setNearbyVehicles] = useState<VehicleNearby[]>([]);
@@ -133,6 +139,17 @@ export function UserHomeMap() {
   const [locationAttempt, setLocationAttempt] = useState(0);
 
   const mapRef = useRef<google.maps.Map | null>(null);
+  const initialCenterRef = useRef<{ lat: number; lng: number } | null>(null);
+  const hasFittedInitialBoundsRef = useRef(false);
+
+  if (userPosition && !initialCenterRef.current) {
+    initialCenterRef.current = { lat: userPosition.lat, lng: userPosition.lng };
+  }
+
+  const containerStyle = useMemo(
+    () => (height === "360px" ? defaultContainerStyle : { width: "100%", height }),
+    [height]
+  );
 
   const fetchNearby = useCallback(async (lat: number, lng: number, options?: { silent?: boolean }) => {
     if (!options?.silent) setLoading(true);
@@ -154,36 +171,56 @@ export function UserHomeMap() {
     }
   }, []);
 
-  const onMapLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map;
-    if (userPosition) {
-      const center = new google.maps.LatLng(userPosition.lat, userPosition.lng);
-      const bounds = new google.maps.Circle({ center, radius: MAP_FIT_RADIUS_METERS }).getBounds();
-      if (bounds) map.fitBounds(bounds);
+  const fitMapToUserRadius = useCallback((map: google.maps.Map, pos: { lat: number; lng: number }) => {
+    const center = new google.maps.LatLng(pos.lat, pos.lng);
+    const bounds = new google.maps.Circle({ center, radius: MAP_FIT_RADIUS_METERS }).getBounds();
+    if (bounds) {
+      map.fitBounds(bounds);
+    } else {
+      map.panTo(pos);
+      map.setZoom(DEFAULT_MAP_ZOOM);
     }
-  }, [userPosition]);
+  }, []);
+
+  const onMapLoad = useCallback(
+    (map: google.maps.Map) => {
+      mapRef.current = map;
+      if (userPosition && !hasFittedInitialBoundsRef.current) {
+        hasFittedInitialBoundsRef.current = true;
+        fitMapToUserRadius(map, userPosition);
+      }
+    },
+    [userPosition, fitMapToUserRadius]
+  );
 
   const onMapUnmount = useCallback(() => {
     mapRef.current = null;
   }, []);
 
-  /** Fit map bounds to 10 km around user so initial view shows only 10 km (markers up to 200 km still rendered). */
+  /** Fit map bounds to 10 km around user once on initial position acquisition. */
   useEffect(() => {
-    if (!userPosition || !mapRef.current) return;
-    const center = new google.maps.LatLng(userPosition.lat, userPosition.lng);
-    const bounds = new google.maps.Circle({
-      center,
-      radius: MAP_FIT_RADIUS_METERS,
-    }).getBounds();
-    if (bounds) mapRef.current.fitBounds(bounds);
-  }, [userPosition]);
+    if (!userPosition || !mapRef.current || hasFittedInitialBoundsRef.current) return;
+    hasFittedInitialBoundsRef.current = true;
+    fitMapToUserRadius(mapRef.current, userPosition);
+  }, [userPosition, fitMapToUserRadius]);
+
+  const locateMe = useCallback(() => {
+    if (userPosition && mapRef.current) {
+      mapRef.current.panTo(userPosition);
+      fitMapToUserRadius(mapRef.current, userPosition);
+    } else {
+      setLocationAttempt((n) => n + 1);
+    }
+  }, [userPosition, fitMapToUserRadius]);
 
   useEffect(() => {
     let cancelled = false;
     setLocationError(null);
+    hasFittedInitialBoundsRef.current = false;
     getPassengerLocation()
       .then(({ lat, lng }) => {
         if (cancelled) return;
+        initialCenterRef.current = { lat, lng };
         setUserPosition({ lat, lng });
         fetchNearby(lat, lng);
       })
@@ -252,7 +289,10 @@ export function UserHomeMap() {
 
   if (!userPosition) {
     return (
-      <div className="w-full bg-muted/30 flex flex-col items-center justify-center gap-3 h-[360px] px-6 text-center">
+      <div
+        style={containerStyle}
+        className={`w-full bg-muted/30 flex flex-col items-center justify-center gap-3 px-6 text-center ${className}`}
+      >
         <p className="text-sm text-foreground">{locationError ?? "Getting your location..."}</p>
         {locationError && (
           <Button type="button" variant="outline" onClick={() => setLocationAttempt((n) => n + 1)}>
@@ -265,7 +305,7 @@ export function UserHomeMap() {
 
   if (!isLoaded) {
     return (
-      <div className="w-full bg-muted/30 flex items-center justify-center h-[360px]">
+      <div style={containerStyle} className={`w-full bg-muted/30 flex items-center justify-center ${className}`}>
         <p className="text-sm text-muted-foreground">Loading map...</p>
       </div>
     );
@@ -273,12 +313,12 @@ export function UserHomeMap() {
 
   return (
     <>
-      <div className="relative w-full">
+      <div className={`relative w-full ${className}`}>
         <div style={containerStyle} className="relative w-full">
           <GoogleMap
             mapContainerStyle={containerStyle}
-            center={userPosition}
-            zoom={12}
+            center={initialCenterRef.current ?? userPosition}
+            zoom={DEFAULT_MAP_ZOOM}
             onLoad={onMapLoad}
             onUnmount={onMapUnmount}
             options={{
@@ -339,7 +379,16 @@ export function UserHomeMap() {
           <p className="absolute top-3 left-3 z-10 text-[11px] font-semibold uppercase tracking-wider bg-white/90 text-foreground px-2 py-1 rounded-md shadow-sm">
             Nearby vehicles
           </p>
-          <div className="absolute top-3 right-3 z-10">
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={locateMe}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-white/90 text-[#1C8C42] shadow-sm backdrop-blur-sm hover:bg-muted"
+              title="Locate me"
+              aria-label="Locate me"
+            >
+              <LocateFixed className="h-4 w-4" />
+            </button>
             <MapTypeToggle mapType={mapType} onToggle={handleMapTypeToggle} />
           </div>
         </div>

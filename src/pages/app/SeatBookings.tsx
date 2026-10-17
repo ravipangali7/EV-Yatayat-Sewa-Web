@@ -217,7 +217,15 @@ export default function SeatBookings() {
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs">Paid Status</Label>
-          <Select value={isPaidInput} onValueChange={(v) => setIsPaidInput(v as 'all' | 'true' | 'false')}>
+          <Select
+            value={isPaidInput}
+            onValueChange={(v) => {
+              const next = v as 'all' | 'true' | 'false';
+              setIsPaidInput(next);
+              setAppliedIsPaid(next);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue />
             </SelectTrigger>
@@ -230,7 +238,15 @@ export default function SeatBookings() {
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs">Passenger Type</Label>
-          <Select value={isGuestInput} onValueChange={(v) => setIsGuestInput(v as 'all' | 'true' | 'false')}>
+          <Select
+            value={isGuestInput}
+            onValueChange={(v) => {
+              const next = v as 'all' | 'true' | 'false';
+              setIsGuestInput(next);
+              setAppliedIsGuest(next);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue />
             </SelectTrigger>
@@ -246,6 +262,7 @@ export default function SeatBookings() {
           Search
         </Button>
       </div>
+
 
       {loading ? (
         <div className="text-center py-12">

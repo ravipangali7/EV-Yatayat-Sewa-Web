@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Edit } from 'lucide-react';
+import { Edit, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { walletApi } from '@/modules/wallets/services/walletApi';
@@ -18,6 +19,8 @@ export default function WalletView() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'deducted'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'pending' | 'failed'>('all');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,7 +29,7 @@ export default function WalletView() {
       try {
         const [walletData, transactionsResponse] = await Promise.all([
           walletApi.get(id),
-          transactionApi.list({ wallet: id, per_page: 100 }),
+          transactionApi.list({ wallet: id, per_page: 250 }),
         ]);
         setWallet(walletData);
         setTransactions(transactionsResponse.results);
@@ -39,6 +42,14 @@ export default function WalletView() {
     };
     fetchData();
   }, [id]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+      if (statusFilter !== 'all' && tx.status !== statusFilter) return false;
+      return true;
+    });
+  }, [transactions, typeFilter, statusFilter]);
 
   if (loading) {
     return (
@@ -63,13 +74,21 @@ export default function WalletView() {
     <div>
       <PageHeader
         title="Wallet Details"
-        subtitle={wallet.user_details?.name || 'Unknown User'}
+        subtitle={wallet.user_details?.name || wallet.user_details?.phone || 'Unknown User'}
         backUrl="/admin/wallets"
         actions={
-          <Button onClick={() => navigate(`/admin/wallets/${id}/edit`)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/admin/transactions?wallet=${wallet.id}&user=${wallet.user}`)}
+            >
+              View All in Transactions
+            </Button>
+            <Button onClick={() => navigate(`/admin/wallets/${id}/edit`)}>
+              <Edit className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
+          </div>
         }
       />
 
@@ -93,19 +112,19 @@ export default function WalletView() {
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">Balance</span>
               <span className="font-medium text-lg">
-                ${toNumber(wallet.balance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Rs. {toNumber(wallet.balance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">To Pay</span>
               <span className="font-medium text-warning">
-                ${toNumber(wallet.to_pay, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Rs. {toNumber(wallet.to_pay, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">To Receive</span>
               <span className="font-medium text-success">
-                ${toNumber(wallet.to_receive, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Rs. {toNumber(wallet.to_receive, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">
@@ -120,49 +139,84 @@ export default function WalletView() {
         {/* Transaction History */}
         <Card>
           <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <CardTitle>Transaction History ({filteredTransactions.length})</CardTitle>
+              <div className="flex items-center gap-2">
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'all' | 'add' | 'deducted')}>
+                  <SelectTrigger className="w-[115px] h-8 text-xs">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="add">Credit (+)</SelectItem>
+                    <SelectItem value="deducted">Debit (-)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'success' | 'pending' | 'failed')}>
+                  <SelectTrigger className="w-[120px] h-8 text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="success">Success</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {transactions.length === 0 ? (
+            {filteredTransactions.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">No transactions found</p>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {transactions.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={tx.type === 'add' ? 'default' : 'secondary'}>
-                          {tx.type === 'add' ? 'Credit' : 'Debit'}
-                        </Badge>
-                        <StatusBadge status={tx.status} />
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                {filteredTransactions.map((tx) => {
+                  const cardDetails = (tx as Transaction & { card_details?: { card_number?: string } }).card_details;
+                  return (
+                    <div
+                      key={tx.id}
+                      onClick={() => navigate(`/admin/transactions/${tx.id}`)}
+                      className="p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant={tx.type === 'add' ? 'default' : 'secondary'}>
+                            {tx.type === 'add' ? 'Credit (+)' : 'Debit (-)'}
+                          </Badge>
+                          <StatusBadge status={tx.status} />
+                          {cardDetails?.card_number && (
+                            <Badge variant="outline" className="font-mono text-xs">
+                              Card: {cardDetails.card_number}
+                            </Badge>
+                          )}
+                        </div>
+                        <span
+                          className={`font-semibold ${
+                            tx.type === 'add' ? 'text-success' : 'text-destructive'
+                          }`}
+                        >
+                          {tx.type === 'add' ? '+' : '-'} Rs.{' '}
+                          {toNumber(tx.amount, 0).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
                       </div>
-                      <span
-                        className={`font-semibold ${
-                          tx.type === 'add' ? 'text-success' : 'text-destructive'
-                        }`}
-                      >
-                        {tx.type === 'add' ? '+' : '-'}$
-                        {toNumber(tx.amount, 0).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div>
+                          Balance: Rs. {toNumber(tx.balance_before, 0).toFixed(2)} → Rs.{' '}
+                          {toNumber(tx.balance_after, 0).toFixed(2)}
+                        </div>
+                        {tx.remarks && <div>Remarks: {tx.remarks}</div>}
+                        <div className="text-xs flex justify-between items-center pt-1">
+                          <span>{new Date(tx.created_at).toLocaleString()}</span>
+                          <span className="text-muted-foreground/70">#{tx.id}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div>
-                        Balance: ${toNumber(tx.balance_before, 0).toFixed(2)} → $
-                        {toNumber(tx.balance_after, 0).toFixed(2)}
-                      </div>
-                      {tx.remarks && <div>Remarks: {tx.remarks}</div>}
-                      <div className="text-xs">
-                        {new Date(tx.created_at).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -171,3 +225,4 @@ export default function WalletView() {
     </div>
   );
 }
+

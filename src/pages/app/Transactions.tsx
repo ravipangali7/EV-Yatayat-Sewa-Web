@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Receipt, Search } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Receipt, Search, X } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable, Column } from '@/components/common/DataTable';
 import { StatusBadge } from '@/components/common/StatusBadge';
@@ -17,12 +17,17 @@ import { toast } from 'sonner';
 import { toNumber } from '@/lib/utils';
 
 interface TransactionWithDetails extends Transaction {
-  user_details?: { name?: string; phone?: string };
+  user_details?: { name?: string; phone?: string; username?: string };
+  card_details?: { card_number?: string; balance?: string } | null;
   stats?: { total_count?: number; sum_amount?: string };
 }
 
 export default function Transactions() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const walletFilterParam = searchParams.get('wallet') || '';
+  const userFilterParam = searchParams.get('user') || '';
+
   const [transactions, setTransactions] = useState<TransactionWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -65,6 +70,8 @@ export default function Transactions() {
         date_to: appliedDateTo || undefined,
         status: appliedStatus !== 'all' ? appliedStatus : undefined,
         type: appliedType !== 'all' ? appliedType : undefined,
+        wallet: walletFilterParam || undefined,
+        user: userFilterParam || undefined,
         is_driver: isDriver,
         is_ticket_dealer: isTicketDealer,
         page,
@@ -75,7 +82,9 @@ export default function Transactions() {
       setStats(response.stats ?? null);
     } catch (error) {
       console.error('Failed to load transactions:', error);
-      setTransactions([]);
+      if (!isBackground) {
+        setTransactions([]);
+      }
     } finally {
       if (isBackground) {
         pollingInFlightRef.current = false;
@@ -84,7 +93,7 @@ export default function Transactions() {
         setLoading(false);
       }
     }
-  }, [appliedSearch, appliedDateFrom, appliedDateTo, appliedStatus, appliedType, page, roleTab]);
+  }, [appliedSearch, appliedDateFrom, appliedDateTo, appliedStatus, appliedType, walletFilterParam, userFilterParam, page, roleTab]);
 
   useEffect(() => {
     fetchTransactions();
@@ -114,17 +123,26 @@ export default function Transactions() {
     {
       key: 'user',
       header: 'User',
-      render: (tx) =>
-        (tx as TransactionWithDetails).user_details?.name ||
-        (tx as TransactionWithDetails).user_details?.phone ||
-        tx.user,
+      render: (tx) => {
+        const name = tx.user_details?.name || tx.user_details?.username;
+        const phone = tx.user_details?.phone;
+        if (name && phone && name !== phone) {
+          return (
+            <div>
+              <div className="font-medium">{name}</div>
+              <div className="text-xs text-muted-foreground">{phone}</div>
+            </div>
+          );
+        }
+        return name || phone || tx.user;
+      },
     },
     {
       key: 'type',
       header: 'Type',
       render: (tx) => (
         <Badge variant={tx.type === 'add' ? 'default' : 'secondary'}>
-          {tx.type === 'add' ? 'Credit' : 'Debit'}
+          {tx.type === 'add' ? 'Credit (+)' : 'Debit (-)'}
         </Badge>
       ),
     },
@@ -132,20 +150,51 @@ export default function Transactions() {
       key: 'amount',
       header: 'Amount',
       render: (tx) => (
-        <span className={tx.type === 'add' ? 'text-success' : 'text-destructive'}>
-          {tx.type === 'add' ? '+' : '-'} Rs.{toNumber(tx.amount, 0).toLocaleString()}
+        <span className={`font-medium ${tx.type === 'add' ? 'text-success' : 'text-destructive'}`}>
+          {tx.type === 'add' ? '+' : '-'} Rs. {toNumber(tx.amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       ),
+    },
+    {
+      key: 'balance_before',
+      header: 'Balance Before',
+      render: (tx) => `Rs. ${toNumber(tx.balance_before, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    },
+    {
+      key: 'balance_after',
+      header: 'Balance After',
+      render: (tx) => `Rs. ${toNumber(tx.balance_after, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     },
     {
       key: 'status',
       header: 'Status',
       render: (tx) => <StatusBadge status={tx.status} />,
     },
-    { key: 'remarks', header: 'Remarks', render: (tx) => (
-      <span className="line-clamp-2 max-w-xs text-xs">{tx.remarks || '-'}</span>
-    )},
+    {
+      key: 'remarks',
+      header: 'Remarks / Reference',
+      render: (tx) => (
+        <div className="space-y-0.5 max-w-xs">
+          <span className="line-clamp-2 text-xs">{tx.remarks || '-'}</span>
+          {tx.card_details?.card_number && (
+            <div className="text-[11px] font-mono text-muted-foreground">
+              Card: {tx.card_details.card_number}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Date & Time',
+      render: (tx) => (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {tx.created_at ? new Date(tx.created_at).toLocaleString() : '-'}
+        </span>
+      ),
+    },
   ];
+
 
   const handleDelete = async (id: string) => {
     try {
@@ -235,7 +284,12 @@ export default function Transactions() {
           <Label className="text-xs">Status</Label>
           <Select
             value={statusInput}
-            onValueChange={(v) => setStatusInput(v as 'all' | 'pending' | 'success' | 'failed')}
+            onValueChange={(v) => {
+              const next = v as 'all' | 'pending' | 'success' | 'failed';
+              setStatusInput(next);
+              setAppliedStatus(next);
+              setPage(1);
+            }}
           >
             <SelectTrigger className="w-[120px]">
               <SelectValue />
@@ -252,15 +306,20 @@ export default function Transactions() {
           <Label className="text-xs">Type</Label>
           <Select
             value={typeInput}
-            onValueChange={(v) => setTypeInput(v as 'all' | 'add' | 'deducted')}
+            onValueChange={(v) => {
+              const next = v as 'all' | 'add' | 'deducted';
+              setTypeInput(next);
+              setAppliedType(next);
+              setPage(1);
+            }}
           >
             <SelectTrigger className="w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="add">Credit</SelectItem>
-              <SelectItem value="deducted">Debit</SelectItem>
+              <SelectItem value="add">Credit (+)</SelectItem>
+              <SelectItem value="deducted">Debit (-)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -268,7 +327,22 @@ export default function Transactions() {
           <Search className="w-4 h-4" />
           Search
         </Button>
+        {(walletFilterParam || userFilterParam) && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setSearchParams({});
+              setPage(1);
+            }}
+            className="gap-1.5 text-xs"
+          >
+            <X className="w-3.5 h-3.5" />
+            Clear Wallet/User Filter
+          </Button>
+        )}
       </div>
+
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading transactions...</div>

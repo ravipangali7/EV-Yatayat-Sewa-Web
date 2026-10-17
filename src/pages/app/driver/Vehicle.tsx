@@ -340,6 +340,7 @@ export default function Vehicle() {
     check_out_lat: number;
     check_out_lng: number;
     check_out_address: string;
+    is_paid: boolean;
     place_id?: string;
     preview: CheckoutPreviewResponse;
   };
@@ -617,6 +618,9 @@ export default function Vehicle() {
       }
       setSelectedVehicle(res);
       setSeats(buildSeatsFromVehicle(res, fallback));
+      if (res.active_route_details) {
+        setSelectedRoute(routeToRouteInfo(res.active_route_details as ApiRoute));
+      }
     } catch (_) {
       // Keep current UI state when refresh fails.
     }
@@ -679,6 +683,14 @@ export default function Vehicle() {
   }, [showSeatsBookedModal]);
 
   const vehicleInfo = selectedVehicle ? vehicleToVehicleInfo(selectedVehicle) : null;
+  const activeRouteInfo = useMemo(
+    () =>
+      selectedRoute ??
+      (selectedVehicle?.active_route_details
+        ? routeToRouteInfo(selectedVehicle.active_route_details as ApiRoute)
+        : null),
+    [selectedRoute, selectedVehicle?.active_route_details]
+  );
   const bookedSelected = selectedSeats.filter((s) => s.status === "booked");
   const availableSelected = selectedSeats.filter((s) => s.status === "available");
   const singleBookedSelected = bookedSelected.length === 1 && availableSelected.length === 0;
@@ -1071,6 +1083,7 @@ export default function Vehicle() {
                 check_out_lat: loc.lat,
                 check_out_lng: loc.lng,
                 check_out_address: dropoffData.placeName,
+                is_paid: true,
                 place_id: dropoffData.placeId,
                 preview: res as CheckoutPreviewResponse,
               });
@@ -1125,6 +1138,7 @@ export default function Vehicle() {
                 check_out_lat: loc.lat,
                 check_out_lng: loc.lng,
                 check_out_address: "",
+                is_paid: false,
                 preview: res as CheckoutPreviewResponse,
               });
             }
@@ -1163,7 +1177,7 @@ export default function Vehicle() {
           check_out_lat: item.check_out_lat,
           check_out_lng: item.check_out_lng,
           check_out_address: item.check_out_address,
-          is_paid: true,
+          is_paid: item.is_paid,
           ...(item.place_id != null && { place_id: item.place_id }),
           confirm_out_of_range: true,
         });
@@ -1339,26 +1353,26 @@ export default function Vehicle() {
       : null;
 
   const routePointsForAnnounce = useMemo(() => {
-    if (!selectedRoute) return [];
+    if (!activeRouteInfo) return [];
     const pts: Array<{ lat: number; lng: number; name: string }> = [];
-    if (selectedRoute.startPoint && (selectedRoute.startPoint.lat !== 0 || selectedRoute.startPoint.lng !== 0)) {
-      pts.push({ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng, name: selectedRoute.startPoint.name ?? "Start" });
+    if (activeRouteInfo.startPoint && (activeRouteInfo.startPoint.lat !== 0 || activeRouteInfo.startPoint.lng !== 0)) {
+      pts.push({ lat: activeRouteInfo.startPoint.lat, lng: activeRouteInfo.startPoint.lng, name: activeRouteInfo.startPoint.name ?? "Start" });
     }
-    (selectedRoute.stops ?? []).forEach((s) => {
+    (activeRouteInfo.stops ?? []).forEach((s) => {
       if (s.lat !== 0 || s.lng !== 0) pts.push({ lat: s.lat, lng: s.lng, name: s.name ?? "Stop" });
     });
-    if (selectedRoute.endPoint && (selectedRoute.endPoint.lat !== 0 || selectedRoute.endPoint.lng !== 0)) {
-      pts.push({ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng, name: selectedRoute.endPoint.name ?? "End" });
+    if (activeRouteInfo.endPoint && (activeRouteInfo.endPoint.lat !== 0 || activeRouteInfo.endPoint.lng !== 0)) {
+      pts.push({ lat: activeRouteInfo.endPoint.lat, lng: activeRouteInfo.endPoint.lng, name: activeRouteInfo.endPoint.name ?? "End" });
     }
     return pts;
-  }, [selectedRoute]);
+  }, [activeRouteInfo]);
 
   const inAnnounceRadius = useMemo(() => {
-    if (!lastLocation || !selectedRoute || pointCoverRadiusKm <= 0 || routePointsForAnnounce.length === 0) return false;
+    if (!lastLocation || !activeRouteInfo || pointCoverRadiusKm <= 0 || routePointsForAnnounce.length === 0) return false;
     return routePointsForAnnounce.some(
       (p) => haversineKm(lastLocation!.lat, lastLocation!.lng, p.lat, p.lng) <= pointCoverRadiusKm
     );
-  }, [lastLocation, selectedRoute, pointCoverRadiusKm, routePointsForAnnounce]);
+  }, [lastLocation, activeRouteInfo, pointCoverRadiusKm, routePointsForAnnounce]);
 
   const showAnnounceButton = false;
 
@@ -1490,7 +1504,7 @@ export default function Vehicle() {
     );
   }
 
-  if (driverState === "route_selected" && selectedRoute && vehicleInfo) {
+  if (driverState === "route_selected" && activeRouteInfo && vehicleInfo) {
     const hasActiveTrip = !!selectedVehicle?.active_trip?.id && selectedVehicle?.active_trip?.start_time && !selectedVehicle?.active_trip?.end_time;
     return (
       <div className="min-h-screen">
@@ -1506,7 +1520,7 @@ export default function Vehicle() {
               </Button>
             )}
           </div>
-          <RouteCard route={selectedRoute} active showMap />
+          <RouteCard route={activeRouteInfo} active showMap />
         </div>
         {selectedVehicle?.active_route_details?.is_bidirectional && (
           <div className="mt-4 flex items-center gap-2">
@@ -1573,7 +1587,7 @@ export default function Vehicle() {
             </DialogHeader>
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
               {(selectedVehicle?.routes?.length ? routes.filter((r) => selectedVehicle!.routes!.includes(r.id)) : routes).map((route) => (
-                <RouteCard key={route.id} route={route} onSelect={() => handleSelectRoute(route)} active={selectedRoute?.id === route.id} showMap />
+                <RouteCard key={route.id} route={route} onSelect={() => handleSelectRoute(route)} active={activeRouteInfo?.id === route.id} showMap />
               ))}
             </div>
           </DialogContent>
@@ -1600,17 +1614,19 @@ export default function Vehicle() {
   }
 
   const tripMapPoints: MapPoint[] = [
-    ...(selectedRoute ? [{
-      name: selectedRoute.startPoint?.name ?? "Start",
-      lat: selectedRoute.startPoint?.lat ?? 0,
-      lng: selectedRoute.startPoint?.lng ?? 0,
+    ...(activeRouteInfo && (activeRouteInfo.startPoint?.lat !== 0 || activeRouteInfo.startPoint?.lng !== 0) ? [{
+      name: activeRouteInfo.startPoint?.name ?? "Start",
+      lat: activeRouteInfo.startPoint?.lat ?? 0,
+      lng: activeRouteInfo.startPoint?.lng ?? 0,
       type: "start" as const,
     }] : []),
-    ...(selectedRoute?.stops ?? []).map((s) => ({ name: s.name, lat: s.lat, lng: s.lng, type: "stop" as const })),
-    ...(selectedRoute ? [{
-      name: selectedRoute.endPoint?.name ?? "End",
-      lat: selectedRoute.endPoint?.lat ?? 0,
-      lng: selectedRoute.endPoint?.lng ?? 0,
+    ...(activeRouteInfo?.stops ?? [])
+      .filter((s) => s.lat !== 0 || s.lng !== 0)
+      .map((s) => ({ name: s.name, lat: s.lat, lng: s.lng, type: "stop" as const })),
+    ...(activeRouteInfo && (activeRouteInfo.endPoint?.lat !== 0 || activeRouteInfo.endPoint?.lng !== 0) ? [{
+      name: activeRouteInfo.endPoint?.name ?? "End",
+      lat: activeRouteInfo.endPoint?.lat ?? 0,
+      lng: activeRouteInfo.endPoint?.lng ?? 0,
       type: "end" as const,
     }] : []),
   ];
@@ -1621,6 +1637,35 @@ export default function Vehicle() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <AppBar title={selectedVehicle ? `${selectedVehicle.vehicle_no} · ${selectedVehicle.name}` : "Trip"} />
+      {activeRouteInfo && (
+        <div className="px-4 py-2.5 border-b border-border/60 bg-muted/20 shrink-0 space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-bold text-xs text-foreground truncate">{activeRouteInfo.name}</span>
+            {activeTrip?.trip_id && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
+                {activeTrip.trip_id}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground overflow-x-auto whitespace-nowrap no-scrollbar">
+            <span className="inline-flex items-center gap-1 font-medium text-foreground">
+              <MapPin size={11} className="text-primary shrink-0" />
+              {activeRouteInfo.startPoint?.name || "Start"}
+            </span>
+            {(activeRouteInfo.stops ?? []).map((stop, idx) => (
+              <span key={`${stop.name}-${idx}`} className="inline-flex items-center gap-1">
+                <span>→</span>
+                <span>{stop.name}</span>
+              </span>
+            ))}
+            <span>→</span>
+            <span className="inline-flex items-center gap-1 font-medium text-foreground">
+              <MapPin size={11} className="text-destructive shrink-0" />
+              {activeRouteInfo.endPoint?.name || "End"}
+            </span>
+          </div>
+        </div>
+      )}
       <div className="flex gap-2 px-4 pt-3 border-b border-border bg-background/80 backdrop-blur shrink-0">
         <button
           type="button"
@@ -1646,6 +1691,11 @@ export default function Vehicle() {
       >
       {tripTab === "seats" && (
         <>
+      {activeRouteInfo && (
+        <div className="mb-4">
+          <RouteCard route={activeRouteInfo} active showMap={false} />
+        </div>
+      )}
       <SeatLayout seats={seats} selectedSeats={selectedSeats} onSeatSelect={setSelectedSeats} size="large" />
 
       {selectedSeats.length > 0 && (
@@ -1741,16 +1791,23 @@ export default function Vehicle() {
                 );
               }
               const navCenterPoint = { lat: navCenter.lat, lng: navCenter.lng };
-              const routeWaypoints: Array<{ lat: number; lng: number }> = selectedRoute
+              const routeWaypoints: Array<{ lat: number; lng: number }> = activeRouteInfo
                 ? [
-                    ...(selectedRoute.startPoint ? [{ lat: selectedRoute.startPoint.lat, lng: selectedRoute.startPoint.lng }] : []),
-                    ...(selectedRoute.stops ?? []).map((s) => ({ lat: s.lat, lng: s.lng })),
-                    ...(selectedRoute.endPoint ? [{ lat: selectedRoute.endPoint.lat, lng: selectedRoute.endPoint.lng }] : []),
+                    ...(activeRouteInfo.startPoint ? [{ lat: activeRouteInfo.startPoint.lat, lng: activeRouteInfo.startPoint.lng }] : []),
+                    ...(activeRouteInfo.stops ?? []).map((s) => ({ lat: s.lat, lng: s.lng })),
+                    ...(activeRouteInfo.endPoint ? [{ lat: activeRouteInfo.endPoint.lat, lng: activeRouteInfo.endPoint.lng }] : []),
                   ].filter((p) => p.lat !== 0 || p.lng !== 0)
                 : [];
-              const routeMarkers = tripMapPoints.filter(
-                (p): p is MapPoint & { type: "start" | "stop" | "end" } => p.type !== "current"
-              );
+              const seenMarkerCoords = new Set<string>();
+              const routeMarkers = tripMapPoints
+                .filter((p): p is MapPoint & { type: "start" | "stop" | "end" } => p.type !== "current")
+                .filter((p) => {
+                  if (p.type !== "stop") return true;
+                  const coordKey = `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+                  if (seenMarkerCoords.has(coordKey)) return false;
+                  seenMarkerCoords.add(coordKey);
+                  return true;
+                });
               return (
                 <DriverNavigationMap
                   center={navCenterPoint}
@@ -2022,7 +2079,9 @@ export default function Vehicle() {
         title="Not at destination"
         confirmLabel="Confirm"
       >
-        <p className="text-sm text-muted-foreground mb-3">You are not at the destination. If you confirm, check-out will apply with adjusted amount for each seat below.</p>
+        <p className="text-sm text-muted-foreground mb-3">
+          You have not reached the passenger&apos;s destination yet. Confirming will release the seat(s) early without charging driver dues.
+        </p>
         <div className="space-y-2 max-h-[50vh] overflow-y-auto">
           {outOfRangeCheckouts?.map((item) => (
             <div key={item.vehicle_seat_id} className="rounded-xl border border-border bg-muted/30 p-3 text-sm">

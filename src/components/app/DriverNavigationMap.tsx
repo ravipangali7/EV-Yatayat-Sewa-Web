@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 import { Crosshair } from "lucide-react";
 import { useGoogleMaps } from "@/contexts/GoogleMapsContext";
 import { MapTypeToggle } from "@/components/maps/MapTypeToggle";
@@ -10,14 +10,10 @@ import {
   MARKER_HEIGHT,
   MARKER_WIDTH,
   NAV_ZOOM,
-  POLYLINE_STROKE_COLOR,
-  POLYLINE_STROKE_OPACITY,
-  POLYLINE_STROKE_WEIGHT,
   ROUTE_MARKER_ANCHOR,
   ROUTE_MARKER_SIZE,
 } from "@/config/mapConstants";
 import { GOOGLE_MAPS_CONFIG } from "@/config/maps";
-import { getDirectionsPath } from "@/lib/directions";
 import {
   loadVehicleMarkerImage,
   makePlainVehicleIcon,
@@ -67,7 +63,7 @@ export interface DriverNavigationMapProps {
   heading?: number | null;
   /** When provided (e.g. from Flutter WebView), RAF loop reads target from this ref for smooth updates without re-renders. */
   liveTargetRef?: React.MutableRefObject<LiveTargetSnapshot | null>;
-  /** Route waypoints for polyline (start, stops, end). */
+  /** Route waypoints (kept for prop compatibility; driver map renders stop markers without connecting polylines). */
   routeWaypoints?: Array<{ lat: number; lng: number }>;
   /** Start, stop, and end markers to show on the map. */
   routeMarkers?: RouteMarkerPoint[];
@@ -90,7 +86,6 @@ export default function DriverNavigationMap({
   previousCenter,
   heading: headingOverride,
   liveTargetRef,
-  routeWaypoints = [],
   routeMarkers = [],
   className = "",
 }: DriverNavigationMapProps) {
@@ -101,8 +96,6 @@ export default function DriverNavigationMap({
   const lastRotationPaintedRef = useRef<number | null>(null);
   const listenerRef = useRef<google.maps.MapsEventListener[]>([]);
   const [followMode, setFollowMode] = useState(true);
-  const [zoomState, setZoomState] = useState(NAV_ZOOM);
-  const [roadPath, setRoadPath] = useState<Array<{ lat: number; lng: number }> | null>(null);
   const computedHeading =
     previousCenter && (previousCenter.lat !== center.lat || previousCenter.lng !== center.lng)
       ? computeHeading(previousCenter, center)
@@ -118,7 +111,7 @@ export default function DriverNavigationMap({
   const targetHeadingRef = useRef<number>(targetHeading);
   const lastTickTimeRef = useRef<number>(performance.now());
   const rafRef = useRef<number | null>(null);
-  /** When liveTargetRef is provided, freeze center so GoogleMap does not override RAF-driven setCenter on re-renders. */
+  /** Keep initial center reference stable so GoogleMap does not override user panning when followMode is false. */
   const initialCenterRef = useRef<{ lat: number; lng: number }>({ lat: center.lat, lng: center.lng });
 
   const { isLoaded, mapType, setMapType } = useGoogleMaps();
@@ -130,7 +123,6 @@ export default function DriverNavigationMap({
     const targetH = targetHeadingRef.current;
     displayCenterRef.current = { lat: targetC.lat, lng: targetC.lng };
     displayHeadingRef.current = targetH;
-    setZoomState(NAV_ZOOM);
     setFollowMode(true);
     if (map) {
       map.setCenter(displayCenterRef.current);
@@ -149,17 +141,6 @@ export default function DriverNavigationMap({
   targetCenterRef.current = { lat: center.lat, lng: center.lng };
   targetHeadingRef.current = targetHeading;
 
-  // When using live ref, keep initial center stable; otherwise sync so prop-driven updates work
-  if (!liveTargetRef) {
-    initialCenterRef.current = { lat: center.lat, lng: center.lng };
-  }
-  const centerForMap = liveTargetRef ? initialCenterRef.current : center;
-
-  const routeWaypointsKey = useMemo(
-    () => routeWaypoints.map((w) => `${w.lat},${w.lng}`).join("|"),
-    [routeWaypoints]
-  );
-
   const onMapLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map;
@@ -177,12 +158,6 @@ export default function DriverNavigationMap({
       listenerRef.current.push(dragStartListener);
       const dragListener = map.addListener("dragend", () => setFollowMode(false));
       listenerRef.current.push(dragListener);
-      const zoomListener = map.addListener("zoom_changed", () => {
-        const z = map.getZoom();
-        if (typeof z === "number") setZoomState(z);
-        setFollowMode(false);
-      });
-      listenerRef.current.push(zoomListener);
 
       const plainIcon = makePlainVehicleIcon(
         MARKER_ICONS.current,
@@ -333,21 +308,6 @@ export default function DriverNavigationMap({
     };
   }, [isLoaded, liveTargetRef, mapId, followMode]);
 
-  useEffect(() => {
-    if (!isLoaded || routeWaypoints.length < 2) {
-      setRoadPath(null);
-      return;
-    }
-    let cancelled = false;
-    getDirectionsPath(routeWaypoints).then((path) => {
-      if (!cancelled && path) setRoadPath(path);
-      else if (!cancelled) setRoadPath(null);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoaded, routeWaypointsKey]);
-
   if (!isLoaded) {
     return (
       <div className={`flex items-center justify-center bg-muted/50 rounded-xl text-muted-foreground text-sm ${className}`} style={{ minHeight: 200 }}>
@@ -355,8 +315,6 @@ export default function DriverNavigationMap({
       </div>
     );
   }
-
-  const polylinePath = roadPath && roadPath.length >= 2 ? roadPath : (routeWaypoints.length >= 2 ? routeWaypoints : null);
 
   const mapOptions: google.maps.MapOptions = {
     clickableIcons: false,
@@ -376,22 +334,12 @@ export default function DriverNavigationMap({
     <div className={`relative rounded-xl overflow-hidden h-full min-h-[200px] ${className}`} style={{ height: "100%" }}>
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "100%", minHeight: 200 }}
-        center={centerForMap}
-        zoom={zoomState}
+        center={initialCenterRef.current}
+        zoom={NAV_ZOOM}
         onLoad={onMapLoad}
         onUnmount={onMapUnmount}
         options={mapOptions}
       >
-        {polylinePath && (
-          <Polyline
-            path={polylinePath}
-            options={{
-              strokeColor: POLYLINE_STROKE_COLOR,
-              strokeOpacity: POLYLINE_STROKE_OPACITY,
-              strokeWeight: POLYLINE_STROKE_WEIGHT,
-            }}
-          />
-        )}
         {routeMarkers.map((marker, i) => (
           <Marker
             key={`${marker.type}-${i}-${marker.lat}-${marker.lng}`}

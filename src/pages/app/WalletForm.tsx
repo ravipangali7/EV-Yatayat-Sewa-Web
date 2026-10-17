@@ -20,6 +20,7 @@ export default function WalletForm() {
     balance: 0,
     to_pay: 0,
     to_receive: 0,
+    remarks: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -44,9 +45,10 @@ export default function WalletForm() {
           const wallet = await walletApi.get(id);
           setFormData({
             user: wallet.user || '',
-            balance: wallet.balance || 0,
-            to_pay: wallet.to_pay || 0,
-            to_receive: wallet.to_receive || 0,
+            balance: Number(wallet.balance) || 0,
+            to_pay: Number(wallet.to_pay) || 0,
+            to_receive: Number(wallet.to_receive) || 0,
+            remarks: '',
           });
         } catch (error) {
           toast.error('Failed to load wallet');
@@ -64,11 +66,15 @@ export default function WalletForm() {
     setLoading(true);
 
     try {
+      const payload = {
+        ...formData,
+        remarks: formData.remarks.trim() || undefined,
+      } as Partial<typeof formData>;
       if (isEdit && id) {
-        await walletApi.edit(id, formData);
+        await walletApi.edit(id, payload);
         toast.success('Wallet updated successfully');
       } else {
-        await walletApi.create(formData);
+        await walletApi.create(payload);
         toast.success('Wallet created successfully');
       }
       navigate('/admin/wallets');
@@ -103,7 +109,7 @@ export default function WalletForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="balance">Balance</Label>
+            <Label htmlFor="balance">Balance (Rs.)</Label>
             <Input
               id="balance"
               type="number"
@@ -115,7 +121,7 @@ export default function WalletForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="to_pay">To Pay</Label>
+            <Label htmlFor="to_pay">To Pay (Rs.)</Label>
             <Input
               id="to_pay"
               type="number"
@@ -127,7 +133,7 @@ export default function WalletForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="to_receive">To Receive</Label>
+            <Label htmlFor="to_receive">To Receive (Rs.)</Label>
             <Input
               id="to_receive"
               type="number"
@@ -135,6 +141,16 @@ export default function WalletForm() {
               value={formData.to_receive}
               onChange={(e) => setFormData({ ...formData, to_receive: parseFloat(e.target.value) || 0 })}
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="remarks">Remarks / Adjustment Reason (Optional)</Label>
+            <Input
+              id="remarks"
+              placeholder={isEdit ? 'Reason for balance or due adjustment...' : 'Initial balance remarks...'}
+              value={formData.remarks}
+              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
             />
           </div>
         </div>
@@ -149,3 +165,4 @@ export default function WalletForm() {
     </div>
   );
 }
+

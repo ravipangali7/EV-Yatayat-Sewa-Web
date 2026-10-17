@@ -19,7 +19,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'rec
 import { vehicleApi } from '@/modules/vehicles/services/vehicleApi';
 import { userApi } from '@/modules/users/services/userApi';
 import { routeApi } from '@/modules/routes/services/routeApi';
-import { Vehicle, User, Route, VehicleSeat, VehicleImage, VehicleAnalyticsResponse, AnalyticsDatePreset } from '@/types';
+import { tripApi } from '@/modules/trips/services/tripApi';
+import { seatBookingApi } from '@/modules/seat-bookings/services/seatBookingApi';
+import { Vehicle, User, Route, VehicleSeat, VehicleImage, VehicleAnalyticsResponse, AnalyticsDatePreset, SeatBooking } from '@/types';
 import { toast } from 'sonner';
 import { toNumber } from '@/lib/utils';
 import { getDirectionsPath } from '@/lib/directions';
@@ -37,6 +39,18 @@ interface MarkerData {
   icon?: string;
 }
 
+interface VehicleTripItem {
+  id: string;
+  trip_id: string;
+  driver_name?: string;
+  driver_phone?: string;
+  route_name?: string;
+  start_time: string | null;
+  end_time: string | null;
+  is_scheduled?: boolean;
+  reverse_direction?: boolean;
+}
+
 // Color palette for routes
 const routeColors = ['#4285F4', '#EA4335', '#34A853', '#FBBC04', '#9C27B0', '#FF5722', '#00BCD4'];
 
@@ -49,6 +63,10 @@ export default function VehicleView() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [seats, setSeats] = useState<VehicleSeat[]>([]);
   const [images, setImages] = useState<VehicleImage[]>([]);
+  const [vehicleTrips, setVehicleTrips] = useState<VehicleTripItem[]>([]);
+  const [vehicleSeatBookings, setVehicleSeatBookings] = useState<SeatBooking[]>([]);
+  const [seatStatusFilter, setSeatStatusFilter] = useState<'all' | 'available' | 'booked'>('all');
+  const [togglingSeatId, setTogglingSeatId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
@@ -92,18 +110,22 @@ export default function VehicleView() {
       if (!id) return;
       setLoading(true);
       try {
-        const [vehicleData, usersResponse, routesResponse, seatsData, imagesData] = await Promise.all([
+        const [vehicleData, usersResponse, routesResponse, seatsData, imagesData, tripsResponse, bookingsResponse] = await Promise.all([
           vehicleApi.get(id),
           userApi.list({ per_page: 1000 }),
           routeApi.list({ per_page: 1000 }),
           vehicleApi.getSeats(id),
           vehicleApi.getImages(id),
+          tripApi.list({ vehicle: id, per_page: 25 }).catch(() => ({ results: [] })),
+          seatBookingApi.list({ vehicle: id, per_page: 25 }).catch(() => ({ results: [] })),
         ]);
         setVehicle(vehicleData);
         setUsers(usersResponse.results);
         setRoutes(routesResponse.results);
         setSeats(seatsData);
         setImages(imagesData);
+        setVehicleTrips((tripsResponse.results || []) as VehicleTripItem[]);
+        setVehicleSeatBookings((bookingsResponse.results || []) as SeatBooking[]);
       } catch (error) {
         toast.error('Failed to load vehicle data');
         console.error(error);
@@ -113,6 +135,23 @@ export default function VehicleView() {
     };
     fetchData();
   }, [id]);
+
+  const handleToggleSeatStatus = async (seat: VehicleSeat) => {
+    if (!id || togglingSeatId) return;
+    const nextStatus = seat.status === 'booked' ? 'available' : 'booked';
+    setTogglingSeatId(seat.id);
+    try {
+      const updated = await vehicleApi.editSeat(id, seat.id, { status: nextStatus });
+      setSeats((prev) => prev.map((s) => (s.id === seat.id ? { ...s, status: updated.status } : s)));
+      toast.success(`Seat ${seat.side}${seat.number} marked as ${nextStatus}`);
+    } catch (err) {
+      console.error('Failed to update seat status:', err);
+      toast.error('Failed to update seat status');
+    } finally {
+      setTogglingSeatId(null);
+    }
+  };
+
 
   const { isLoaded: isMapsLoaded } = useGoogleMaps();
 
@@ -443,21 +482,80 @@ export default function VehicleView() {
           </CardContent>
         </Card>
 
-        {/* Seat Layout (from vehicle seat_layout JSON) */}
-        {vehicle?.seat_layout?.length > 0 && seats.length > 0 && (
+        {/* Seat Layout & Status */}
+        {seats.length > 0 && (
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Seat Layout</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <CardTitle>
+                  Seat Layout & Status ({seats.filter((s) => s.status === 'available').length} Available,{' '}
+                  {seats.filter((s) => s.status === 'booked').length} Booked)
+                </CardTitle>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={seatStatusFilter === 'all' ? 'default' : 'outline'}
+                    onClick={() => setSeatStatusFilter('all')}
+                  >
+                    All ({seats.length})
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={seatStatusFilter === 'available' ? 'default' : 'outline'}
+                    onClick={() => setSeatStatusFilter('available')}
+                  >
+                    Available ({seats.filter((s) => s.status === 'available').length})
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={seatStatusFilter === 'booked' ? 'default' : 'outline'}
+                    onClick={() => setSeatStatusFilter('booked')}
+                  >
+                    Booked ({seats.filter((s) => s.status === 'booked').length})
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <SeatLayoutVisualizer
-                seatLayout={vehicle.seat_layout}
-                seats={seats.map((s) => ({ side: s.side, number: s.number }))}
-                bookedSeats={new Set(seats.filter((s) => s.status === 'booked').map((s) => `${s.side}${s.number}`))}
-              />
+            <CardContent className="space-y-4">
+              {vehicle?.seat_layout?.length > 0 && (
+                <SeatLayoutVisualizer
+                  seatLayout={vehicle.seat_layout}
+                  seats={seats.map((s) => ({ side: s.side, number: s.number }))}
+                  bookedSeats={new Set(seats.filter((s) => s.status === 'booked').map((s) => `${s.side}${s.number}`))}
+                />
+              )}
+              <div className="pt-2 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-2">
+                  Click any seat below to toggle between Available and Booked (preserves all trip and booking history):
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {seats
+                    .filter((s) => seatStatusFilter === 'all' || s.status === seatStatusFilter)
+                    .map((seat) => (
+                      <button
+                        key={seat.id}
+                        type="button"
+                        disabled={togglingSeatId === seat.id}
+                        onClick={() => handleToggleSeatStatus(seat)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                          seat.status === 'booked'
+                            ? 'bg-destructive/15 text-destructive border-destructive/40 hover:bg-destructive/25'
+                            : 'bg-success/15 text-success border-success/40 hover:bg-success/25'
+                        }`}
+                      >
+                        {seat.side}
+                        {seat.number} — {seat.status === 'booked' ? 'Booked' : 'Available'}
+                      </button>
+                    ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
+
 
         {/* Routes Map */}
         {polylinesToShow.length > 0 && (
@@ -737,7 +835,120 @@ export default function VehicleView() {
             )}
           </CardContent>
         </Card>
+
+        {/* Trip History */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Recent Trip History ({vehicleTrips.length})</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/trips')}>
+                View All Trips
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {vehicleTrips.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-4 text-center">No trips recorded for this vehicle.</p>
+            ) : (
+              <div className="border rounded-md overflow-auto max-h-72">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-2">Trip ID</th>
+                      <th className="text-left p-2">Route</th>
+                      <th className="text-left p-2">Driver</th>
+                      <th className="text-left p-2">Start</th>
+                      <th className="text-left p-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vehicleTrips.map((t) => (
+                      <tr
+                        key={t.id}
+                        onClick={() => navigate(`/admin/trips/${t.id}`)}
+                        className="border-b hover:bg-muted/50 cursor-pointer"
+                      >
+                        <td className="p-2 font-mono text-xs">{t.trip_id}</td>
+                        <td className="p-2">{t.route_name || '-'}{t.reverse_direction ? ' (Return)' : ''}</td>
+                        <td className="p-2">{t.driver_name || t.driver_phone || '-'}</td>
+                        <td className="p-2 text-xs">
+                          {t.start_time ? format(new Date(t.start_time), 'MMM dd, HH:mm') : '-'}
+                        </td>
+                        <td className="p-2">
+                          <Badge variant={t.end_time ? 'secondary' : 'default'}>
+                            {t.end_time ? 'Completed' : 'Active'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Seat Booking History */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Recent Seat Bookings ({vehicleSeatBookings.length})</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/seat-bookings')}>
+                View All Bookings
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {vehicleSeatBookings.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-4 text-center">No seat bookings recorded for this vehicle.</p>
+            ) : (
+              <div className="border rounded-md overflow-auto max-h-72">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-2">Seat</th>
+                      <th className="text-left p-2">Passenger</th>
+                      <th className="text-left p-2">Check In</th>
+                      <th className="text-right p-2">Amount</th>
+                      <th className="text-left p-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vehicleSeatBookings.map((b) => (
+                      <tr
+                        key={b.id}
+                        onClick={() => navigate(`/admin/seat-bookings/${b.id}`)}
+                        className="border-b hover:bg-muted/50 cursor-pointer"
+                      >
+                        <td className="p-2 font-medium">
+                          {b.vehicle_seat_details
+                            ? `${b.vehicle_seat_details.side}${b.vehicle_seat_details.number}`
+                            : '-'}
+                        </td>
+                        <td className="p-2">
+                          {b.is_guest ? 'Guest' : b.user_details?.name || b.user_details?.phone || 'Passenger'}
+                        </td>
+                        <td className="p-2 text-xs">
+                          {b.check_in_datetime ? format(new Date(b.check_in_datetime), 'MMM dd, HH:mm') : '-'}
+                        </td>
+                        <td className="p-2 text-right">
+                          {Number(b.trip_amount) > 0 ? `Rs. ${Number(b.trip_amount).toFixed(2)}` : '-'}
+                        </td>
+                        <td className="p-2">
+                          <Badge variant={b.check_out_datetime ? 'secondary' : 'default'}>
+                            {b.check_out_datetime ? 'Checked Out' : 'Active'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
 
       {/* Marker/Route Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
